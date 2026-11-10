@@ -54,8 +54,26 @@
     bottom: 20px;
     right: 20px;
   }
+
+  .habit-risks-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .explain-drawer-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .nl-input-row {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
 }
 
+@media (max-width: 480px) {
   .timer-display-wrapper {
     width: 260px;
     height: 260px;
@@ -84,6 +102,10 @@
   }
 
   .ambient-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .metrics-grid {
     grid-template-columns: 1fr;
   }
 }

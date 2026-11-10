@@ -37,6 +37,9 @@
         <button id="auth-modal-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="Account & Cloud Sync">
           <span>👤</span> <span id="auth-btn-text">Sign In</span>
         </button>
+        <button id="transparency-modal-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="AI Model Transparency & Governance">
+          <span>🧠</span> <span>AI Models</span>
+        </button>
         <button id="zen-toggle-btn" class="btn-icon" title="Toggle Zen Mode (Fullscreen Focus)">
           <span>👁️</span>
         </button>
@@ -309,7 +312,10 @@
         </div>
       </section>
 
-      <div class="dashboard-columns" style="margin-top: 20px;">
+      <!-- ML Explainable Intelligence Section -->
+      <div id="ml-insights-container" style="margin-top: 24px;"></div>
+
+      <div class="dashboard-columns" style="margin-top: 24px;">
         <!-- Weekly Focus Activity -->
         <div class="glass-card">
           <h2 class="section-title" style="margin-bottom: 12px;">Weekly Deep Work (Minutes)</h2>
@@ -447,6 +453,20 @@
       <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
         <button id="save-settings-btn" class="btn-primary" style="width: 100%; justify-content: center;">Save Preferences</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Model Transparency Modal -->
+  <div id="transparency-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card modal-large" style="max-width: 720px; max-height: 85vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h2 class="modal-title"><span>🧠 Model Transparency & Privacy</span></h2>
+        <button id="close-transparency-modal" class="btn-icon">✕</button>
+      </div>
+      <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px;">
+        LifeBuddy uses strictly local, per-user machine learning models. No telemetry, third-party analytics, or raw logs leave your device.
+      </p>
+      <div id="transparency-modal-body"></div>
     </div>
   </div>
 

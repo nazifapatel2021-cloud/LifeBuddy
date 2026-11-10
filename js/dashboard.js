@@ -15,6 +15,7 @@ export class DashboardManager {
     this.onNavigate = options.onNavigate || (() => {});
     this.onStartFocus = options.onStartFocus || (() => {});
     this.onTaskFocus = options.onTaskFocus || (() => {});
+    this.onTaskCreated = options.onTaskCreated || (() => {});
   }
 
   getGreeting() {
@@ -38,7 +39,7 @@ export class DashboardManager {
     const greeting = this.getGreeting();
 
     const focusMins = summary.focus.today_minutes || 0;
-    const focusTarget = 100; // 100 mins daily deep work target
+    const focusTarget = 100;
     const focusPct = Math.min(100, Math.round((focusMins / focusTarget) * 100));
 
     const todayExpense = summary.finances.today_expense || 0;
@@ -66,6 +67,26 @@ export class DashboardManager {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Natural Language Quick-Add Bar -->
+      <div class="glass-card nl-quick-add-container" style="margin-bottom: 24px;">
+        <form id="nl-task-form" class="nl-task-form">
+          <div class="nl-input-wrapper">
+            <span class="nl-magic-icon">✨</span>
+            <input 
+              type="text" 
+              id="nl-task-input" 
+              class="nl-input-field" 
+              placeholder="Natural-language task add (e.g., 'finish DBMS report friday 5pm urgent study 3 pomos')" 
+              autocomplete="off"
+            >
+            <button type="submit" class="btn-primary" style="padding: 10px 20px;">
+              Add Task
+            </button>
+          </div>
+          <div id="nl-preview-pills" class="nl-preview-pills" style="display: none;"></div>
+        </form>
       </div>
 
       <!-- Quick Metrics Grid -->
@@ -159,7 +180,10 @@ export class DashboardManager {
       </div>
     `;
 
-    // Hook click events
+    this.bindEvents(container);
+  }
+
+  bindEvents(container) {
     container.querySelectorAll('[data-nav]').forEach(el => {
       el.addEventListener('click', () => {
         this.onNavigate(el.dataset.nav);
@@ -191,6 +215,65 @@ export class DashboardManager {
         this.onNavigate('focus');
       });
     });
+
+    // Natural Language Input Handlers
+    const nlForm = container.querySelector('#nl-task-form');
+    const nlInput = container.querySelector('#nl-task-input');
+    const previewPills = container.querySelector('#nl-preview-pills');
+
+    let debounceTimer = null;
+
+    if (nlInput && previewPills) {
+      nlInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        const text = nlInput.value.trim();
+        if (text.length < 5) {
+          previewPills.style.display = 'none';
+          return;
+        }
+
+        debounceTimer = setTimeout(async () => {
+          try {
+            const parsed = await API.ml.parseTask(text);
+            previewPills.style.display = 'flex';
+            previewPills.innerHTML = `
+              <span class="badge badge-subtle">🏷️ ${parsed.title}</span>
+              <span class="badge ${parsed.priority === 'urgent' ? 'badge-urgent' : 'badge-medium'}">Priority: ${parsed.priority}</span>
+              <span class="badge badge-subtle">Category: ${parsed.category}</span>
+              ${parsed.due_date ? `<span class="badge badge-subtle">📅 Due: ${parsed.due_date}</span>` : ''}
+              <span class="badge badge-subtle">🍅 ${parsed.estimated_pomodoros} pomo</span>
+            `;
+          } catch (e) {
+            previewPills.style.display = 'none';
+          }
+        }, 300);
+      });
+    }
+
+    if (nlForm) {
+      nlForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = nlInput.value.trim();
+        if (!text) return;
+
+        try {
+          const parsed = await API.ml.parseTask(text);
+          await API.tasks.create({
+            title: parsed.title,
+            category: parsed.category,
+            priority: parsed.priority,
+            estimated_pomodoros: parsed.estimated_pomodoros,
+            due_date: parsed.due_date
+          });
+          nlInput.value = '';
+          previewPills.style.display = 'none';
+          this.onTaskCreated();
+          this.render(container);
+        } catch (err) {
+          console.error('Failed to create parsed task', err);
+        }
+      });
+    }
   }
 
   renderTopTasks(tasks) {

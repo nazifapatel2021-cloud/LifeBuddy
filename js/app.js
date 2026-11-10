@@ -9,6 +9,8 @@ import { DashboardManager } from './dashboard.js';
 import { AuthController } from './auth.js';
 import { StatsVisualizer } from './stats.js';
 import { ThemeManager } from './theme.js';
+import { InsightsCoordinator } from './insights.js';
+import { ModelTransparencyController } from './transparency.js';
 import { API } from './api.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -18,6 +20,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 1. Initialize Controllers
   const themeManager = new ThemeManager();
   const statsVisualizer = new StatsVisualizer();
+  const insightsCoordinator = new InsightsCoordinator();
+  const transparencyController = new ModelTransparencyController();
+  transparencyController.init();
 
   const taskManager = new TaskManager({
     onTasksChanged: () => {
@@ -56,6 +61,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     },
     onTaskFocus: (taskId) => {
       taskManager.setActiveTask(taskId);
+    },
+    onTaskCreated: () => {
+      taskManager.loadTasks();
     }
   });
 
@@ -66,6 +74,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await expenseManager.loadExpenses();
       await dashboardManager.render(document.getElementById('view-dashboard'));
       statsVisualizer.updateStatsUI();
+      insightsCoordinator.render();
     }
   });
 
@@ -131,6 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await expenseManager.init();
   await authController.init();
   await dashboardManager.render(document.getElementById('view-dashboard'));
+  insightsCoordinator.render();
   timerEngine.reset();
 
   // 3. View / Tab Navigation Switcher
@@ -153,6 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (viewName === 'dashboard') {
       dashboardManager.render(document.getElementById('view-dashboard'));
     } else if (viewName === 'insights') {
+      insightsCoordinator.render();
       statsVisualizer.updateStatsUI();
     }
   }
@@ -284,14 +295,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 7. Expense Form
+  // 7. Expense Form with ML Auto-Categorization!
   const expenseForm = document.getElementById('expense-form');
+  const expNoteInput = document.getElementById('exp-note-input');
+  const expCategorySelect = document.getElementById('exp-category-select');
+
+  if (expNoteInput && expCategorySelect) {
+    let expDebounce = null;
+    expNoteInput.addEventListener('input', () => {
+      clearTimeout(expDebounce);
+      const text = expNoteInput.value.trim();
+      if (text.length >= 3) {
+        expDebounce = setTimeout(async () => {
+          try {
+            const pred = await API.ml.categorizeExpense(text);
+            if (pred && pred.category) {
+              const options = Array.from(expCategorySelect.options);
+              const match = options.find(o => o.value.toLowerCase() === pred.category.toLowerCase());
+              if (match) {
+                expCategorySelect.value = match.value;
+                showToast(`✨ Auto-categorized as ${match.value}`);
+              }
+            }
+          } catch {}
+        }, 350);
+      }
+    });
+  }
+
   if (expenseForm) {
     expenseForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const amount = document.getElementById('exp-amount-input').value;
-      const category = document.getElementById('exp-category-select').value;
-      const note = document.getElementById('exp-note-input').value;
+      const category = expCategorySelect.value;
+      const note = expNoteInput.value;
       const date = document.getElementById('exp-date-input').value;
       const type = document.getElementById('exp-type-select').value;
 

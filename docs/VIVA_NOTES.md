@@ -85,3 +85,29 @@ Constructed an 8-module machine learning and statistical inference engine in `ap
 
 **Q3: How does the cross-module insight engine establish statistical validity without p-hacking?**
 > *Answer:* We enforce three strict criteria: (1) a pre-defined set of 4 domain hypotheses based on cognitive science literature; (2) a minimum sample size constraint of $N \ge 14$ consecutive days; and (3) a strict two-tailed $p$-value threshold ($p < 0.05$) combined with Cohen's effect size reporting ($r \ge 0.25$). Weak or non-significant correlations are withheld or explicitly labeled as "Developing Trends".
+
+
+---
+
+## Phase 3: Frontend Architecture & Explainable UI
+
+### Architectural Decisions & Rationale
+1. **Zero-Build Vanilla ES6 Modules & Native SVG over Heavy Frontend Frameworks (React/Vue/Chart.js):**
+   - *Alternative:* React/Next.js with Chart.js or Recharts.
+   - *Why Vanilla ES6 + Native SVG:* Eliminates 200MB+ `node_modules` dependency chains, complex bundler pipelines (Webpack/Vite), and runtime overhead. Native SVG path calculations for the spending forecast with 95% confidence cones give pixel-level visual control, 60fps rendering, offline resilience, and zero build steps.
+2. **Explainability Drawer Pattern ("Why am I seeing this?") vs Black-Box AI:**
+   - *Alternative:* Displaying raw numerical scores without rationale.
+   - *Why Explainability Drawer:* In high-stakes personal productivity and behavioral change, users reject predictions they do not understand or trust. The drawer demystifies Bayesian shrinkage, confidence intervals, and regression weights in plain English.
+3. **Model Transparency & Governance Modal:**
+   - *Alternative:* Keeping ML model states hidden in the backend.
+   - *Why Transparency Modal:* Reinforces the thesis of "privacy-first, self-learning system". Users can audit exactly how many sessions trained each model, see current MAE/accuracy metrics, and trigger retraining on demand.
+
+### 3 Likely Examiner Questions & Answers
+**Q1: Why did you construct the spending forecast and confidence interval charts using pure SVG instead of an established charting library like Chart.js or Highcharts?**
+> *Answer:* Standard charting libraries introduce third-party CDN or npm bundle dependencies, which violate our zero-build, offline-first PWA architecture. By computing mathematical SVG paths (`M ... L ...` and confidence interval polygon coordinates) directly in vanilla JavaScript, we achieved zero-dependency rendering, sub-millisecond load times, full responsiveness, and exact CSS variable theming across all five color schemes.
+
+**Q2: How does the "Why am I seeing this?" explainability drawer uphold principles of Responsible AI and Human-Centered Design?**
+> *Answer:* It addresses the "black box" problem of machine learning by explaining model predictions in human terms rather than raw mathematical notation. For example, for habit risk nudges, it explains how recent streak length, day-of-week patterns, and yesterday's mood contributed to the risk probability, allowing the user to make conscious behavioral adjustments rather than feeling judged by an opaque algorithm.
+
+**Q3: How does the dashboard Natural-Language Quick-Add bar prevent user errors before task creation?**
+> *Answer:* It provides instantaneous visual feedback via interactive entity chips as the user types. The user sees extracted entities (due date, priority, category, estimated pomodoros) highlighted in real time. If the regex parser misclassifies a token, the user can immediately see the interpretation and edit the text or override it before clicking Add, ensuring complete human-in-the-loop validation.

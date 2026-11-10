@@ -76,3 +76,41 @@ This document tracks all engineering deliverables, verification commands, test r
   - Start server: `python run.py`.
   - Navigate to interactive Swagger docs at `http://localhost:8000/docs`.
   - Try `GET /api/ml/focus-recommendation`, `POST /api/ml/parse-task`, or `GET /api/ml/spending-forecast`.
+
+
+## Phase 3 - Frontend: Explainable UI & Natural-Language Capture
+
+- **What was built:**
+  1. **Explainable Insights View (`js/insights.js`, `index.html`):**
+     - Personalized deep-work window recommendation card with confidence rating and peak hour breakdown.
+     - Weekly mindful reflection summary synthesized from behavioral data.
+     - Pure native SVG Month-End Spending Forecast chart featuring historical spending path, linear projection trend, budget ceiling line, and 95% Gaussian confidence interval cone.
+     - Habit Miss Risk Nudge cards detailing tomorrow's predicted risk probability, current streak, and supportive intervention prompts.
+     - Cross-Module Lifestyle Correlation cards with Pearson $r$ / Spearman $\rho$ values, statistical significance badges ($p < 0.05$), and causal lifestyle explanations.
+     - Slide-out Explainability Drawer ("Why am I seeing this?") detailing model mechanics, Bayesian priors, regression weights, and confidence intervals in plain English.
+  2. **Natural-Language Quick-Add Bar (`js/dashboard.js`, `css/styles.css`):**
+     - Dashboard natural-language capture with instant live preview chips (detected due date, category, priority, and pomodoros) before task creation.
+     - Auto-categorization listener in expense logger suggesting categories via TF-IDF + Logistic Regression predictions.
+  3. **Model Transparency & Governance Modal (`js/transparency.js`, `index.html`):**
+     - Accessible via top-bar "AI Models" button.
+     - Details architecture (Isolated Per-User ML), last trained timestamp, training data counts, cold-start heuristics, and evaluation metrics for all 8 ML pipelines.
+     - Includes one-click manual retraining trigger.
+  4. **Multi-Theme & Mobile Responsiveness:**
+     - Verified across all 5 themes (`sage`, `lavender`, `nordic`, `sunset`, `midnight`).
+     - SVG charts and drawer responsive down to mobile viewports ($< 480$px).
+
+- **How to run & test it:**
+  - Start the backend: `python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`
+  - Open `http://localhost:8000` in the browser.
+  - Log in with demo persona: `alex_code` / `password123`.
+
+- **What to click to see it:**
+  1. On the **Today** tab, type in the Quick Add bar: `finish DBMS lab tomorrow 4pm urgent study` and observe live entity chips auto-extracting date, urgent priority, and study category. Click "Add Task".
+  2. Click the **Insights** tab to see:
+     - Recommended Focus Window and Weekly Mindful Reflection.
+     - Native SVG Spending Forecast chart with 95% CI cone.
+     - Habit Miss Risk cards.
+     - Cross-module lifestyle correlations.
+     - Click **"Why am I seeing this? →"** on any card to slide out the explainability drawer.
+  3. Click **"AI Models"** in the top navigation header to view the live Model Transparency modal with training sizes, algorithms, and evaluation metrics.
+  4. Click the gear icon (**Settings**) to switch between all 5 themes and verify visual harmony.
