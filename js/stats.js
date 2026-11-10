@@ -10,13 +10,14 @@ export class StatsVisualizer {
   async updateStatsUI() {
     const stats = Storage.getStats();
 
-    const hours = (stats.totalMinutes / 60).toFixed(1);
+    const totalMins = Number(stats ? stats.totalMinutes : 0) || 0;
+    const hours = (totalMins / 60).toFixed(1);
     const totalMinutesEl = document.getElementById('stat-total-time');
     const totalPomosEl = document.getElementById('stat-total-pomos');
     const streakEl = document.getElementById('stat-streak');
 
     if (totalMinutesEl) totalMinutesEl.textContent = `${hours}h`;
-    if (totalPomosEl) totalPomosEl.textContent = stats.completedPomodoros;
+    if (totalPomosEl) totalPomosEl.textContent = (stats && stats.completedPomodoros) || 0;
     if (streakEl) streakEl.textContent = `${stats.currentStreak} 🔥`;
 
     this.renderWeeklyChart(stats.dailyHistory);

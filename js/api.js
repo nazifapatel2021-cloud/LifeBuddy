@@ -745,7 +745,7 @@ export const API = {
       const habits = JSON.parse(localStorage.getItem(OFFLINE_HABITS_KEY) || '[]');
 
       const todayFocusMins = sessions
-        .filter(s => s.mode === 'focus' && s.completed_at.startsWith(today))
+        .filter(s => s.mode === 'focus' && (s.completed_at || '').startsWith(today))
         .reduce((sum, s) => sum + (s.duration_minutes || 0), 0);
 
       const todayExpenses = expenses
@@ -753,7 +753,7 @@ export const API = {
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
       const monthExpenses = expenses
-        .filter(e => e.type === 'expense' && e.date.startsWith(monthPrefix))
+        .filter(e => e.type === 'expense' && (e.date || '').startsWith(monthPrefix))
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
       const habitsDone = habits.filter(h => (h.history || []).includes(today)).length;
@@ -762,7 +762,7 @@ export const API = {
         date: today,
         focus: {
           today_minutes: todayFocusMins,
-          today_sessions: sessions.filter(s => s.mode === 'focus' && s.completed_at.startsWith(today)).length
+          today_sessions: sessions.filter(s => s.mode === 'focus' && (s.completed_at || '').startsWith(today)).length
         },
         tasks: {
           total: tasks.length,

@@ -15,7 +15,7 @@ import { API } from './api.js';
 import { syncEngine } from './sync.js';
 import { studyController } from './study.js';
 
-document.addEventListener('DOMContentLoaded', async () => {
+function initApp() {
   const CIRCUMFERENCE = 2 * Math.PI * 140; // 879.64
   const settings = Storage.getSettings();
 
@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statsVisualizer = new StatsVisualizer();
   const insightsCoordinator = new InsightsCoordinator();
   const transparencyController = new ModelTransparencyController();
+
+  // Initialize Modals
   transparencyController.init();
   studyController.init();
 
@@ -31,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     onTasksChanged: () => {
       taskManager.renderTaskList(document.getElementById('task-list-container'));
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
-      dashboardManager.render(document.getElementById('view-dashboard'));
+      dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     },
     onActiveTaskChanged: (activeTask) => {
       updateActiveTaskBadge(activeTask);
@@ -41,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const habitManager = new HabitManager({
     onChanged: () => {
       habitManager.renderHabitsList(document.getElementById('habits-list-container'));
-      dashboardManager.render(document.getElementById('view-dashboard'));
+      dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     }
   });
 
@@ -49,8 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     onChanged: () => {
       expenseManager.renderExpenseList(document.getElementById('expense-list-container'));
       expenseManager.renderBudgetWidget(document.getElementById('budget-widget-container'));
-      statsVisualizer.renderCategoryBreakdown();
-      dashboardManager.render(document.getElementById('view-dashboard'));
+      statsVisualizer.renderCategoryBreakdown().catch(console.warn);
+      dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     }
   });
 
@@ -72,12 +74,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const authController = new AuthController({
     onUserChanged: async () => {
-      await taskManager.loadTasks();
-      await habitManager.loadHabits();
-      await expenseManager.loadExpenses();
-      await dashboardManager.render(document.getElementById('view-dashboard'));
-      statsVisualizer.updateStatsUI();
-      insightsCoordinator.render();
+      try {
+        await taskManager.loadTasks();
+        await habitManager.loadHabits();
+        await expenseManager.loadExpenses();
+        await dashboardManager.render(document.getElementById('view-dashboard'));
+        statsVisualizer.updateStatsUI();
+        insightsCoordinator.render();
+      } catch (e) {
+        console.warn('User change reload error:', e);
+      }
     }
   });
 
@@ -112,15 +118,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       audioSynth.playCompletionChime();
 
       if (mode === 'focus') {
-        await taskManager.incrementActiveTaskPomodoro();
-        Storage.recordCompletedSession(durationMinutes);
-        await API.focus.recordSession({
-          task_id: taskManager.activeTaskId,
-          mode: 'focus',
-          duration_minutes: durationMinutes
-        });
+        try {
+          await taskManager.incrementActiveTaskPomodoro();
+          Storage.recordCompletedSession(durationMinutes);
+          await API.focus.recordSession({
+            task_id: taskManager.activeTaskId,
+            mode: 'focus',
+            duration_minutes: durationMinutes
+          });
+        } catch (e) {
+          console.warn('Failed to record session:', e);
+        }
         statsVisualizer.updateStatsUI();
-        dashboardManager.render(document.getElementById('view-dashboard'));
+        dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
         showToast('🎉 Focus session completed! Mindful work recognized.');
       } else {
         showToast('🌿 Break finished! Ready to refocus?');
@@ -137,17 +147,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // 2. Initialize Data
-  await taskManager.init();
-  await habitManager.init();
-  await expenseManager.init();
-  await authController.init();
-  await syncEngine.init();
-  await dashboardManager.render(document.getElementById('view-dashboard'));
-  insightsCoordinator.render();
-  timerEngine.reset();
+  // ==========================================
+  // 2. Synchronous UI DOM Event Bindings
+  // (Bound immediately so buttons never freeze)
+  // ==========================================
 
-  // 3. View / Tab Navigation Switcher
+  // View / Tab Navigation Switcher
   const navTabs = document.querySelectorAll('.nav-tab');
   const appViews = document.querySelectorAll('.app-view');
 
@@ -165,10 +170,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     if (viewName === 'dashboard') {
-      dashboardManager.render(document.getElementById('view-dashboard'));
+      dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     } else if (viewName === 'insights') {
-      insightsCoordinator.render();
-      statsVisualizer.updateStatsUI();
+      insightsCoordinator.render().catch(console.warn);
+      statsVisualizer.updateStatsUI().catch(console.warn);
     }
   }
 
@@ -178,38 +183,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 4. Timer DOM controls
+  // Timer DOM controls
   const startPauseBtn = document.getElementById('start-pause-btn');
   const resetBtn = document.getElementById('reset-btn');
   const modeBtns = document.querySelectorAll('.mode-btn');
 
-  startPauseBtn.addEventListener('click', () => {
-    audioSynth.playClickSound();
-    if (timerEngine.isRunning) {
-      timerEngine.pause();
-      updateStartPauseBtn(false);
-    } else {
-      timerEngine.start();
-      updateStartPauseBtn(true);
-    }
-  });
+  if (startPauseBtn) {
+    startPauseBtn.addEventListener('click', () => {
+      audioSynth.playClickSound();
+      if (timerEngine.isRunning) {
+        timerEngine.pause();
+        updateStartPauseBtn(false);
+      } else {
+        timerEngine.start();
+        updateStartPauseBtn(true);
+      }
+    });
+  }
 
-  resetBtn.addEventListener('click', () => {
-    audioSynth.playClickSound();
-    timerEngine.reset();
-    updateStartPauseBtn(false);
-  });
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      audioSynth.playClickSound();
+      timerEngine.reset();
+      updateStartPauseBtn(false);
+    });
+  }
 
   modeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
       audioSynth.playClickSound();
-      const mode = e.target.dataset.mode;
+      const mode = e.currentTarget.dataset.mode;
       timerEngine.switchMode(mode);
       updateStartPauseBtn(false);
     });
   });
 
   function updateStartPauseBtn(isRunning) {
+    if (!startPauseBtn) return;
     if (isRunning) {
       startPauseBtn.innerHTML = `<span>❚❚</span> <span>Pause</span>`;
       startPauseBtn.style.background = 'var(--accent-primary-hover)';
@@ -237,7 +247,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // 5. Quick Task Forms (Focus Room & Planner)
+  // Quick Task Forms (Focus Room & Planner)
   const taskForm = document.getElementById('task-form');
   const taskTitleInput = document.getElementById('task-title-input');
   const taskPomoInput = document.getElementById('task-pomo-input');
@@ -245,12 +255,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (taskForm) {
     taskForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const title = taskTitleInput.value;
-      const estPomo = taskPomoInput.value;
+      const title = taskTitleInput ? taskTitleInput.value : '';
+      const estPomo = taskPomoInput ? taskPomoInput.value : 1;
       if (title.trim()) {
         await taskManager.addTask(title, estPomo);
-        taskTitleInput.value = '';
-        taskPomoInput.value = '1';
+        if (taskTitleInput) taskTitleInput.value = '';
+        if (taskPomoInput) taskPomoInput.value = '1';
         showToast('Task added');
       }
     });
@@ -260,11 +270,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (plannerTaskForm) {
     plannerTaskForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const title = document.getElementById('planner-task-title').value;
-      const category = document.getElementById('planner-task-cat').value;
-      const priority = document.getElementById('planner-task-priority').value;
-      const estPomo = document.getElementById('planner-task-pomo').value;
-      const dueDate = document.getElementById('planner-task-due').value;
+      const title = document.getElementById('planner-task-title')?.value || '';
+      const category = document.getElementById('planner-task-cat')?.value || 'work';
+      const priority = document.getElementById('planner-task-priority')?.value || 'medium';
+      const estPomo = document.getElementById('planner-task-pomo')?.value || 1;
+      const dueDate = document.getElementById('planner-task-due')?.value || null;
 
       if (title.trim()) {
         await taskManager.addTask(title, estPomo, category, priority, dueDate || null);
@@ -276,7 +286,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Filter tabs for Planner
   document.querySelectorAll('.task-filter-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const filter = btn.dataset.filter;
@@ -284,13 +294,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 6. Habit Form
+  // Habit Form
   const habitForm = document.getElementById('habit-form');
   if (habitForm) {
     habitForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const title = document.getElementById('habit-title-input').value;
-      const icon = document.getElementById('habit-icon-select').value;
+      const title = document.getElementById('habit-title-input')?.value || '';
+      const icon = document.getElementById('habit-icon-select')?.value || '🌱';
       if (title.trim()) {
         await habitManager.addHabit({ title, icon });
         habitForm.reset();
@@ -299,7 +309,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 7. Expense Form with ML Auto-Categorization!
+  // Expense Form with ML Auto-Categorization
   const expenseForm = document.getElementById('expense-form');
   const expNoteInput = document.getElementById('exp-note-input');
   const expCategorySelect = document.getElementById('exp-category-select');
@@ -330,16 +340,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (expenseForm) {
     expenseForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const amount = document.getElementById('exp-amount-input').value;
-      const category = expCategorySelect.value;
-      const note = expNoteInput.value;
-      const date = document.getElementById('exp-date-input').value;
-      const type = document.getElementById('exp-type-select').value;
+      const amount = document.getElementById('exp-amount-input')?.value;
+      const category = expCategorySelect?.value || 'Other';
+      const note = expNoteInput?.value || '';
+      const date = document.getElementById('exp-date-input')?.value;
+      const type = document.getElementById('exp-type-select')?.value || 'expense';
 
       if (amount && category) {
         await expenseManager.addExpense({ amount, category, note, date, type });
         expenseForm.reset();
-        document.getElementById('exp-date-input').value = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('exp-date-input');
+        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
         const modal = document.getElementById('expense-modal');
         if (modal) modal.classList.remove('active');
         showToast('Expense recorded');
@@ -347,7 +358,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 8. Ambient Sound Synthesis
+  // Ambient Sound Synthesis
   document.querySelectorAll('.sound-card').forEach(card => {
     const type = card.dataset.sound;
     const slider = card.querySelector('.sound-slider');
@@ -355,19 +366,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     card.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT') return;
       audioSynth.playClickSound();
-      const volume = parseFloat(slider.value);
+      const volume = slider ? parseFloat(slider.value) : 0.5;
       const isPlaying = audioSynth.toggleAmbientSound(type, volume);
       if (isPlaying) card.classList.add('active');
       else card.classList.remove('active');
     });
 
-    slider.addEventListener('input', (e) => {
-      const volume = parseFloat(e.target.value);
-      audioSynth.setAmbientVolume(type, volume);
-    });
+    if (slider) {
+      slider.addEventListener('input', (e) => {
+        const volume = parseFloat(e.target.value);
+        audioSynth.setAmbientVolume(type, volume);
+      });
+    }
   });
 
-  // 9. Floating Action Button (FAB)
+  // Floating Action Button (FAB)
   const fabBtn = document.getElementById('fab-quick-btn');
   const expenseModal = document.getElementById('expense-modal');
   const closeExpenseModal = document.getElementById('close-expense-modal');
@@ -385,7 +398,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 10. Theme Swatches
+  // Theme Swatches
   document.querySelectorAll('.theme-swatch').forEach(swatch => {
     swatch.addEventListener('click', () => {
       audioSynth.playClickSound();
@@ -395,7 +408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // 11. Settings & Zen Mode
+  // Settings & Zen Mode
   const settingsBtn = document.getElementById('settings-btn');
   const settingsModal = document.getElementById('settings-modal');
   const closeSettingsBtn = document.getElementById('close-settings-btn');
@@ -403,51 +416,68 @@ document.addEventListener('DOMContentLoaded', async () => {
   const zenToggleBtn = document.getElementById('zen-toggle-btn');
   const exitZenBtn = document.getElementById('exit-zen-btn');
 
-  settingsBtn.addEventListener('click', () => {
-    audioSynth.playClickSound();
-    const curr = Storage.getSettings();
-    document.getElementById('input-focus-time').value = curr.focusDuration;
-    document.getElementById('input-short-break-time').value = curr.shortBreakDuration;
-    document.getElementById('input-long-break-time').value = curr.longBreakDuration;
-    document.getElementById('input-auto-breaks').checked = curr.autoStartBreaks;
-    document.getElementById('input-auto-pomo').checked = curr.autoStartPomodoros;
-    settingsModal.classList.add('active');
-  });
+  if (settingsBtn && settingsModal) {
+    settingsBtn.addEventListener('click', () => {
+      audioSynth.playClickSound();
+      const curr = Storage.getSettings();
+      const fInput = document.getElementById('input-focus-time');
+      const sbInput = document.getElementById('input-short-break-time');
+      const lbInput = document.getElementById('input-long-break-time');
+      const abCheck = document.getElementById('input-auto-breaks');
+      const apCheck = document.getElementById('input-auto-pomo');
 
-  closeSettingsBtn.addEventListener('click', () => {
-    settingsModal.classList.remove('active');
-  });
+      if (fInput) fInput.value = curr.focusDuration;
+      if (sbInput) sbInput.value = curr.shortBreakDuration;
+      if (lbInput) lbInput.value = curr.longBreakDuration;
+      if (abCheck) abCheck.checked = curr.autoStartBreaks;
+      if (apCheck) apCheck.checked = curr.autoStartPomodoros;
 
-  saveSettingsBtn.addEventListener('click', () => {
-    audioSynth.playClickSound();
-    const focusMin = parseInt(document.getElementById('input-focus-time').value) || 25;
-    const shortMin = parseInt(document.getElementById('input-short-break-time').value) || 5;
-    const longMin = parseInt(document.getElementById('input-long-break-time').value) || 15;
-    const autoBreaks = document.getElementById('input-auto-breaks').checked;
-    const autoPomo = document.getElementById('input-auto-pomo').checked;
+      settingsModal.classList.add('active');
+    });
+  }
 
-    const curr = Storage.getSettings();
-    curr.focusDuration = focusMin;
-    curr.shortBreakDuration = shortMin;
-    curr.longBreakDuration = longMin;
-    curr.autoStartBreaks = autoBreaks;
-    curr.autoStartPomodoros = autoPomo;
+  if (closeSettingsBtn && settingsModal) {
+    closeSettingsBtn.addEventListener('click', () => {
+      settingsModal.classList.remove('active');
+    });
+  }
 
-    Storage.saveSettings(curr);
-    timerEngine.setDurations(focusMin, shortMin, longMin);
-    settingsModal.classList.remove('active');
-    showToast('Preferences saved');
-  });
+  if (saveSettingsBtn && settingsModal) {
+    saveSettingsBtn.addEventListener('click', () => {
+      audioSynth.playClickSound();
+      const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
+      const shortMin = parseInt(document.getElementById('input-short-break-time')?.value) || 5;
+      const longMin = parseInt(document.getElementById('input-long-break-time')?.value) || 15;
+      const autoBreaks = !!document.getElementById('input-auto-breaks')?.checked;
+      const autoPomo = !!document.getElementById('input-auto-pomo')?.checked;
 
-  zenToggleBtn.addEventListener('click', () => {
-    audioSynth.playClickSound();
-    document.body.classList.add('zen-mode');
-    showToast('Entered Zen Mode (Esc to exit)');
-  });
+      const curr = Storage.getSettings();
+      curr.focusDuration = focusMin;
+      curr.shortBreakDuration = shortMin;
+      curr.longBreakDuration = longMin;
+      curr.autoStartBreaks = autoBreaks;
+      curr.autoStartPomodoros = autoPomo;
 
-  exitZenBtn.addEventListener('click', () => {
-    document.body.classList.remove('zen-mode');
-  });
+      Storage.saveSettings(curr);
+      timerEngine.setDurations(focusMin, shortMin, longMin);
+      settingsModal.classList.remove('active');
+      showToast('Preferences saved');
+    });
+  }
+
+  if (zenToggleBtn) {
+    zenToggleBtn.addEventListener('click', () => {
+      audioSynth.playClickSound();
+      document.body.classList.add('zen-mode');
+      showToast('Entered Zen Mode (Esc to exit)');
+    });
+  }
+
+  if (exitZenBtn) {
+    exitZenBtn.addEventListener('click', () => {
+      document.body.classList.remove('zen-mode');
+    });
+  }
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && document.body.classList.contains('zen-mode')) {
@@ -455,6 +485,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Initial timer visual reset
+  timerEngine.reset();
+
+  // ==========================================
+  // 3. Asynchronous Data Initializations
+  // (Safe non-blocking execution)
+  // ==========================================
+  (async () => {
+    try {
+      await authController.init();
+    } catch (e) {
+      console.warn('Auth controller init error:', e);
+    }
+
+    try {
+      await syncEngine.init();
+    } catch (e) {
+      console.warn('Sync engine init error:', e);
+    }
+
+    try {
+      await Promise.allSettled([
+        taskManager.init(),
+        habitManager.init(),
+        expenseManager.init()
+      ]);
+    } catch (e) {
+      console.warn('Data collections load error:', e);
+    }
+
+    try {
+      await dashboardManager.render(document.getElementById('view-dashboard'));
+    } catch (e) {
+      console.warn('Dashboard initial render error:', e);
+    }
+
+    try {
+      insightsCoordinator.render();
+    } catch (e) {
+      console.warn('Insights coordinator render error:', e);
+    }
+  })();
+
+  // Toast Helper
   function showToast(msg) {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -469,6 +543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, 2800);
   }
 
+  // HTML Escape Helper
   function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/[&<>"']/g, match => {
@@ -476,4 +551,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return map[match];
     });
   }
-});
+}
+
+// Ensure startup regardless of DOM readiness state
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}

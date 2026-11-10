@@ -3,7 +3,9 @@ const STORAGE_KEYS = {
   SETTINGS: 'zen_pomodoro_settings',
   TASKS: 'zen_pomodoro_tasks',
   STATS: 'zen_pomodoro_stats',
-  ACTIVE_TASK: 'zen_pomodoro_active_task'
+  ACTIVE_TASK: 'zen_pomodoro_active_task',
+  TOKEN: 'lifebuddy_token',
+  REFRESH_TOKEN: 'lifebuddy_refresh_token'
 };
 
 const DEFAULT_SETTINGS = {
@@ -26,6 +28,22 @@ const DEFAULT_STATS = {
 };
 
 export const Storage = {
+  getToken() {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.TOKEN) || null;
+    } catch {
+      return null;
+    }
+  },
+
+  getRefreshToken() {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN) || null;
+    } catch {
+      return null;
+    }
+  },
+
   getSettings() {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -61,15 +79,21 @@ export const Storage = {
   },
 
   getActiveTaskId() {
-    return localStorage.getItem(STORAGE_KEYS.ACTIVE_TASK) || null;
+    try {
+      return localStorage.getItem(STORAGE_KEYS.ACTIVE_TASK) || null;
+    } catch {
+      return null;
+    }
   },
 
   setActiveTaskId(id) {
-    if (id) {
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_TASK, id);
-    } else {
-      localStorage.removeItem(STORAGE_KEYS.ACTIVE_TASK);
-    }
+    try {
+      if (id) {
+        localStorage.setItem(STORAGE_KEYS.ACTIVE_TASK, id);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.ACTIVE_TASK);
+      }
+    } catch {}
   },
 
   getStats() {
