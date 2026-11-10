@@ -173,3 +173,14 @@ This document tracks all engineering deliverables, verification commands, test r
   - Launch app: `python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`
   - In browser, click **"🎓 User Study"** in the top header to take the 10-item SUS questionnaire and export anonymous results.
   - Inspect Jupyter notebooks in `notebooks/`.
+
+---
+
+## Post-v1.0 Hotfix — Resilient DOM Binding & Zero-Latency Interactivity
+- **Root Cause Identified**: In zero-build client architectures, gating UI event listeners behind asynchronous initialization (wait taskManager.init(), wait dashboardManager.render()) causes the entire UI to lock up if any async promise rejects or if DOMContentLoaded fires prior to deferred module execution.
+- **Changes Applied**:
+  1. Restructured js/app.js to execute synchronous DOM listener attachment immediately upon entry (tabs, timer buttons, modals, forms, sound synthesis cards).
+  2. Guarded async data retrieval in non-blocking Promise.allSettled and isolated 	ry/catch wrappers so that background network/data fetch issues never impede UI responsiveness.
+  3. Added lifecycle guard checking document.readyState so the application bootstraps properly even when cached or deferred.
+  4. Added defensive null-safe property access in js/api.js and js/stats.js for date formatting and statistics aggregation.
+- **Verification**: Full test suite re-verified (16/16 tests passing, 92% coverage on pp/ml), backend root serving verified on port 8000.
