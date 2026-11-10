@@ -1,12 +1,26 @@
-import sqlite3
 import os
+import sqlite3
 import json
 from datetime import datetime
 
-DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lifebuddy.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
+SQLITE_DB_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "lifebuddy.db")
+
+def is_postgres():
+    return bool(DATABASE_URL and (DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://")))
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_FILE)
+    if is_postgres():
+        try:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+            conn = psycopg2.connect(url, cursor_factory=RealDictCursor)
+            return conn
+        except ImportError:
+            print("psycopg2 not installed; falling back to SQLite for local storage.")
+    
+    conn = sqlite3.connect(SQLITE_DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -39,7 +53,7 @@ def init_db():
     );
     """)
 
-    # Tasks Table
+    # Tasks Table (with completed_at)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
@@ -51,6 +65,7 @@ def init_db():
         completed_pomodoros INTEGER DEFAULT 0,
         completed INTEGER DEFAULT 0,
         due_date TEXT,
+        completed_at TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
@@ -73,7 +88,7 @@ def init_db():
     );
     """)
 
-    # Expenses Table
+    # Expenses Table (with time)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
@@ -83,12 +98,13 @@ def init_db():
         category TEXT NOT NULL,
         note TEXT DEFAULT '',
         date TEXT NOT NULL,
+        time TEXT DEFAULT '12:00:00',
         created_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
     """)
 
-    # Focus Sessions Table
+    # Focus Sessions Table (with start_time, end_time, interruptions)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS focus_sessions (
         id TEXT PRIMARY KEY,
@@ -96,14 +112,56 @@ def init_db():
         task_id TEXT,
         mode TEXT NOT NULL,
         duration_minutes INTEGER NOT NULL,
+        start_time TEXT,
+        end_time TEXT,
+        interruptions INTEGER DEFAULT 0,
         completed_at TEXT NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
     """)
+
+    # Daily Wellness Logs Table (mood, sleep)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS daily_logs (
+        id TEXT PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        date TEXT NOT NULL,
+        mood INTEGER DEFAULT 3,
+        sleep_hours REAL DEFAULT 7.5,
+        notes TEXT DEFAULT '',
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        UNIQUE(user_id, date)
+    );
+    """)
+
+    # Ensure columns exist in SQLite if table was created in an earlier revision
+    if not is_postgres():
+        # Check tasks.completed_at
+        cursor.execute("PRAGMA table_info(tasks)")
+        task_cols = [row[1] for row in cursor.fetchall()]
+        if "completed_at" not in task_cols:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT")
+
+        # Check expenses.time
+        cursor.execute("PRAGMA table_info(expenses)")
+        exp_cols = [row[1] for row in cursor.fetchall()]
+        if "time" not in exp_cols:
+            cursor.execute("ALTER TABLE expenses ADD COLUMN time TEXT DEFAULT '12:00:00'")
+
+        # Check focus_sessions (start_time, end_time, interruptions)
+        cursor.execute("PRAGMA table_info(focus_sessions)")
+        fs_cols = [row[1] for row in cursor.fetchall()]
+        if "start_time" not in fs_cols:
+            cursor.execute("ALTER TABLE focus_sessions ADD COLUMN start_time TEXT")
+        if "end_time" not in fs_cols:
+            cursor.execute("ALTER TABLE focus_sessions ADD COLUMN end_time TEXT")
+        if "interruptions" not in fs_cols:
+            cursor.execute("ALTER TABLE focus_sessions ADD COLUMN interruptions INTEGER DEFAULT 0")
 
     conn.commit()
     conn.close()
 
 if __name__ == "__main__":
     init_db()
-    print("Database initialized successfully at:", DB_FILE)
+    print("Database initialized successfully at:", SQLITE_DB_FILE)

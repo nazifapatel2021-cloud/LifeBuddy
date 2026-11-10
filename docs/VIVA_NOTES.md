@@ -29,3 +29,31 @@ Comprehensive system audit and engineering roadmap establishing a privacy-first,
 
 **Q3: How does the system handle the "Cold Start" problem when a new user registers with zero history?**
 > *Answer:* Every intelligent component implements a two-tier strategy: a rule-based statistical heuristic (e.g., population averages or time-of-day defaults) for the initial cold-start phase, followed by an automatic transition to personalized machine learning models once the minimum observation threshold is reached.
+
+---
+
+## Phase 1: Data Architecture & Behavioral Simulation
+
+### What Was Built
+Extended SQLite/PostgreSQL schema with Alembic versioning and built a 90-day x 5-persona synthetic generator with realistic behavioral dependencies (sleep-focus degradation, mood-spending spikes, and circadian preferences).
+
+### Why This Approach Over Alternatives
+1. **Longitudinal Behavioral Modeling vs Uniform Random Synthetic Data:**
+   - *Alternative:* Generating data with independent random choices (e.g. `random.randint(1, 10)` for focus and expenses).
+   - *Why Behavioral Modeling:* True human productivity is correlated (poor sleep impairs prefrontal cortex executive function, leading to higher task interruptions, decreased focus duration, and compensatory impulse spending). Modeling these causal chains with mathematical dynamics (Poisson processes, Gaussian noise, sinusoidal burnout waves) allows machine learning models to detect real, statistically significant signals ($p < 0.05$).
+2. **Alembic Migrations with Dual Engine Support:**
+   - *Alternative:* Hardcoded SQLite-only or raw unversioned SQL scripts.
+   - *Why Alembic:* Enables enterprise-grade schema evolution, migration rollbacks, and zero-downtime deployment when switching between SQLite (local dev) and PostgreSQL (production cloud).
+3. **Deterministic Random Seeding (`seed=42`):**
+   - *Alternative:* Non-deterministic random generation.
+   - *Why Fixed Seed:* Critical for scientific reproducibility. Any examiner or peer reviewer running `python scripts/seed_demo.py` will reproduce identical distributions, evaluation metrics, and correlation coefficients.
+
+### 3 Likely Examiner Questions & Answers
+**Q1: Why did you include interruptions count and session start/end timestamps rather than just total duration?**
+> *Answer:* Raw session duration obscures focus quality. A 25-minute Pomodoro session with 5 interruptions has fundamentally different cognitive depth than an uninterrupted session. By capturing exact start/end times and interruption counts, our machine learning engine can calculate circadian productivity density and model distraction factors.
+
+**Q2: How does the system transition between SQLite in development and PostgreSQL in production?**
+> *Answer:* `backend/database.py` and `alembic/env.py` inspect the `DATABASE_URL` environment variable. If `DATABASE_URL` points to a PostgreSQL connection URI, the system connects via PostgreSQL client drivers; otherwise, it resolves locally to `lifebuddy.db` with SQLite-specific foreign key constraints and type adaptations.
+
+**Q3: How were the synthetic personas calibrated to reflect realistic human psychology?**
+> *Answer:* The generator models known behavioral economics and cognitive science phenomena: (1) sleep deprivation degrading executive focus, modeled via negative Poisson rate scaling on interruptions; (2) emotional/retail therapy spending on low-mood days ($\le 2$ on 1–5 scale); and (3) circadian chronotypes (e.g., night-owl developers peaking between 21:00 and 01:00).

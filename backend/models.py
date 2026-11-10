@@ -30,6 +30,7 @@ class TaskCreate(BaseModel):
     priority: str = "medium"
     estimated_pomodoros: int = 1
     due_date: Optional[str] = None
+    completed_at: Optional[str] = None
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -39,6 +40,7 @@ class TaskUpdate(BaseModel):
     completed_pomodoros: Optional[int] = None
     completed: Optional[bool] = None
     due_date: Optional[str] = None
+    completed_at: Optional[str] = None
 
 class HabitCreate(BaseModel):
     id: Optional[str] = None
@@ -53,6 +55,7 @@ class HabitUpdate(BaseModel):
 
 class HabitCheckIn(BaseModel):
     date: str  # YYYY-MM-DD
+    timestamp: Optional[str] = None
 
 class ExpenseCreate(BaseModel):
     id: Optional[str] = None
@@ -61,10 +64,30 @@ class ExpenseCreate(BaseModel):
     category: str
     note: Optional[str] = ""
     date: str
+    time: Optional[str] = "12:00:00"
 
 class FocusSessionCreate(BaseModel):
     id: Optional[str] = None
     task_id: Optional[str] = None
     mode: str
     duration_minutes: int
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    interruptions: Optional[int] = 0
     completed_at: str
+
+class DailyLogCreate(BaseModel):
+    id: Optional[str] = None
+    date: str  # YYYY-MM-DD
+    mood: int = 3  # 1 to 5
+    sleep_hours: float = 7.5
+    notes: Optional[str] = ""
+
+class DailyLogResponse(BaseModel):
+    id: str
+    user_id: int
+    date: str
+    mood: int
+    sleep_hours: float
+    notes: str
+    created_at: str

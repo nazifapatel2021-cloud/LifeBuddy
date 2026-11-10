@@ -12,7 +12,7 @@ from .auth import hash_password, verify_password, create_access_token, get_curre
 from .models import (
     UserRegister, UserLogin, UserSettings,
     TaskCreate, TaskUpdate, HabitCreate, HabitUpdate, HabitCheckIn,
-    ExpenseCreate, FocusSessionCreate
+    ExpenseCreate, FocusSessionCreate, DailyLogCreate
 )
 
 app = FastAPI(title="LifeBuddy API", description="Mindful productivity, habits, focus and finance companion", version="2.0.0")
@@ -130,9 +130,9 @@ def create_task(task: TaskCreate, user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO tasks (id, user_id, title, category, priority, estimated_pomodoros, completed_pomodoros, completed, due_date, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)
-    """, (task_id, user["id"], task.title.strip(), task.category, task.priority, task.estimated_pomodoros, task.due_date, now, now))
+        INSERT INTO tasks (id, user_id, title, category, priority, estimated_pomodoros, completed_pomodoros, completed, due_date, completed_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
+    """, (task_id, user["id"], task.title.strip(), task.category, task.priority, task.estimated_pomodoros, task.due_date, task.completed_at, now, now))
     conn.commit()
     cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
     new_task = dict(cursor.fetchone())
@@ -156,6 +156,12 @@ def update_task(task_id: str, updates: TaskUpdate, user: dict = Depends(get_curr
         if k == "completed":
             fields.append("completed = ?")
             values.append(1 if v else 0)
+            if v and not existing["completed_at"]:
+                fields.append("completed_at = ?")
+                values.append(now)
+            elif not v:
+                fields.append("completed_at = ?")
+                values.append(None)
         else:
             fields.append(f"{k} = ?")
             values.append(v)
@@ -284,12 +290,13 @@ def get_expenses(user: dict = Depends(get_current_user)):
 def create_expense(expense: ExpenseCreate, user: dict = Depends(get_current_user)):
     exp_id = expense.id or str(uuid.uuid4())
     now = datetime.utcnow().isoformat()
+    time_str = expense.time or now[11:19]
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO expenses (id, user_id, type, amount, category, note, date, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, (exp_id, user["id"], expense.type, expense.amount, expense.category, expense.note or "", expense.date, now))
+        INSERT INTO expenses (id, user_id, type, amount, category, note, date, time, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (exp_id, user["id"], expense.type, expense.amount, expense.category, expense.note or "", expense.date, time_str, now))
     conn.commit()
     cursor.execute("SELECT * FROM expenses WHERE id = ?", (exp_id,))
     item = dict(cursor.fetchone())
@@ -311,7 +318,7 @@ def delete_expense(expense_id: str, user: dict = Depends(get_current_user)):
 def get_focus_sessions(user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at DESC LIMIT 100", (user["id"],))
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at DESC LIMIT 200", (user["id"],))
     rows = cursor.fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -322,9 +329,9 @@ def create_focus_session(session: FocusSessionCreate, user: dict = Depends(get_c
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO focus_sessions (id, user_id, task_id, mode, duration_minutes, completed_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (session_id, user["id"], session.task_id, session.mode, session.duration_minutes, session.completed_at))
+        INSERT INTO focus_sessions (id, user_id, task_id, mode, duration_minutes, start_time, end_time, interruptions, completed_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (session_id, user["id"], session.task_id, session.mode, session.duration_minutes, session.start_time, session.end_time, session.interruptions or 0, session.completed_at))
 
     # If linked to task, increment pomodoro
     if session.task_id and session.mode == "focus":
@@ -332,6 +339,37 @@ def create_focus_session(session: FocusSessionCreate, user: dict = Depends(get_c
 
     conn.commit()
     cursor.execute("SELECT * FROM focus_sessions WHERE id = ?", (session_id,))
+    item = dict(cursor.fetchone())
+    conn.close()
+    return item
+
+# ================= DAILY WELLNESS LOGS ENDPOINTS =================
+
+@app.get("/api/daily-logs")
+def get_daily_logs(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC LIMIT 90", (user["id"],))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@app.post("/api/daily-logs")
+def save_daily_log(log: DailyLogCreate, user: dict = Depends(get_current_user)):
+    log_id = log.id or str(uuid.uuid4())
+    now = datetime.utcnow().isoformat()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO daily_logs (id, user_id, date, mood, sleep_hours, notes, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, date) DO UPDATE SET
+            mood = excluded.mood,
+            sleep_hours = excluded.sleep_hours,
+            notes = excluded.notes
+    """, (log_id, user["id"], log.date, log.mood, log.sleep_hours, log.notes or "", now))
+    conn.commit()
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? AND date = ?", (user["id"], log.date))
     item = dict(cursor.fetchone())
     conn.close()
     return item
