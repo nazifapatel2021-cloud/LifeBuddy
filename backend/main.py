@@ -12,8 +12,10 @@ from .auth import hash_password, verify_password, create_access_token, get_curre
 from .models import (
     UserRegister, UserLogin, UserSettings,
     TaskCreate, TaskUpdate, HabitCreate, HabitUpdate, HabitCheckIn,
-    ExpenseCreate, FocusSessionCreate, DailyLogCreate
+    ExpenseCreate, FocusSessionCreate, DailyLogCreate,
+    MLEstimateTaskDurationRequest, MLCategorizeExpenseRequest, MLParseTaskRequest
 )
+from app.ml.pipeline import ml_registry
 
 app = FastAPI(title="LifeBuddy API", description="Mindful productivity, habits, focus and finance companion", version="2.0.0")
 
@@ -239,15 +241,12 @@ def toggle_habit_check(habit_id: str, check: HabitCheckIn, user: dict = Depends(
         history.append(target_date)
         history.sort()
 
-    # Recalculate streak
     streak = 0
     today_str = date.today().isoformat()
     if history:
         sorted_dates = sorted(list(set(history)), reverse=True)
-        # Check consecutive days
         from datetime import timedelta
         curr = date.today()
-        # If not done today, see if done yesterday to preserve streak
         if today_str not in sorted_dates:
             curr = curr - timedelta(days=1)
         while curr.isoformat() in sorted_dates:
@@ -333,7 +332,6 @@ def create_focus_session(session: FocusSessionCreate, user: dict = Depends(get_c
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (session_id, user["id"], session.task_id, session.mode, session.duration_minutes, session.start_time, session.end_time, session.interruptions or 0, session.completed_at))
 
-    # If linked to task, increment pomodoro
     if session.task_id and session.mode == "focus":
         cursor.execute("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE id = ? AND user_id = ?", (session.task_id, user["id"]))
 
@@ -379,12 +377,11 @@ def save_daily_log(log: DailyLogCreate, user: dict = Depends(get_current_user)):
 @app.get("/api/dashboard")
 def get_dashboard(user: dict = Depends(get_current_user)):
     today_str = date.today().isoformat()
-    month_prefix = today_str[:7] # YYYY-MM
+    month_prefix = today_str[:7]
 
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Today focus minutes
     cursor.execute("""
         SELECT COALESCE(SUM(duration_minutes), 0) as today_focus, COUNT(id) as today_sessions
         FROM focus_sessions
@@ -392,15 +389,12 @@ def get_dashboard(user: dict = Depends(get_current_user)):
     """, (user["id"], today_str))
     focus_data = dict(cursor.fetchone())
 
-    # Tasks stats
     cursor.execute("SELECT COUNT(id) as total_tasks, SUM(completed) as completed_tasks FROM tasks WHERE user_id = ?", (user["id"],))
     task_counts = dict(cursor.fetchone())
 
-    # Today's pending tasks
     cursor.execute("SELECT * FROM tasks WHERE user_id = ? AND completed = 0 ORDER BY priority DESC LIMIT 5", (user["id"],))
     top_tasks = [dict(r) for r in cursor.fetchall()]
 
-    # Expenses summary (This month and today)
     cursor.execute("""
         SELECT 
             COALESCE(SUM(CASE WHEN type='expense' AND substr(date, 1, 10) = ? THEN amount ELSE 0 END), 0) as today_expense,
@@ -411,12 +405,10 @@ def get_dashboard(user: dict = Depends(get_current_user)):
     """, (today_str, month_prefix, month_prefix, user["id"]))
     finance_data = dict(cursor.fetchone())
 
-    # Habits count
     cursor.execute("SELECT * FROM habits WHERE user_id = ?", (user["id"],))
     habits = [dict(r) for r in cursor.fetchall()]
     habits_done_today = sum(1 for h in habits if today_str in json.loads(h["history"] or "[]"))
 
-    # User settings (budget, etc)
     cursor.execute("SELECT * FROM user_settings WHERE user_id = ?", (user["id"],))
     user_settings = dict(cursor.fetchone() or {})
 
@@ -446,6 +438,130 @@ def get_dashboard(user: dict = Depends(get_current_user)):
         }
     }
 
+# ================= ML & INTELLIGENCE ENDPOINTS =================
+
+@app.get("/api/ml/focus-recommendation")
+def get_focus_recommendation(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at DESC LIMIT 300", (user["id"],))
+    sessions = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return ml_registry.get_focus_recommendations(user["id"], sessions)
+
+@app.post("/api/ml/estimate-task-duration")
+def estimate_task_duration(req: MLEstimateTaskDurationRequest, user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE user_id = ?", (user["id"],))
+    tasks = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return ml_registry.estimate_task_duration(user["id"], tasks, req.title, req.category, req.priority)
+
+@app.post("/api/ml/categorize-expense")
+def categorize_expense_ml(req: MLCategorizeExpenseRequest, user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM expenses WHERE user_id = ? LIMIT 300", (user["id"],))
+    expenses = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return ml_registry.categorize_expense(user["id"], expenses, req.note)
+
+@app.get("/api/ml/spending-forecast")
+def get_spending_forecast(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC LIMIT 400", (user["id"],))
+    expenses = [dict(r) for r in cursor.fetchall()]
+    cursor.execute("SELECT monthly_budget FROM user_settings WHERE user_id = ?", (user["id"],))
+    s_row = cursor.fetchone()
+    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 1000.0
+    conn.close()
+    return ml_registry.detect_spending_anomalies(user["id"], expenses, budget)
+
+@app.get("/api/ml/habit-risks")
+def get_habit_risks(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM habits WHERE user_id = ?", (user["id"],))
+    habits = []
+    for r in cursor.fetchall():
+        item = dict(r)
+        item["history"] = json.loads(item["history"] or "[]")
+        habits.append(item)
+
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC LIMIT 90", (user["id"],))
+    daily_logs = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at DESC LIMIT 200", (user["id"],))
+    sessions = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+
+    return ml_registry.predict_habit_risks(user["id"], habits, daily_logs, sessions)
+
+@app.get("/api/ml/cross-module-insights")
+def get_cross_module_insights(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date ASC LIMIT 180", (user["id"],))
+    daily_logs = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at ASC LIMIT 400", (user["id"],))
+    sessions = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM expenses WHERE user_id = ? ORDER BY date ASC LIMIT 400", (user["id"],))
+    expenses = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM habits WHERE user_id = ?", (user["id"],))
+    habits = []
+    for r in cursor.fetchall():
+        item = dict(r)
+        item["history"] = json.loads(item["history"] or "[]")
+        habits.append(item)
+    conn.close()
+
+    return ml_registry.discover_insights(user["id"], daily_logs, sessions, expenses, habits)
+
+@app.get("/api/ml/weekly-reflection")
+def get_weekly_reflection(user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ?", (user["id"],))
+    sessions = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM tasks WHERE user_id = ?", (user["id"],))
+    tasks = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM expenses WHERE user_id = ?", (user["id"],))
+    expenses = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM habits WHERE user_id = ?", (user["id"],))
+    habits = []
+    for r in cursor.fetchall():
+        item = dict(r)
+        item["history"] = json.loads(item["history"] or "[]")
+        habits.append(item)
+
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC LIMIT 30", (user["id"],))
+    daily_logs = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT monthly_budget FROM user_settings WHERE user_id = ?", (user["id"],))
+    s_row = cursor.fetchone()
+    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 1000.0
+    conn.close()
+
+    return ml_registry.generate_reflection(
+        user["id"], user["username"], sessions, tasks, expenses, habits, daily_logs, budget
+    )
+
+@app.post("/api/ml/parse-task")
+def parse_natural_task(req: MLParseTaskRequest):
+    return ml_registry.parse_natural_task(req.text)
+
+@app.get("/api/ml/transparency")
+def get_model_transparency(user: dict = Depends(get_current_user)):
+    return ml_registry.get_transparency_metrics(user["id"])
+
 # ================= FULL BACKUP / RESTORE =================
 
 @app.get("/api/sync/export")
@@ -464,6 +580,9 @@ def export_user_data(user: dict = Depends(get_current_user)):
     cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ?", (user["id"],))
     sessions = [dict(r) for r in cursor.fetchall()]
 
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ?", (user["id"],))
+    daily_logs = [dict(r) for r in cursor.fetchall()]
+
     cursor.execute("SELECT * FROM user_settings WHERE user_id = ?", (user["id"],))
     settings = dict(cursor.fetchone() or {})
 
@@ -474,13 +593,13 @@ def export_user_data(user: dict = Depends(get_current_user)):
         "habits": habits,
         "expenses": expenses,
         "focus_sessions": sessions,
+        "daily_logs": daily_logs,
         "settings": settings
     }
 
 # Static file serving
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Mount css and js
 app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")
 app.mount("/js", StaticFiles(directory=os.path.join(BASE_DIR, "js")), name="js")
 

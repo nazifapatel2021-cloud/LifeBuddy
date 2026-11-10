@@ -91,3 +91,14 @@ class DailyLogResponse(BaseModel):
     sleep_hours: float
     notes: str
     created_at: str
+
+class MLEstimateTaskDurationRequest(BaseModel):
+    title: str
+    category: str = "work"
+    priority: str = "medium"
+
+class MLCategorizeExpenseRequest(BaseModel):
+    note: str
+
+class MLParseTaskRequest(BaseModel):
+    text: str
