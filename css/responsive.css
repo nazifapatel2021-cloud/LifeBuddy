@@ -1,0 +1,89 @@
+/* Responsive Adaptations */
+@media (max-width: 900px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .side-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+}
+
+@media (max-width: 650px) {
+  #app {
+    padding: 16px 14px 40px;
+    gap: 20px;
+  }
+
+  .side-column {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .main-nav-bar {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 6px;
+  }
+
+  .nav-tab {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .dashboard-hero {
+    padding: 20px 18px;
+  }
+
+  .hero-title {
+    font-size: 1.45rem;
+  }
+
+  .fab-container {
+    bottom: 20px;
+    right: 20px;
+  }
+}
+
+  .timer-display-wrapper {
+    width: 260px;
+    height: 260px;
+  }
+
+  .timer-digits {
+    font-size: 3.5rem;
+  }
+
+  .glass-card {
+    padding: 22px 18px;
+  }
+
+  .timer-modes {
+    padding: 4px;
+  }
+
+  .mode-btn {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+
+  .btn-primary {
+    padding: 12px 32px;
+    font-size: 1rem;
+  }
+
+  .ambient-controls {
+    grid-template-columns: 1fr;
+  }
+}

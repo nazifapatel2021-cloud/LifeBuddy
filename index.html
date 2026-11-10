@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="sage">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LifeBuddy — Mindful Focus, Tasks, Habits & Finances</title>
+  <meta name="description" content="Your all-in-one everyday companion for deep focus, task management, daily habits, and mindful personal finances.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+  <link rel="manifest" href="static/manifest.json">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- Ambient Animated Background Orbs -->
+  <div class="bg-ambient-orb bg-ambient-orb-1"></div>
+  <div class="bg-ambient-orb bg-ambient-orb-2"></div>
+
+  <!-- Exit Zen Mode Button -->
+  <button id="exit-zen-btn" class="btn-secondary zen-exit-btn">
+    <span>✕</span> <span>Exit Zen Mode</span>
+  </button>
+
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">🌱</div>
+        <h1 class="brand-title">LifeBuddy</h1>
+      </div>
+
+      <div class="header-actions">
+        <div id="cloud-sync-status" class="status-pill status-offline" title="Connection status">
+          <span class="status-dot offline"></span> <span>Local Mode</span>
+        </div>
+        <button id="auth-modal-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="Account & Cloud Sync">
+          <span>👤</span> <span id="auth-btn-text">Sign In</span>
+        </button>
+        <button id="zen-toggle-btn" class="btn-icon" title="Toggle Zen Mode (Fullscreen Focus)">
+          <span>👁️</span>
+        </button>
+        <button id="settings-btn" class="btn-icon" title="Preferences & Themes">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Navigation Bar -->
+    <nav class="main-nav-bar" aria-label="LifeBuddy Views">
+      <button class="nav-tab active" data-view="dashboard">
+        <span>☀️</span> <span>Today</span>
+      </button>
+      <button class="nav-tab" data-view="focus">
+        <span>⏱️</span> <span>Focus Room</span>
+      </button>
+      <button class="nav-tab" data-view="planner">
+        <span>📋</span> <span>Planner & Habits</span>
+      </button>
+      <button class="nav-tab" data-view="finances">
+        <span>💰</span> <span>Finances</span>
+      </button>
+      <button class="nav-tab" data-view="insights">
+        <span>📊</span> <span>Insights</span>
+      </button>
+    </nav>
+
+    <!-- ================= VIEW 1: TODAY DASHBOARD ================= -->
+    <main id="view-dashboard" class="app-view active">
+      <!-- Injected dynamically by DashboardManager -->
+    </main>
+
+    <!-- ================= VIEW 2: FOCUS ROOM ================= -->
+    <section id="view-focus" class="app-view">
+      <div class="main-grid">
+        <!-- Pomodoro Timer Box -->
+        <div class="glass-card timer-container">
+          <!-- Mode Tabs -->
+          <nav class="timer-modes" aria-label="Timer Mode Navigation">
+            <button class="mode-btn active" data-mode="focus">Focus</button>
+            <button class="mode-btn" data-mode="shortBreak">Short Break</button>
+            <button class="mode-btn" data-mode="longBreak">Long Break</button>
+          </nav>
+
+          <!-- SVG Circular Progress Ring -->
+          <div class="timer-display-wrapper">
+            <svg class="timer-svg" viewBox="0 0 300 300">
+              <circle class="timer-bg-ring" cx="150" cy="150" r="140" />
+              <circle id="timer-progress-ring" class="timer-progress-ring" cx="150" cy="150" r="140" />
+            </svg>
+
+            <div class="timer-content">
+              <div id="timer-digits" class="timer-digits">25:00</div>
+              <div id="timer-label" class="timer-label">Focus Session</div>
+              <div id="active-task-badge" class="active-task-badge" style="display: none;"></div>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="timer-controls">
+            <button id="start-pause-btn" class="btn-primary">
+              <span>▶</span> <span>Start</span>
+            </button>
+            <button id="reset-btn" class="btn-secondary" title="Reset Session">
+              <span>↺</span> <span>Reset</span>
+            </button>
+          </div>
+
+          <!-- Mindful Breathing Guide -->
+          <div class="breath-widget">
+            <div class="breath-circle"></div>
+            <span>Breathe in... Breathe out...</span>
+          </div>
+        </div>
+
+        <!-- Side Column: Active Tasks & Ambient Audio Synthesizer -->
+        <div class="side-column">
+          <!-- Focus Quick Tasks -->
+          <section class="glass-card">
+            <h2 class="section-title">
+              <span>Focus Queue</span>
+              <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Est. 🍅</span>
+            </h2>
+
+            <form id="task-form" class="task-input-wrapper">
+              <input type="text" id="task-title-input" class="input-field" placeholder="What are you working on?" required autocomplete="off">
+              <input type="number" id="task-pomo-input" class="input-field input-number" value="1" min="1" max="10" title="Estimated Pomodoros">
+              <button type="submit" class="btn-primary" style="padding: 12px 18px;" title="Add Task">+</button>
+            </form>
+
+            <div id="task-list-container" class="task-list"></div>
+          </section>
+
+          <!-- Ambient Audio Synthesizer -->
+          <section class="glass-card">
+            <h2 class="section-title">
+              <span>Ambient Soundscapes</span>
+              <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Synthesized</span>
+            </h2>
+
+            <div class="sound-grid">
+              <div class="sound-card" data-sound="rain">
+                <div class="sound-info">
+                  <span class="sound-icon">🌧️</span>
+                  <span class="sound-title">Gentle Rain</span>
+                </div>
+                <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5">
+              </div>
+
+              <div class="sound-card" data-sound="whitenoise">
+                <div class="sound-info">
+                  <span class="sound-icon">💨</span>
+                  <span class="sound-title">White Noise</span>
+                </div>
+                <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.4">
+              </div>
+
+              <div class="sound-card" data-sound="forest">
+                <div class="sound-info">
+                  <span class="sound-icon">🌲</span>
+                  <span class="sound-title">Forest Wind</span>
+                </div>
+                <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5">
+              </div>
+
+              <div class="sound-card" data-sound="bowl">
+                <div class="sound-info">
+                  <span class="sound-icon">🥣</span>
+                  <span class="sound-title">Singing Bowl</span>
+                </div>
+                <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.6">
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: PLANNER & HABITS ================= -->
+    <section id="view-planner" class="app-view">
+      <div class="dashboard-columns">
+        <!-- Tasks Column -->
+        <div class="glass-card">
+          <div class="section-header-flex">
+            <h2 class="section-title"><span>Task Planner</span></h2>
+            <div class="task-filter-group" style="display: flex; gap: 6px;">
+              <button class="btn-secondary task-filter-btn active" data-filter="all" style="padding: 4px 10px; font-size: 0.78rem;">All</button>
+              <button class="btn-secondary task-filter-btn" data-filter="today" style="padding: 4px 10px; font-size: 0.78rem;">Today</button>
+              <button class="btn-secondary task-filter-btn" data-filter="pending" style="padding: 4px 10px; font-size: 0.78rem;">Pending</button>
+              <button class="btn-secondary task-filter-btn" data-filter="completed" style="padding: 4px 10px; font-size: 0.78rem;">Done</button>
+            </div>
+          </div>
+
+          <form id="planner-task-form" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px;">
+            <input type="text" id="planner-task-title" class="input-field" placeholder="Add a new task or project..." required autocomplete="off">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 8px;">
+              <select id="planner-task-cat" class="input-field" style="font-size: 0.85rem;">
+                <option value="work">💼 Work</option>
+                <option value="study">📚 Study</option>
+                <option value="personal">🏠 Personal</option>
+                <option value="health">🌱 Health</option>
+              </select>
+              <select id="planner-task-priority" class="input-field" style="font-size: 0.85rem;">
+                <option value="urgent">🔴 Urgent</option>
+                <option value="high">🟠 High</option>
+                <option value="medium" selected>🔵 Medium</option>
+                <option value="low">⚪ Low</option>
+              </select>
+              <input type="date" id="planner-task-due" class="input-field" style="font-size: 0.85rem;" title="Due Date">
+              <input type="number" id="planner-task-pomo" class="input-field" value="1" min="1" max="10" title="Est. Pomodoros" style="font-size: 0.85rem;">
+              <button type="submit" class="btn-primary" style="padding: 0 16px;">Add</button>
+            </div>
+          </form>
+
+          <div id="planner-task-list" class="task-list"></div>
+        </div>
+
+        <!-- Habits Column -->
+        <div class="glass-card">
+          <div class="section-header-flex">
+            <h2 class="section-title"><span>Daily Habits & Streaks</span></h2>
+          </div>
+
+          <form id="habit-form" style="display: flex; gap: 8px; margin-bottom: 18px;">
+            <select id="habit-icon-select" class="input-field" style="width: 75px; text-align: center; font-size: 1.2rem;">
+              <option value="🌱">🌱</option>
+              <option value="💧">💧</option>
+              <option value="🏃">🏃</option>
+              <option value="📖">📖</option>
+              <option value="🧘">🧘</option>
+              <option value="✍️">✍️</option>
+              <option value="💤">💤</option>
+            </select>
+            <input type="text" id="habit-title-input" class="input-field" placeholder="New daily routine (e.g. Read 20 mins)" required autocomplete="off">
+            <button type="submit" class="btn-primary" style="padding: 0 18px;">Add</button>
+          </form>
+
+          <div id="habits-list-container"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 4: FINANCES & EXPENSES ================= -->
+    <section id="view-finances" class="app-view">
+      <div class="dashboard-columns">
+        <!-- Left: Quick Log & Budget -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+          <!-- Budget Meter Widget -->
+          <div id="budget-widget-container"></div>
+
+          <!-- Add Transaction Card -->
+          <div class="glass-card">
+            <h2 class="section-title" style="margin-bottom: 16px;"><span>Record Transaction</span></h2>
+            <form id="expense-form" style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <select id="exp-type-select" class="input-field">
+                  <option value="expense">Expense (-)</option>
+                  <option value="income">Income (+)</option>
+                </select>
+                <input type="number" step="0.01" id="exp-amount-input" class="input-field" placeholder="Amount (e.g. 15.50)" required>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <select id="exp-category-select" class="input-field" required>
+                  <option value="Food">🍔 Food & Dining</option>
+                  <option value="Study">📚 Study & Books</option>
+                  <option value="Transport">🚗 Transport</option>
+                  <option value="Shopping">🛍️ Shopping</option>
+                  <option value="Bills">⚡ Utilities & Bills</option>
+                  <option value="Health">💊 Health & Fitness</option>
+                  <option value="Entertainment">🎬 Entertainment</option>
+                  <option value="Income">💰 Salary / Side Gig</option>
+                  <option value="Other">📦 Other</option>
+                </select>
+                <input type="date" id="exp-date-input" class="input-field">
+              </div>
+
+              <input type="text" id="exp-note-input" class="input-field" placeholder="Description or note (optional)" autocomplete="off">
+              <button type="submit" class="btn-primary" style="justify-content: center;">Save Transaction</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Right: Recent Transactions -->
+        <div class="glass-card">
+          <div class="section-header-flex">
+            <h2 class="section-title"><span>Recent Activity</span></h2>
+          </div>
+          <div id="expense-list-container" style="max-height: 520px; overflow-y: auto;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= VIEW 5: INSIGHTS & ANALYTICS ================= -->
+    <section id="view-insights" class="app-view">
+      <!-- Stats Bar -->
+      <section class="stats-bar">
+        <div class="stat-card">
+          <div id="stat-total-time" class="stat-number">0h</div>
+          <div class="stat-label">Total Focus</div>
+        </div>
+        <div class="stat-card">
+          <div id="stat-total-pomos" class="stat-number">0</div>
+          <div class="stat-label">Pomodoros Done</div>
+        </div>
+        <div class="stat-card">
+          <div id="stat-streak" class="stat-number">0 🔥</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+      </section>
+
+      <div class="dashboard-columns" style="margin-top: 20px;">
+        <!-- Weekly Focus Activity -->
+        <div class="glass-card">
+          <h2 class="section-title" style="margin-bottom: 12px;">Weekly Deep Work (Minutes)</h2>
+          <div id="weekly-chart-container"></div>
+        </div>
+
+        <!-- Monthly Spending Categories -->
+        <div class="glass-card">
+          <h2 class="section-title" style="margin-bottom: 12px;">Spending By Category</h2>
+          <div id="finance-category-chart"></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Floating Action Button (FAB) -->
+  <div class="fab-container">
+    <button id="fab-quick-btn" class="fab-main-btn" title="Quick Add">+</button>
+  </div>
+
+  <!-- Quick Add Expense Modal -->
+  <div id="expense-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">Quick Log Expense</h2>
+        <button id="close-expense-modal" class="btn-icon">✕</button>
+      </div>
+      <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px;">Keep your spending mindful. Log a quick expense right now.</p>
+      <!-- Reuse expense form fields or navigate -->
+      <div style="display: flex; gap: 10px; flex-direction: column;">
+        <button class="btn-primary" onclick="document.querySelector('[data-view=\'finances\']').click(); document.getElementById('expense-modal').classList.remove('active');" style="justify-content: center;">
+          Open Full Expense Logger
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth & Cloud Sync Modal -->
+  <div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">Account & Cloud Sync</h2>
+        <button id="close-auth-btn" class="btn-icon">✕</button>
+      </div>
+
+      <!-- Logged In State View -->
+      <div id="auth-logged-in-view" style="display: none; text-align: center; padding: 10px 0;">
+        <div style="font-size: 3rem; margin-bottom: 10px;">👤</div>
+        <h3 id="profile-username" style="font-size: 1.3rem; margin-bottom: 4px;">User</h3>
+        <p id="profile-email" style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 20px;">email@example.com</p>
+        <p style="font-size: 0.85rem; color: var(--accent-primary); margin-bottom: 24px;">🟢 Cloud Sync is Active. All tasks, habits, and expenses are saved to your account.</p>
+        <button id="auth-logout-btn" class="btn-secondary" style="width: 100%; justify-content: center;">Log Out</button>
+      </div>
+
+      <!-- Logged Out State View -->
+      <div id="auth-logged-out-view">
+        <div class="auth-tabs">
+          <button id="auth-tab-login" class="auth-tab active">Sign In</button>
+          <button id="auth-tab-register" class="auth-tab">Create Account</button>
+        </div>
+
+        <form id="auth-form" style="display: flex; flex-direction: column; gap: 14px;">
+          <div id="auth-error-msg" style="display: none; padding: 10px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border-radius: var(--radius-sm); font-size: 0.85rem;"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="auth-username-input">Username or Email</label>
+            <input type="text" id="auth-username-input" class="input-field" placeholder="Your username" required autocomplete="username">
+          </div>
+
+          <div id="auth-email-group" class="form-group" style="display: none;">
+            <label class="form-label" for="auth-email-input">Email Address</label>
+            <input type="email" id="auth-email-input" class="input-field" placeholder="your@email.com" autocomplete="email">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="auth-password-input">Password</label>
+            <input type="password" id="auth-password-input" class="input-field" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+
+          <button type="submit" id="auth-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Sign In</button>
+        </form>
+
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 16px; text-align: center;">
+          LifeBuddy also works offline in Local Mode. Creating an account syncs your data across all your devices.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings & Theme Modal -->
+  <div id="settings-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">Preferences</h2>
+        <button id="close-settings-btn" class="btn-icon" aria-label="Close settings">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="input-focus-time">Focus Duration (Minutes)</label>
+        <input type="number" id="input-focus-time" class="input-field" min="1" max="120" value="25">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="input-short-break-time">Short Break Duration (Minutes)</label>
+        <input type="number" id="input-short-break-time" class="input-field" min="1" max="60" value="5">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="input-long-break-time">Long Break Duration (Minutes)</label>
+        <input type="number" id="input-long-break-time" class="input-field" min="1" max="60" value="15">
+      </div>
+
+      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <label class="form-label" for="input-auto-breaks">Auto-start Breaks</label>
+        <input type="checkbox" id="input-auto-breaks" style="width: 20px; height: 20px; accent-color: var(--accent-primary);">
+      </div>
+
+      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <label class="form-label" for="input-auto-pomo">Auto-start Pomodoros</label>
+        <input type="checkbox" id="input-auto-pomo" style="width: 20px; height: 20px; accent-color: var(--accent-primary);">
+      </div>
+
+      <div class="form-group" style="margin-top: 14px;">
+        <label class="form-label">Aesthetic Themes</label>
+        <div class="theme-options">
+          <button class="theme-swatch swatch-sage active" data-theme="sage" title="Sage Garden">🌿</button>
+          <button class="theme-swatch swatch-lavender" data-theme="lavender" title="Dusk Lavender">🔮</button>
+          <button class="theme-swatch swatch-nordic" data-theme="nordic" title="Nordic Fog">❄️</button>
+          <button class="theme-swatch swatch-sunset" data-theme="sunset" title="Sunset Terracotta">🌅</button>
+          <button class="theme-swatch swatch-midnight" data-theme="midnight" title="Midnight Focus">🌌</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; display: flex; justify-content: flex-end;">
+        <button id="save-settings-btn" class="btn-primary" style="width: 100%; justify-content: center;">Save Preferences</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Logic -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

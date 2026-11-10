@@ -1,0 +1,16 @@
+{
+  "name": "LifeBuddy — Mindful OS",
+  "short_name": "LifeBuddy",
+  "description": "Mindful daily companion for deep focus, tasks, habits, and expenses.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eef4f0",
+  "theme_color": "#3b6e58",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}

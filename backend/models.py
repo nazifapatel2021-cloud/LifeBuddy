@@ -1,0 +1,70 @@
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    username_or_email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+
+class UserSettings(BaseModel):
+    monthly_budget: float = 1000.0
+    currency_symbol: str = "$"
+    focus_duration: int = 25
+    short_break: int = 5
+    long_break: int = 15
+    theme: str = "sage"
+
+class TaskCreate(BaseModel):
+    id: Optional[str] = None
+    title: str
+    category: str = "work"
+    priority: str = "medium"
+    estimated_pomodoros: int = 1
+    due_date: Optional[str] = None
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    category: Optional[str] = None
+    priority: Optional[str] = None
+    estimated_pomodoros: Optional[int] = None
+    completed_pomodoros: Optional[int] = None
+    completed: Optional[bool] = None
+    due_date: Optional[str] = None
+
+class HabitCreate(BaseModel):
+    id: Optional[str] = None
+    title: str
+    icon: str = "🌱"
+    frequency: str = "daily"
+
+class HabitUpdate(BaseModel):
+    title: Optional[str] = None
+    icon: Optional[str] = None
+    frequency: Optional[str] = None
+
+class HabitCheckIn(BaseModel):
+    date: str  # YYYY-MM-DD
+
+class ExpenseCreate(BaseModel):
+    id: Optional[str] = None
+    type: str = "expense"  # "expense" or "income"
+    amount: float
+    category: str
+    note: Optional[str] = ""
+    date: str
+
+class FocusSessionCreate(BaseModel):
+    id: Optional[str] = None
+    task_id: Optional[str] = None
+    mode: str
+    duration_minutes: int
+    completed_at: str
