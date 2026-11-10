@@ -146,3 +146,30 @@ This document tracks all engineering deliverables, verification commands, test r
 - **How to run & test it:**
   - Run the test suite with coverage: `python -m pytest tests/test_engineering_depth.py tests/test_ml.py --cov=app/ml --cov-report=term-missing`
   - Run docker compose: `docker compose up --build -d`
+
+
+## Phase 5 - Evaluation, Research Artifacts & Final Documentation
+
+- **What was built:**
+  1. **Reproducible Research Notebooks (`notebooks/`):**
+     - `notebooks/01_eda_and_behavioral_dynamics.ipynb`: Exploratory data analysis analyzing longitudinal interactions between sleep duration, circadian rhythms, habit streaks, and financial spending across all 5 demo personas.
+     - `notebooks/02_model_benchmarks_and_ablation.ipynb`: Rigorous model evaluations against zero/heuristic baselines, including `TimeSeriesSplit` cross-validation tables, Ridge vs Gradient Boosting comparisons, feature ablation studies (semantic TF-IDF contributions), logistic regression odds ratios, and the 55-sentence NL task parsing benchmark.
+  2. **Comprehensive Scientific Evaluation Report (`evaluation_report.md`):**
+     - Detailed empirical evaluation of all 8 statistical and machine learning modules with explicit mathematical formulations.
+     - Feature ablation analysis proving a 47.5% error reduction in task duration prediction.
+     - Honest discussion of cold-start fallbacks, per-user sample variance, and the synthetic-to-real behavioral gap.
+  3. **In-App Usability Study Suite (`js/study.js`, `index.html`):**
+     - Standard 10-item System Usability Scale (SUS) questionnaire (John Brooke, 1996) accessible via top header "🎓 User Study" button.
+     - Anonymized client-side telemetry logger tracking user activity counts without recording private text or finances.
+     - Built-in SUS score calculator and one-click JSON export (`lifebuddy_study_<ID>.json`) for running a 2-week study with 10–20 classmates.
+  4. **Master Viva Oral Defense Notes (`docs/VIVA_NOTES.md`):**
+     - Completed comprehensive cheat sheet featuring the **Top 20 candidate examiner questions and answers** spanning system architecture, statistical ML, data security, offline sync, and usability research.
+  5. **5-Minute Viva Demonstration Script (`docs/DEMO_SCRIPT.md`):**
+     - Timed 5-minute presentation script covering problem statement, NL capture, explainable insights, model transparency, offline sync, and usability evaluation.
+  6. **Complete Academic README (`README.md`):**
+     - Full documentation with Mermaid System Architecture diagram, Mermaid ER diagram, 3-command quickstart, plain-English ML explainer table, and API reference.
+
+- **How to run & test it:**
+  - Launch app: `python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000`
+  - In browser, click **"🎓 User Study"** in the top header to take the 10-item SUS questionnaire and export anonymous results.
+  - Inspect Jupyter notebooks in `notebooks/`.

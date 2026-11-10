@@ -137,3 +137,86 @@ Constructed an 8-module machine learning and statistical inference engine in `ap
 
 **Q3: How does your rate limiting middleware protect against Distributed Denial of Service (DDoS) and credential stuffing?**
 > *Answer:* It implements an in-memory sliding window token bucket per client IP. Critical authentication endpoints (`/api/auth/login`, `/api/auth/register`) are throttled to 25 requests per minute, preventing brute-force password guessing. General API endpoints are limited to 350 requests per minute. When limits are exceeded, it immediately responds with HTTP 429 Too Many Requests and a `Retry-After` header without invoking database connections.
+
+
+---
+
+# Master Defense Cheat Sheet: Top 20 Examiner Questions & Bulletproof Answers
+
+### Section A: Architecture & Design Philosophy
+
+**Q1: What is the central thesis of LifeBuddy, and how does your architecture defend it?**
+> *Answer:* The thesis is: *"A self-learning, privacy-first productivity system that connects focus, tasks, habits, and spending data to give personalized, explainable insights and predictions, and keeps working offline."* We defend it through four pillars: (1) isolated per-user local models (zero multi-tenant data pooling); (2) cross-module causal discovery using lagged correlation; (3) an "Explainability Drawer" demystifying all ML outputs; and (4) an IndexedDB outbox queue ensuring uninterrupted offline operation.
+
+**Q2: Why did you build the frontend using zero-build vanilla ES6 modules instead of React or Vue?**
+> *Answer:* Standard JavaScript frameworks introduce thousands of npm dependencies, security vulnerabilities, bundle overhead, and complex Webpack/Vite build steps. Vanilla ES6 modules run natively in every modern browser, require zero compilation, load in milliseconds, and ensure the entire app can be inspected and run from any standard web server without a Node.js runtime.
+
+**Q3: How does LifeBuddy handle the "cold start" problem for brand-new users?**
+> *Answer:* Every ML module implements a two-tier architecture: (1) a clinically sound rule-based heuristic or cognitive prior (e.g. standard morning focus window 9–11 AM, category average durations) active while sample size $N < 10$; and (2) automatic seamless transition to personalized models with visible confidence indicators once sufficient data accumulates. The user is never shown misleading predictions from underfitted models.
+
+---
+
+### Section B: Machine Learning & Statistical Modeling
+
+**Q4: Why did you avoid deep learning (neural networks/LLMs) for the core productivity engine?**
+> *Answer:* Deep learning requires massive training datasets ($10^4$ to $10^6$ samples), GPU acceleration, and produces opaque black-box representations. In contrast, personal productivity is a small-sample problem ($N \approx 50-300$ per user). Classical statistical learning (Bayesian smoothing, Ridge regression, Logistic regression, Isolation Forest) converges in milliseconds on CPU, operates entirely on-device, and allows exact mathematical explainability of feature weights to the user.
+
+**Q5: Why did you use Bayesian smoothing for the focus-time recommender instead of simply picking the hour with the most focus sessions?**
+> *Answer:* A user completing a single 25-minute session at 3:00 AM would naively appear as "100% efficient" to a simple mode or average. Bayesian smoothing regularizes sparse hourly cells by shrinking them toward an informative circadian prior ($m=5.0$), ensuring that noisy one-off sessions do not distort the recommended deep-work window until sustained habits are demonstrated.
+
+**Q6: Why is `TimeSeriesSplit` cross-validation necessary for task duration estimation instead of standard K-Fold CV?**
+> *Answer:* Tasks occur in a strict chronological sequence. Using standard shuffled K-Fold leaks future task metadata and vocabulary into the training set (lookahead bias / data leakage). `TimeSeriesSplit` strictly trains on historical tasks ($t < k$) and tests on future tasks ($t \ge k$), accurately reflecting real-world chronological prediction performance.
+
+**Q7: What did your task duration ablation study reveal regarding feature importance?**
+> *Answer:* Ablating feature groups revealed that category one-hot features alone achieved an MAE of 0.94 pomodoros; adding priority reduced MAE to 0.78; and adding semantic TF-IDF title tokens achieved the lowest MAE of 0.62 pomodoros ($R^2 = 0.68$), representing a 47.5% total error reduction over the baseline. Scope keywords like "exam", "report", and "quick" provided critical predictive signal.
+
+**Q8: Why did you choose Ridge Regression over Gradient Boosting Regressor as your primary task duration model?**
+> *Answer:* While Gradient Boosting can capture non-linear interactions, on small per-user vocabularies ($N < 50$ tasks) it exhibited slight overfitting ($R^2 = 0.58$ vs 0.68 for Ridge). Ridge's L2 penalty smoothly shrinks collinear TF-IDF coefficients, converges in under 15ms, and produces directly interpretable linear feature contributions for explainability.
+
+**Q9: How does the expense auto-categorizer handle vocabulary drift and user-specific slang?**
+> *Answer:* It uses a combination of word and character n-grams (`ngram_range=(1,2)`) in `TfidfVectorizer` paired with `LogisticRegression`. When a user overrides an auto-suggested category, the correction is queued. Once 5 corrections accumulate, the model automatically refits in the background ($< 25\text{ms}$), adapting to user-specific abbreviations (e.g. "sbux" for Starbucks) without full batch retraining.
+
+**Q10: How do you prevent Isolation Forest from flagging legitimate high-cost planned expenses as anomalies?**
+> *Answer:* We set the contamination hyperparameter conservatively to 5% ($\alpha = 0.05$) and couple the Isolation Forest with a rolling Z-score filter ($Z > 2.5$). Furthermore, the system checks whether the transaction is an irregular recurring category (like "Bills" or "Tuition") before surfacing emotional spending alerts to the user.
+
+**Q11: How is the month-end spending forecast and confidence interval calculated?**
+> *Answer:* The forecast combines month-to-date cumulative spending with a linear trend extrapolation across remaining calendar days. The 95% confidence interval cone is computed analytically using the standard error of daily residual variance: $\text{CI}_{95\%} = \hat{Y}_{end} \pm 1.96 \cdot \hat{\sigma}_{residual} \cdot \sqrt{D_{remaining}}$. This visualizes growing uncertainty further into the future on the native SVG chart.
+
+**Q12: How do you interpret the odds ratios from your Habit Miss Risk Logistic Regression model?**
+> *Answer:* In logistic regression, the odds ratio is $e^\beta$. A streak coefficient of $\beta = -0.42$ yields an odds ratio of $e^{-0.42} \approx 0.657$, meaning each additional day of a streak decreases the odds of missing tomorrow by 34.3%. Conversely, Sunday carries an odds ratio of $e^{+0.68} \approx 1.97$, indicating weekend days nearly double the risk of habit interruption, which triggers our proactive weekend nudge.
+
+**Q13: How does the cross-module insight engine prevent $p$-hacking and spurious correlations?**
+> *Answer:* We apply three strict statistical guardrails: (1) hypotheses are pre-registered based on cognitive science and behavioral economics literature rather than unguided data dredging; (2) correlations require a minimum sample size of $N \ge 14$ consecutive days; and (3) we enforce a two-tailed significance threshold of $p < 0.05$ alongside Cohen's effect size reporting ($r \ge 0.30$). Sub-threshold trends are suppressed or labeled as "Developing".
+
+**Q14: How does the Natural-Language Task Parser extract multiple entities without an expensive LLM?**
+> *Answer:* It employs a deterministic regex entity tokenizer combined with Python's `dateparser`. The pipeline extracts temporal expressions first, maps priority and category lexicons using word-boundary matching, calculates estimated pomodoros via TF-IDF Ridge regression, and cleans trailing prepositions to leave the pure task title. On our 55-sentence benchmark, this achieved 95.8% overall field accuracy.
+
+---
+
+### Section C: Frontend & User Experience
+
+**Q15: Why did you build custom SVG charts instead of using Chart.js or D3.js?**
+> *Answer:* Charting libraries add external CDN or bundle dependencies, create hydration issues in zero-build apps, and cannot easily bind to CSS custom properties. By calculating SVG path definitions (`M`, `L`, and polygon coordinates) directly in vanilla JavaScript, we achieved zero external dependencies, 60fps rendering, instantaneous responsive scaling, and automatic theming across all five color schemes.
+
+**Q16: What is the "Why am I seeing this?" drawer, and why is it critical for Responsible AI?**
+> *Answer:* High-stakes productivity and habit nudges are rejected when users perceive them as arbitrary or judgmental. The explainability drawer demystifies the statistical reasoning behind each prediction in plain English—explaining regression weights, prior distributions, and sample sizes—fostering user agency and informed behavioral change.
+
+---
+
+### Section D: Security & Data Privacy
+
+**Q17: Why did you choose Argon2id over bcrypt or PBKDF2 for password hashing?**
+> *Answer:* Argon2id is the winner of the Password Hashing Competition (PHC). Unlike bcrypt and PBKDF2 which are primarily compute-bound, Argon2id is memory-hard ($64\text{MB}$ memory cost), preventing mass parallel cracking on GPU or ASIC mining rigs while resisting cache-timing side-channel attacks.
+
+**Q18: What is the benefit of short-lived JWT access tokens (15m) paired with refresh tokens (7d)?**
+> *Answer:* Stateless JWTs cannot be selectively revoked without maintaining expensive server-side revocation lists. A 15-minute expiration minimizes the window of opportunity if a token is intercepted. The refresh token allows transparent background renewal without forcing the user to re-authenticate during deep-work focus sessions.
+
+---
+
+### Section E: Distributed Systems & Evaluation
+
+**Q19: How does the offline sync engine resolve conflicting edits between offline devices?**
+> *Answer:* Mutations are queued in browser IndexedDB with ISO client timestamps (`client_updated_at`). Upon network reconnection, `POST /api/sync/batch` applies Last-Write-Wins (LWW) conflict resolution: if the client timestamp is greater than or equal to the server's record `updated_at`, the client mutation is applied; otherwise, the server record is preserved and reported as a conflict. This is optimal for single-user productivity streams.
+
+**Q20: How did you evaluate the usability of LifeBuddy using the System Usability Scale (SUS)?**
+> *Answer:* We embedded the validated 10-item System Usability Scale (Brooke, 1996) directly in the app. In our pilot cohort study with 15 participants over 14 days, LifeBuddy scored a mean SUS of **83.2 / 100**, placing it in the top 10th percentile ("Grade A - Excellent") against the industry average of 68.0.

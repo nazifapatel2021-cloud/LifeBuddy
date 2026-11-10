@@ -13,6 +13,7 @@ import { InsightsCoordinator } from './insights.js';
 import { ModelTransparencyController } from './transparency.js';
 import { API } from './api.js';
 import { syncEngine } from './sync.js';
+import { studyController } from './study.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const CIRCUMFERENCE = 2 * Math.PI * 140; // 879.64
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const insightsCoordinator = new InsightsCoordinator();
   const transparencyController = new ModelTransparencyController();
   transparencyController.init();
+  studyController.init();
 
   const taskManager = new TaskManager({
     onTasksChanged: () => {

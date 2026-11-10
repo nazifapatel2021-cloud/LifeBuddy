@@ -40,6 +40,9 @@
         <button id="transparency-modal-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="AI Model Transparency & Governance">
           <span>🧠</span> <span>AI Models</span>
         </button>
+        <button id="study-modal-btn" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem;" title="Usability Study & SUS Survey">
+          <span>🎓</span> <span>User Study</span>
+        </button>
         <button id="zen-toggle-btn" class="btn-icon" title="Toggle Zen Mode (Fullscreen Focus)">
           <span>👁️</span>
         </button>
@@ -467,6 +470,17 @@
         LifeBuddy uses strictly local, per-user machine learning models. No telemetry, third-party analytics, or raw logs leave your device.
       </p>
       <div id="transparency-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Usability Study & SUS Survey Modal -->
+  <div id="study-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card modal-large" style="max-width: 760px; max-height: 88vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h2 class="modal-title"><span>🎓 Usability Study & SUS Survey</span></h2>
+        <button id="close-study-modal" class="btn-icon">✕</button>
+      </div>
+      <div id="study-modal-body"></div>
     </div>
   </div>
 
