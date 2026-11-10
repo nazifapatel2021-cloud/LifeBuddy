@@ -114,3 +114,35 @@ This document tracks all engineering deliverables, verification commands, test r
      - Click **"Why am I seeing this? →"** on any card to slide out the explainability drawer.
   3. Click **"AI Models"** in the top navigation header to view the live Model Transparency modal with training sizes, algorithms, and evaluation metrics.
   4. Click the gear icon (**Settings**) to switch between all 5 themes and verify visual harmony.
+
+
+## Phase 4 - Engineering Depth: Offline-First Sync, Security, CI & Docker
+
+- **What was built:**
+  1. **Offline-First Synchronization Engine (`js/sync.js`, `backend/main.py`):**
+     - Native IndexedDB (`lifebuddy_sync_db`) outbox queue persisting local mutations when offline or disconnected.
+     - Idempotent `POST /api/sync/batch` endpoint resolving state conflicts via Last-Write-Wins (LWW) timestamp comparisons against database `updated_at`.
+     - Live synchronization status pill (`#cloud-sync-status`) in the header showing: `🟢 Synced`, `🟡 Syncing...`, `🟠 Offline (Queue: N)`, `🔴 Sync Error`.
+     - Auto-flush on `window.addEventListener('online')` and 30-second periodic heartbeat.
+  2. **Security & GDPR Privacy Architecture (`backend/auth.py`, `backend/main.py`):**
+     - Argon2id password hashing algorithm (Password Hashing Competition winner) with transparent PBKDF2 legacy support.
+     - Short-lived JWT access tokens (15 minutes) paired with 7-day refresh tokens.
+     - Token refresh endpoint (`POST /api/auth/refresh`) and transparent client-side retry on 401 Unauthorized.
+     - `RateLimiterMiddleware` enforcing sliding-window rate limiting (25 req/min for auth, 350 req/min for general API) with HTTP 429 and `Retry-After` headers.
+     - Strict environment-driven CORS configuration (`CORS_ORIGINS`).
+     - GDPR endpoints:
+       - `GET /api/user/export-my-data`: Exports complete personal behavioral history and models as JSON.
+       - `DELETE /api/user/delete-my-data`: Cascading permanent erasure of user account, logs, habits, tasks, expenses, and in-memory ML models.
+  3. **Testing, Coverage & GitHub Actions CI:**
+     - 16 total automated tests across `tests/test_ml.py` and `tests/test_engineering_depth.py`.
+     - Reached **92%** total line coverage on `app/ml/` (target was $\ge 80\%$).
+     - Created `.github/workflows/ci.yml` running linting (flake8), migration checks, and coverage enforcement on Python 3.11 and 3.12.
+  4. **Containerization & Deployment:**
+     - Production multi-stage `Dockerfile` (non-root `appuser`, healthcheck).
+     - `docker-compose.yml` for unified FastAPI + PostgreSQL 16 Alpine orchestration.
+     - `render.yaml` free-tier deployment blueprint.
+     - Authored `docs/DEPLOYMENT.md` with complete operational runbooks.
+
+- **How to run & test it:**
+  - Run the test suite with coverage: `python -m pytest tests/test_engineering_depth.py tests/test_ml.py --cov=app/ml --cov-report=term-missing`
+  - Run docker compose: `docker compose up --build -d`

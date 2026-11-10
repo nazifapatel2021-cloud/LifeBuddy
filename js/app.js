@@ -12,6 +12,7 @@ import { ThemeManager } from './theme.js';
 import { InsightsCoordinator } from './insights.js';
 import { ModelTransparencyController } from './transparency.js';
 import { API } from './api.js';
+import { syncEngine } from './sync.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const CIRCUMFERENCE = 2 * Math.PI * 140; // 879.64
@@ -139,6 +140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await habitManager.init();
   await expenseManager.init();
   await authController.init();
+  await syncEngine.init();
   await dashboardManager.render(document.getElementById('view-dashboard'));
   insightsCoordinator.render();
   timerEngine.reset();

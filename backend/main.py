@@ -1,28 +1,78 @@
 import os
 import json
 import uuid
+import time
+from collections import defaultdict
 from datetime import datetime, date
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from .database import get_db_connection, init_db
-from .auth import hash_password, verify_password, create_access_token, get_current_user
+from .auth import (
+    hash_password, verify_password, create_access_token, create_refresh_token,
+    verify_token, get_current_user
+)
 from .models import (
     UserRegister, UserLogin, UserSettings,
     TaskCreate, TaskUpdate, HabitCreate, HabitUpdate, HabitCheckIn,
     ExpenseCreate, FocusSessionCreate, DailyLogCreate,
-    MLEstimateTaskDurationRequest, MLCategorizeExpenseRequest, MLParseTaskRequest
+    MLEstimateTaskDurationRequest, MLCategorizeExpenseRequest, MLParseTaskRequest,
+    RefreshTokenRequest, SyncBatchRequest
 )
 from app.ml.pipeline import ml_registry
 
 app = FastAPI(title="LifeBuddy API", description="Mindful productivity, habits, focus and finance companion", version="2.0.0")
 
-# CORS setup
+# ================= RATE LIMITING MIDDLEWARE =================
+
+class RateLimiterMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self.request_counts = defaultdict(list)
+    
+    async def dispatch(self, request: Request, call_next):
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        now = time.time()
+        path = request.url.path
+
+        if path.startswith("/api/auth/login") or path.startswith("/api/auth/register"):
+            max_requests = 25
+            window = 60
+            key = f"auth:{client_ip}"
+        elif path.startswith("/api/"):
+            max_requests = 350
+            window = 60
+            key = f"api:{client_ip}"
+        else:
+            return await call_next(request)
+
+        timestamps = [t for t in self.request_counts[key] if now - t < window]
+        if len(timestamps) >= max_requests:
+            retry_after = int(window - (now - timestamps[0]))
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Rate limit exceeded."},
+                headers={"Retry-After": str(max(1, retry_after))}
+            )
+
+        timestamps.append(now)
+        self.request_counts[key] = timestamps
+        return await call_next(request)
+
+app.add_middleware(RateLimiterMiddleware)
+
+# ================= CORS CONFIGURATION =================
+
+cors_env = os.environ.get("CORS_ORIGINS", "*")
+allowed_origins = [o.strip() for o in cors_env.split(",") if o.strip()] if cors_env != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,7 +85,7 @@ init_db()
 def on_startup():
     init_db()
 
-# ================= AUTH ENDPOINTS =================
+# ================= AUTH & SECURITY ENDPOINTS =================
 
 @app.post("/api/auth/register")
 def register(user: UserRegister):
@@ -54,8 +104,15 @@ def register(user: UserRegister):
             (user_id,)
         )
         conn.commit()
-        token = create_access_token(user_id, user.username)
-        return {"token": token, "user": {"id": user_id, "username": user.username, "email": user.email}}
+        access_token = create_access_token(user_id, user.username)
+        refresh_token = create_refresh_token(user_id, user.username)
+        return {
+            "token": access_token,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": {"id": user_id, "username": user.username, "email": user.email}
+        }
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail="Username or email already in use.")
@@ -76,8 +133,32 @@ def login(creds: UserLogin):
     if not row or not verify_password(creds.password, row["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid username or password.")
 
-    token = create_access_token(row["id"], row["username"])
-    return {"token": token, "user": {"id": row["id"], "username": row["username"], "email": row["email"]}}
+    access_token = create_access_token(row["id"], row["username"])
+    refresh_token = create_refresh_token(row["id"], row["username"])
+    return {
+        "token": access_token,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {"id": row["id"], "username": row["username"], "email": row["email"]}
+    }
+
+@app.post("/api/auth/refresh")
+def refresh_access_token(req: RefreshTokenRequest):
+    payload = verify_token(req.refresh_token, expected_type="refresh")
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+    
+    user_id = payload["sub"]
+    username = payload["username"]
+    new_access = create_access_token(user_id, username)
+    new_refresh = create_refresh_token(user_id, username)
+    return {
+        "token": new_access,
+        "access_token": new_access,
+        "refresh_token": new_refresh,
+        "token_type": "bearer"
+    }
 
 @app.get("/api/auth/me")
 def get_me(user: dict = Depends(get_current_user)):
@@ -113,6 +194,244 @@ def update_settings(settings: UserSettings, user: dict = Depends(get_current_use
     conn.commit()
     conn.close()
     return {"status": "success", "settings": settings.dict()}
+
+# ================= USER DATA EXPORT & RIGHT-TO-BE-FORGOTTEN =================
+
+@app.get("/api/user/export-my-data")
+def export_my_data(user: dict = Depends(get_current_user)):
+    """GDPR-compliant personal data export containing all behavioral histories."""
+    user_id = user["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT id, username, email, created_at FROM users WHERE id = ?", (user_id,))
+    u_row = cursor.fetchone()
+    cursor.execute("SELECT * FROM user_settings WHERE user_id = ?", (user_id,))
+    s_row = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    tasks = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM habits WHERE user_id = ? ORDER BY created_at DESC", (user_id,))
+    habits = []
+    for r in cursor.fetchall():
+        d = dict(r)
+        try:
+            d["history"] = json.loads(d.get("history") or "[]")
+        except Exception:
+            pass
+        habits.append(d)
+
+    cursor.execute("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC, time DESC", (user_id,))
+    expenses = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ? ORDER BY completed_at DESC", (user_id,))
+    sessions = [dict(r) for r in cursor.fetchall()]
+
+    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ? ORDER BY date DESC", (user_id,))
+    daily_logs = [dict(r) for r in cursor.fetchall()]
+
+    conn.close()
+
+    return {
+        "export_timestamp": datetime.utcnow().isoformat(),
+        "user_profile": dict(u_row) if u_row else {},
+        "user_settings": dict(s_row) if s_row else {},
+        "tasks": tasks,
+        "habits": habits,
+        "expenses": expenses,
+        "focus_sessions": sessions,
+        "daily_logs": daily_logs
+    }
+
+@app.delete("/api/user/delete-my-data")
+def delete_my_data(user: dict = Depends(get_current_user)):
+    """GDPR-compliant Right-to-be-Forgotten: permanently erases all personal data & models."""
+    user_id = user["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM daily_logs WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM focus_sessions WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM expenses WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM habits WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM tasks WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    
+    conn.commit()
+    conn.close()
+
+    # Clear ML model registry memory for user
+    ml_registry.delete_user_data(user_id)
+
+    return {
+        "status": "success",
+        "message": "All personal account records, activity history, and isolated machine learning models have been permanently erased."
+    }
+
+# ================= IDEMPOTENT OFFLINE SYNC BATCH =================
+
+@app.post("/api/sync/batch")
+def sync_batch(req: SyncBatchRequest, user: dict = Depends(get_current_user)):
+    """Idempotent batch sync endpoint with Last-Write-Wins (LWW) conflict resolution."""
+    user_id = user["id"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    server_time = datetime.utcnow().isoformat()
+    synced_count = 0
+    conflicts = []
+
+    try:
+        for item in req.items:
+            entity = item.entity
+            action = item.action
+            item_id = item.id
+            payload = item.payload or {}
+            client_updated_at = item.client_updated_at
+
+            if entity == "task":
+                if action == "delete":
+                    cursor.execute("DELETE FROM tasks WHERE id = ? AND user_id = ?", (item_id, user_id))
+                    synced_count += 1
+                else:
+                    cursor.execute("SELECT updated_at FROM tasks WHERE id = ? AND user_id = ?", (item_id, user_id))
+                    existing = cursor.fetchone()
+                    if existing and existing["updated_at"] and existing["updated_at"] > client_updated_at:
+                        conflicts.append({"id": item_id, "entity": entity, "reason": "server_is_newer"})
+                        continue
+                    
+                    cursor.execute("""
+                        INSERT INTO tasks (id, user_id, title, category, priority, estimated_pomodoros, completed_pomodoros, completed, due_date, completed_at, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            title = excluded.title,
+                            category = excluded.category,
+                            priority = excluded.priority,
+                            estimated_pomodoros = excluded.estimated_pomodoros,
+                            completed_pomodoros = excluded.completed_pomodoros,
+                            completed = excluded.completed,
+                            due_date = excluded.due_date,
+                            completed_at = excluded.completed_at,
+                            updated_at = excluded.updated_at
+                    """, (
+                        item_id, user_id,
+                        payload.get("title", "Untitled"),
+                        payload.get("category", "work"),
+                        payload.get("priority", "medium"),
+                        int(payload.get("estimated_pomodoros", 1)),
+                        int(payload.get("completed_pomodoros", 0)),
+                        1 if payload.get("completed") else 0,
+                        payload.get("due_date"),
+                        payload.get("completed_at"),
+                        payload.get("created_at", client_updated_at),
+                        client_updated_at
+                    ))
+                    synced_count += 1
+
+            elif entity == "habit":
+                if action == "delete":
+                    cursor.execute("DELETE FROM habits WHERE id = ? AND user_id = ?", (item_id, user_id))
+                    synced_count += 1
+                else:
+                    history_str = json.dumps(payload.get("history", [])) if isinstance(payload.get("history"), list) else (payload.get("history") or "[]")
+                    cursor.execute("""
+                        INSERT INTO habits (id, user_id, title, icon, frequency, streak, last_completed, history, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            title = excluded.title,
+                            icon = excluded.icon,
+                            frequency = excluded.frequency,
+                            streak = excluded.streak,
+                            last_completed = excluded.last_completed,
+                            history = excluded.history
+                    """, (
+                        item_id, user_id,
+                        payload.get("title", "Habit"),
+                        payload.get("icon", "🌱"),
+                        payload.get("frequency", "daily"),
+                        int(payload.get("streak", 0)),
+                        payload.get("last_completed"),
+                        history_str,
+                        payload.get("created_at", client_updated_at)
+                    ))
+                    synced_count += 1
+
+            elif entity == "expense":
+                if action == "delete":
+                    cursor.execute("DELETE FROM expenses WHERE id = ? AND user_id = ?", (item_id, user_id))
+                    synced_count += 1
+                else:
+                    cursor.execute("""
+                        INSERT INTO expenses (id, user_id, type, amount, category, note, date, time, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON CONFLICT(id) DO UPDATE SET
+                            type = excluded.type,
+                            amount = excluded.amount,
+                            category = excluded.category,
+                            note = excluded.note,
+                            date = excluded.date,
+                            time = excluded.time
+                    """, (
+                        item_id, user_id,
+                        payload.get("type", "expense"),
+                        float(payload.get("amount", 0.0)),
+                        payload.get("category", "Other"),
+                        payload.get("note", ""),
+                        payload.get("date", datetime.utcnow().strftime("%Y-%m-%d")),
+                        payload.get("time", "12:00:00"),
+                        payload.get("created_at", client_updated_at)
+                    ))
+                    synced_count += 1
+
+            elif entity == "focus_session":
+                cursor.execute("""
+                    INSERT INTO focus_sessions (id, user_id, task_id, mode, duration_minutes, start_time, end_time, interruptions, completed_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO NOTHING
+                """, (
+                    item_id, user_id,
+                    payload.get("task_id"),
+                    payload.get("mode", "focus"),
+                    int(payload.get("duration_minutes", 25)),
+                    payload.get("start_time"),
+                    payload.get("end_time"),
+                    int(payload.get("interruptions", 0)),
+                    payload.get("completed_at", client_updated_at)
+                ))
+                synced_count += 1
+
+            elif entity == "daily_log":
+                cursor.execute("""
+                    INSERT INTO daily_logs (id, user_id, date, mood, sleep_hours, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(user_id, date) DO UPDATE SET
+                        mood = excluded.mood,
+                        sleep_hours = excluded.sleep_hours,
+                        notes = excluded.notes
+                """, (
+                    item_id, user_id,
+                    payload.get("date", datetime.utcnow().strftime("%Y-%m-%d")),
+                    int(payload.get("mood", 3)),
+                    float(payload.get("sleep_hours", 7.5)),
+                    payload.get("notes", ""),
+                    payload.get("created_at", client_updated_at)
+                ))
+                synced_count += 1
+
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Batch sync error: {str(e)}")
+    finally:
+        conn.close()
+
+    return {
+        "status": "success",
+        "synced_count": synced_count,
+        "conflicts": conflicts,
+        "server_time": server_time
+    }
 
 # ================= TASKS ENDPOINTS =================
 
@@ -562,42 +881,14 @@ def parse_natural_task(req: MLParseTaskRequest):
 def get_model_transparency(user: dict = Depends(get_current_user)):
     return ml_registry.get_transparency_metrics(user["id"])
 
-# ================= FULL BACKUP / RESTORE =================
+# ================= LEGACY BACKUP ALIAS =================
 
 @app.get("/api/sync/export")
-def export_user_data(user: dict = Depends(get_current_user)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM tasks WHERE user_id = ?", (user["id"],))
-    tasks = [dict(r) for r in cursor.fetchall()]
+def export_user_data_alias(user: dict = Depends(get_current_user)):
+    return export_my_data(user)
 
-    cursor.execute("SELECT * FROM habits WHERE user_id = ?", (user["id"],))
-    habits = [dict(r) for r in cursor.fetchall()]
+# ================= STATIC FILE SERVING =================
 
-    cursor.execute("SELECT * FROM expenses WHERE user_id = ?", (user["id"],))
-    expenses = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM focus_sessions WHERE user_id = ?", (user["id"],))
-    sessions = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM daily_logs WHERE user_id = ?", (user["id"],))
-    daily_logs = [dict(r) for r in cursor.fetchall()]
-
-    cursor.execute("SELECT * FROM user_settings WHERE user_id = ?", (user["id"],))
-    settings = dict(cursor.fetchone() or {})
-
-    conn.close()
-    return {
-        "exported_at": datetime.utcnow().isoformat(),
-        "tasks": tasks,
-        "habits": habits,
-        "expenses": expenses,
-        "focus_sessions": sessions,
-        "daily_logs": daily_logs,
-        "settings": settings
-    }
-
-# Static file serving
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 app.mount("/css", StaticFiles(directory=os.path.join(BASE_DIR, "css")), name="css")

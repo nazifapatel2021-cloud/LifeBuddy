@@ -38,6 +38,11 @@ class MLPipelineRegistry:
             }
         return self._user_registries[user_id]
 
+    def delete_user_data(self, user_id: int):
+        """Clears all in-memory ML model state and caches for a user."""
+        if user_id in self._user_registries:
+            del self._user_registries[user_id]
+
     def get_focus_recommendations(self, user_id: int, sessions: List[Dict[str, Any]]) -> Dict[str, Any]:
         bundle = self._get_user_bundle(user_id)
         return bundle["focus_recommender"].analyze(sessions)

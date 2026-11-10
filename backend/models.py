@@ -102,3 +102,17 @@ class MLCategorizeExpenseRequest(BaseModel):
 
 class MLParseTaskRequest(BaseModel):
     text: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+class SyncBatchItem(BaseModel):
+    id: str
+    entity: str  # "task", "habit", "expense", "focus_session", "daily_log"
+    action: str = "upsert"  # "upsert" or "delete"
+    payload: dict = {}
+    client_updated_at: str
+
+class SyncBatchRequest(BaseModel):
+    items: List[SyncBatchItem]

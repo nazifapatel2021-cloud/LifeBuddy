@@ -111,3 +111,29 @@ Constructed an 8-module machine learning and statistical inference engine in `ap
 
 **Q3: How does the dashboard Natural-Language Quick-Add bar prevent user errors before task creation?**
 > *Answer:* It provides instantaneous visual feedback via interactive entity chips as the user types. The user sees extracted entities (due date, priority, category, estimated pomodoros) highlighted in real time. If the regex parser misclassifies a token, the user can immediately see the interpretation and edit the text or override it before clicking Add, ensuring complete human-in-the-loop validation.
+
+
+---
+
+## Phase 4: Engineering Depth, Security & Offline Sync
+
+### Architectural Decisions & Rationale
+1. **Argon2id over Standard PBKDF2 / MD5 / SHA-256:**
+   - *Alternative:* PBKDF2 with 100,000 rounds or bcrypt.
+   - *Why Argon2id:* Argon2 won the international Password Hashing Competition. Unlike bcrypt and PBKDF2, Argon2id is memory-hard ($64\text{MB}$ memory cost per hash), making mass parallelized cracking on ASIC or GPU clusters cost-prohibitive, while resisting cache-timing side-channel attacks.
+2. **IndexedDB Outbox Queue + Last-Write-Wins (LWW) Sync:**
+   - *Alternative:* WebSockets with operational transformation (OT) or CRDTs.
+   - *Why Outbox + LWW:* LifeBuddy is a personal productivity system with isolated per-user data stores. High-complexity distributed CRDTs introduce excessive client overhead. An outbox queue with Last-Write-Wins based on ISO timestamps gives bulletproof offline resilience, minimal battery drain, and deterministic consistency.
+3. **Dual JWT Access (15m) + Refresh (7d) Lifecycle:**
+   - *Alternative:* Indefinite 30-day single tokens.
+   - *Why Dual Token:* Stateless JWTs cannot be revoked instantly without database lookups. Limiting access tokens to 15 minutes confines any token interception window, while the refresh token enables seamless background session renewal without interrupting deep work.
+
+### 3 Likely Examiner Questions & Answers
+**Q1: Why did you choose Argon2id for password hashing, and how does it prevent GPU-accelerated dictionary attacks?**
+> *Answer:* Standard hash functions like SHA-256 and even PBKDF2 are compute-bound, allowing specialized GPUs and ASICs to test billions of combinations per second. Argon2id incorporates memory hardness ($64\text{MB}$ RAM requirement per hash calculation), which exhausts the high-bandwidth memory of GPUs and makes massive parallel dictionary attacks physically and financially infeasible.
+
+**Q2: What are the failure modes of Last-Write-Wins (LWW) conflict resolution, and why is it acceptable for LifeBuddy?**
+> *Answer:* The primary failure mode of LWW is clock skew: if a user edits a task on an offline device with a clock set 5 minutes into the past, an earlier edit on a synchronized device could overwrite it. In LifeBuddy, this trade-off is well-justified because productivity data is strictly isolated per user (no multi-user collaborative editing races), and local changes are queued and synced within seconds of regaining network connectivity.
+
+**Q3: How does your rate limiting middleware protect against Distributed Denial of Service (DDoS) and credential stuffing?**
+> *Answer:* It implements an in-memory sliding window token bucket per client IP. Critical authentication endpoints (`/api/auth/login`, `/api/auth/register`) are throttled to 25 requests per minute, preventing brute-force password guessing. General API endpoints are limited to 350 requests per minute. When limits are exceeded, it immediately responds with HTTP 429 Too Many Requests and a `Retry-After` header without invoking database connections.

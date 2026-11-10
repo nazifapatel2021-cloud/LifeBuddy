@@ -1,6 +1,8 @@
 /* LifeBuddy API Client & Storage Bridge */
+import { syncEngine } from './sync.js';
 
 const TOKEN_KEY = 'lifebuddy_token';
+const REFRESH_TOKEN_KEY = 'lifebuddy_refresh_token';
 const USER_KEY = 'lifebuddy_user';
 const OFFLINE_TASKS_KEY = 'lifebuddy_offline_tasks';
 const OFFLINE_HABITS_KEY = 'lifebuddy_offline_habits';
@@ -14,9 +16,18 @@ export const API = {
     return localStorage.getItem(TOKEN_KEY);
   },
 
-  setAuth(token, user) {
+  getRefreshToken() {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  },
+
+  setAuth(token, user, refreshToken = null) {
     if (token) localStorage.setItem(TOKEN_KEY, token);
     else localStorage.removeItem(TOKEN_KEY);
+
+    if (refreshToken !== null) {
+      if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+      else localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
 
     if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
     else localStorage.removeItem(USER_KEY);
@@ -49,8 +60,15 @@ export const API = {
         headers
       });
 
-      if (res.status === 401) {
-        this.setAuth(null, null);
+      if (res.status === 401 && !options._retry && this.getRefreshToken()) {
+        const refreshedToken = await this.auth.refreshToken();
+        if (refreshedToken) {
+          return await this.request(endpoint, { ...options, _retry: true });
+        }
+        this.setAuth(null, null, null);
+        window.dispatchEvent(new CustomEvent('auth-changed', { detail: { user: null } }));
+      } else if (res.status === 401) {
+        this.setAuth(null, null, null);
         window.dispatchEvent(new CustomEvent('auth-changed', { detail: { user: null } }));
       }
 
@@ -65,14 +83,14 @@ export const API = {
     }
   },
 
-  // Auth
+  // Auth & Security
   auth: {
     async register(username, email, password) {
       const data = await API.request('/api/auth/register', {
         method: 'POST',
         body: JSON.stringify({ username, email, password })
       });
-      API.setAuth(data.token, data.user);
+      API.setAuth(data.token, data.user, data.refresh_token);
       return data;
     },
 
@@ -81,8 +99,26 @@ export const API = {
         method: 'POST',
         body: JSON.stringify({ username_or_email, password })
       });
-      API.setAuth(data.token, data.user);
+      API.setAuth(data.token, data.user, data.refresh_token);
       return data;
+    },
+
+    async refreshToken() {
+      const rt = API.getRefreshToken();
+      if (!rt) return null;
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: rt })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          API.setAuth(data.token, API.getUser(), data.refresh_token);
+          return data.token;
+        }
+      } catch {}
+      return null;
     },
 
     async getMe() {
@@ -107,8 +143,22 @@ export const API = {
     },
 
     logout() {
-      API.setAuth(null, null);
+      API.setAuth(null, null, null);
       window.dispatchEvent(new CustomEvent('auth-changed', { detail: { user: null } }));
+    }
+  },
+
+  // GDPR & Data Management
+  user: {
+    async exportMyData() {
+      return await API.request('/api/user/export-my-data');
+    },
+    async deleteMyData() {
+      const res = await API.request('/api/user/delete-my-data', { method: 'DELETE' });
+      API.setAuth(null, null, null);
+      localStorage.clear();
+      window.dispatchEvent(new CustomEvent('auth-changed', { detail: { user: null } }));
+      return res;
     }
   },
 
@@ -139,32 +189,41 @@ export const API = {
         created_at: new Date().toISOString()
       };
 
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request('/api/tasks', {
             method: 'POST',
             body: JSON.stringify(newTask)
           });
         } catch (e) {
-          console.warn('Backend offline, saving task locally', e);
+          console.warn('Backend offline, queueing task mutation', e);
         }
       }
 
+      // Offline fallback & queue
       const tasks = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || '[]');
       tasks.unshift(newTask);
       localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(tasks));
+
+      await syncEngine.queueMutation({
+        id: newTask.id,
+        entity: 'task',
+        action: 'upsert',
+        payload: newTask
+      });
+
       return newTask;
     },
 
     async update(id, updates) {
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request(`/api/tasks/${id}`, {
             method: 'PUT',
             body: JSON.stringify(updates)
           });
         } catch (e) {
-          console.warn('Backend offline, updating task locally', e);
+          console.warn('Backend offline, queueing update mutation', e);
         }
       }
 
@@ -177,23 +236,38 @@ export const API = {
           if (updates.completed) tasks[index].completed_at = new Date().toISOString();
         }
         localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(tasks));
+
+        await syncEngine.queueMutation({
+          id,
+          entity: 'task',
+          action: 'upsert',
+          payload: tasks[index]
+        });
+
         return tasks[index];
       }
       return null;
     },
 
     async delete(id) {
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request(`/api/tasks/${id}`, { method: 'DELETE' });
         } catch (e) {
-          console.warn('Backend offline, deleting task locally', e);
+          console.warn('Backend offline, queueing delete mutation', e);
         }
       }
 
       let tasks = JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || '[]');
       tasks = tasks.filter(t => t.id !== id);
       localStorage.setItem(OFFLINE_TASKS_KEY, JSON.stringify(tasks));
+
+      await syncEngine.queueMutation({
+        id,
+        entity: 'task',
+        action: 'delete'
+      });
+
       return { status: 'deleted', id };
     }
   },
@@ -227,25 +301,33 @@ export const API = {
         created_at: new Date().toISOString()
       };
 
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request('/api/habits', {
             method: 'POST',
             body: JSON.stringify(newHabit)
           });
         } catch (e) {
-          console.warn('Backend offline, creating habit locally', e);
+          console.warn('Backend offline, queueing habit creation', e);
         }
       }
 
       const habits = await this.getAll();
       habits.push(newHabit);
       localStorage.setItem(OFFLINE_HABITS_KEY, JSON.stringify(habits));
+
+      await syncEngine.queueMutation({
+        id: newHabit.id,
+        entity: 'habit',
+        action: 'upsert',
+        payload: newHabit
+      });
+
       return newHabit;
     },
 
     async check(id, dateStr) {
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request(`/api/habits/${id}/check`, {
             method: 'POST',
@@ -268,13 +350,21 @@ export const API = {
           habit.streak = (habit.streak || 0) + 1;
         }
         localStorage.setItem(OFFLINE_HABITS_KEY, JSON.stringify(habits));
+
+        await syncEngine.queueMutation({
+          id,
+          entity: 'habit',
+          action: 'upsert',
+          payload: habit
+        });
+
         return habit;
       }
       return null;
     },
 
     async delete(id) {
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request(`/api/habits/${id}`, { method: 'DELETE' });
         } catch (e) {
@@ -285,6 +375,13 @@ export const API = {
       let habits = await this.getAll();
       habits = habits.filter(h => h.id !== id);
       localStorage.setItem(OFFLINE_HABITS_KEY, JSON.stringify(habits));
+
+      await syncEngine.queueMutation({
+        id,
+        entity: 'habit',
+        action: 'delete'
+      });
+
       return { status: 'deleted', id };
     }
   },
@@ -315,35 +412,50 @@ export const API = {
         created_at: now.toISOString()
       };
 
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request('/api/expenses', {
             method: 'POST',
             body: JSON.stringify(newExp)
           });
         } catch (e) {
-          console.warn('Backend offline, saving expense locally', e);
+          console.warn('Backend offline, queueing expense creation', e);
         }
       }
 
       const expenses = JSON.parse(localStorage.getItem(OFFLINE_EXPENSES_KEY) || '[]');
       expenses.unshift(newExp);
       localStorage.setItem(OFFLINE_EXPENSES_KEY, JSON.stringify(expenses));
+
+      await syncEngine.queueMutation({
+        id: newExp.id,
+        entity: 'expense',
+        action: 'upsert',
+        payload: newExp
+      });
+
       return newExp;
     },
 
     async delete(id) {
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request(`/api/expenses/${id}`, { method: 'DELETE' });
         } catch (e) {
-          console.warn('Backend offline, deleting expense locally', e);
+          console.warn('Backend offline, queueing expense delete', e);
         }
       }
 
       let expenses = JSON.parse(localStorage.getItem(OFFLINE_EXPENSES_KEY) || '[]');
       expenses = expenses.filter(e => e.id !== id);
       localStorage.setItem(OFFLINE_EXPENSES_KEY, JSON.stringify(expenses));
+
+      await syncEngine.queueMutation({
+        id,
+        entity: 'expense',
+        action: 'delete'
+      });
+
       return { status: 'deleted', id };
     }
   },
@@ -363,20 +475,28 @@ export const API = {
         completed_at: now.toISOString()
       };
 
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request('/api/focus-sessions', {
             method: 'POST',
             body: JSON.stringify(newSession)
           });
         } catch (e) {
-          console.warn('Backend offline, recording session locally', e);
+          console.warn('Backend offline, queueing session creation', e);
         }
       }
 
       const sessions = JSON.parse(localStorage.getItem(OFFLINE_SESSIONS_KEY) || '[]');
       sessions.unshift(newSession);
       localStorage.setItem(OFFLINE_SESSIONS_KEY, JSON.stringify(sessions));
+
+      await syncEngine.queueMutation({
+        id: newSession.id,
+        entity: 'focus_session',
+        action: 'upsert',
+        payload: newSession
+      });
+
       return newSession;
     },
 
@@ -415,14 +535,14 @@ export const API = {
         created_at: new Date().toISOString()
       };
 
-      if (API.isLoggedIn()) {
+      if (API.isLoggedIn() && navigator.onLine) {
         try {
           return await API.request('/api/daily-logs', {
             method: 'POST',
             body: JSON.stringify(newLog)
           });
         } catch (e) {
-          console.warn('Backend offline, saving wellness log locally', e);
+          console.warn('Backend offline, queueing wellness log', e);
         }
       }
 
@@ -431,6 +551,14 @@ export const API = {
       if (idx !== -1) logs[idx] = newLog;
       else logs.unshift(newLog);
       localStorage.setItem(OFFLINE_DAILY_LOGS_KEY, JSON.stringify(logs));
+
+      await syncEngine.queueMutation({
+        id: newLog.id,
+        entity: 'daily_log',
+        action: 'upsert',
+        payload: newLog
+      });
+
       return newLog;
     }
   },
@@ -573,7 +701,6 @@ export const API = {
           console.warn('ML parse task fallback', e);
         }
       }
-      // Simple client-side fallback
       return {
         title: text,
         due_date: null,
