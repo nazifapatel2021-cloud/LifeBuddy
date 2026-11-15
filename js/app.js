@@ -398,14 +398,14 @@ function initApp() {
     }
   });
 
-  // Floating Action Button (FAB)
-  const fabBtn = document.getElementById('fab-quick-btn');
+  // Expense Modal Triggers
+  const addExpenseModalBtn = document.getElementById('btn-add-expense-modal');
   const expenseModal = document.getElementById('expense-modal');
   const closeExpenseModal = document.getElementById('close-expense-modal');
 
-  if (fabBtn && expenseModal) {
-    fabBtn.addEventListener('click', () => {
-        expenseModal.classList.add('active');
+  if (addExpenseModalBtn && expenseModal) {
+    addExpenseModalBtn.addEventListener('click', () => {
+      expenseModal.classList.add('active');
     });
   }
 

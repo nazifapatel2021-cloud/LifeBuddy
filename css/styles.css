@@ -1218,34 +1218,7 @@ body.zen-mode .zen-exit-btn {
   transition: width var(--transition-normal);
 }
 
-/* Floating Action Button (FAB) */
-.fab-container {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  z-index: 99;
-}
 
-.fab-main-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: var(--accent-primary);
-  color: #ffffff;
-  border: none;
-  font-size: 1.8rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 24px var(--accent-glow);
-  cursor: pointer;
-  transition: transform var(--transition-fast), background var(--transition-fast);
-}
-
-.fab-main-btn:hover {
-  transform: scale(1.08) rotate(90deg);
-  background: var(--accent-primary-hover);
-}
 
 /* Category breakdown in stats */
 .category-breakdown-row {
