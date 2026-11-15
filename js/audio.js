@@ -245,31 +245,24 @@ class SoundSynthesizer {
     delete this.activeNodes[type];
     const ctx = this.ctx;
 
-    if (ctx && node.gainNode) {
-      try {
-        const now = ctx.currentTime;
-        // Smooth 0.4s fade-out to prevent pops
-        node.gainNode.gain.setValueAtTime(node.gainNode.gain.value, now);
-        node.gainNode.linearRampToValueAtTime(0.0001, now + 0.4);
-
-        setTimeout(() => {
-          try {
-            node.source.stop();
-            node.source.disconnect();
-            node.filter.disconnect();
-            node.gainNode.disconnect();
-          } catch {}
-        }, 450);
-      } catch {
-        try { node.source.stop(); } catch {}
+    try {
+      if (ctx && node.gainNode) {
+        node.gainNode.gain.setValueAtTime(0, ctx.currentTime);
       }
-    } else {
-      try { node.source.stop(); } catch {}
+      if (node.source) {
+        node.source.stop();
+        node.source.disconnect();
+      }
+      if (node.filter) node.filter.disconnect();
+      if (node.gainNode) node.gainNode.disconnect();
+    } catch (e) {
+      console.warn('Error stopping sound node', e);
     }
   }
 
   stopAllAmbientSounds() {
     Object.keys(this.activeNodes).forEach(type => this.stopAmbientSound(type));
+    this.activeNodes = {};
   }
 }
 

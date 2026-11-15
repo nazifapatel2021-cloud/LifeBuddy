@@ -168,6 +168,14 @@ function initApp() {
       else v.classList.remove('active');
     });
 
+    // Auto-stop ambient sound when leaving Focus Room
+    if (viewName !== 'focus') {
+      audioSynth.stopAllAmbientSounds();
+      document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('active'));
+      const stopSoundBtn = document.getElementById('global-sound-stop-btn');
+      if (stopSoundBtn) stopSoundBtn.style.display = 'none';
+    }
+
     if (viewName === 'dashboard') {
       dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     } else if (viewName === 'insights') {
@@ -354,17 +362,32 @@ function initApp() {
     });
   }
 
-  // Ambient Sound Synthesis
+  // Ambient Sound Synthesis & Instant Global Stop
+  const globalSoundBtn = document.getElementById('global-sound-stop-btn');
+  if (globalSoundBtn) {
+    globalSoundBtn.addEventListener('click', () => {
+      audioSynth.stopAllAmbientSounds();
+      document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('active'));
+      globalSoundBtn.style.display = 'none';
+      showToast('🔇 Ambient sounds stopped');
+    });
+  }
+
   document.querySelectorAll('.sound-card').forEach(card => {
     const type = card.dataset.sound;
     const slider = card.querySelector('.sound-slider');
 
     card.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT') return;
-        const volume = slider ? parseFloat(slider.value) : 0.5;
+      const volume = slider ? parseFloat(slider.value) : 0.5;
       const isPlaying = audioSynth.toggleAmbientSound(type, volume);
       if (isPlaying) card.classList.add('active');
       else card.classList.remove('active');
+
+      const anyPlaying = Object.keys(audioSynth.activeNodes).length > 0;
+      if (globalSoundBtn) {
+        globalSoundBtn.style.display = anyPlaying ? 'inline-flex' : 'none';
+      }
     });
 
     if (slider) {
