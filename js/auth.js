@@ -27,48 +27,41 @@ export class AuthController {
   updateUI() {
     const user = API.getUser();
     const isLoggedIn = API.isLoggedIn();
-    const isGuest = localStorage.getItem('lifebuddy_guest_active') === 'true';
 
     const welcomeGate = document.getElementById('welcome-gate');
     const mainWorkspace = document.getElementById('main-workspace');
-    const mainNav = document.getElementById('main-nav-bar');
+    const workspaceHeaderActions = document.getElementById('workspace-header-actions');
     const authBtnText = document.getElementById('auth-btn-text');
 
     if (isLoggedIn) {
       if (welcomeGate) welcomeGate.style.display = 'none';
       if (mainWorkspace) mainWorkspace.style.display = 'block';
-      if (mainNav) mainNav.style.display = 'flex';
+      if (workspaceHeaderActions) workspaceHeaderActions.style.display = 'flex';
       if (authBtnText) authBtnText.textContent = user ? user.username : 'Account';
-    } else if (isGuest) {
-      if (welcomeGate) welcomeGate.style.display = 'none';
-      if (mainWorkspace) mainWorkspace.style.display = 'block';
-      if (mainNav) mainNav.style.display = 'flex';
-      if (authBtnText) authBtnText.textContent = 'Sign In';
     } else {
-      // Show Welcome & Sign-In Screen first!
+      // Unauthenticated Welcome State:
+      // Show ONLY the welcome hero and login dialog.
+      // Hide workspace, navigation, and all header utility buttons!
       if (welcomeGate) welcomeGate.style.display = 'block';
       if (mainWorkspace) mainWorkspace.style.display = 'none';
-      if (mainNav) mainNav.style.display = 'none';
-      if (authBtnText) authBtnText.textContent = 'Sign In';
+      if (workspaceHeaderActions) workspaceHeaderActions.style.display = 'none';
     }
   }
 
   bindEvents() {
-    // 1. Welcome Screen Demo Buttons
+    // 1. Welcome Screen Quick 1-Click Demo Buttons
     const demoAlexBtn = document.getElementById('quick-demo-alex');
     const demoMayaBtn = document.getElementById('quick-demo-maya');
-    const exploreGuestBtn = document.getElementById('btn-explore-guest');
 
     if (demoAlexBtn) {
       demoAlexBtn.addEventListener('click', async () => {
         demoAlexBtn.textContent = 'Logging in as Alex...';
         try {
           await API.auth.login('alex_student', 'password123');
-          localStorage.removeItem('lifebuddy_guest_active');
           window.location.reload();
         } catch (e) {
           alert('Could not log in as Alex. Ensure server is running.');
-          demoAlexBtn.innerHTML = `<span>🎓 Alex (Student)</span> <span class="badge badge-subtle">90 Days Activity</span>`;
+          demoAlexBtn.innerHTML = `<span>🎓 Alex (Student)</span> <span class="badge badge-subtle">90 Days Data</span>`;
         }
       });
     }
@@ -78,19 +71,11 @@ export class AuthController {
         demoMayaBtn.textContent = 'Logging in as Maya...';
         try {
           await API.auth.login('maya_freelancer', 'password123');
-          localStorage.removeItem('lifebuddy_guest_active');
           window.location.reload();
         } catch (e) {
           alert('Could not log in as Maya. Ensure server is running.');
-          demoMayaBtn.innerHTML = `<span>💼 Maya (Freelancer)</span> <span class="badge badge-subtle">90 Days Activity</span>`;
+          demoMayaBtn.innerHTML = `<span>💼 Maya (Freelancer)</span> <span class="badge badge-subtle">90 Days Data</span>`;
         }
-      });
-    }
-
-    if (exploreGuestBtn) {
-      exploreGuestBtn.addEventListener('click', () => {
-        localStorage.setItem('lifebuddy_guest_active', 'true');
-        this.updateUI();
       });
     }
 
@@ -138,7 +123,6 @@ export class AuthController {
             if (!email) throw new Error('Please enter an email address');
             await API.auth.register(username, email, password);
           }
-          localStorage.removeItem('lifebuddy_guest_active');
           window.location.reload();
         } catch (err) {
           if (gateErrorMsg) {
@@ -165,13 +149,8 @@ export class AuthController {
           document.getElementById('auth-logged-out-view').style.display = 'none';
           document.getElementById('profile-username').textContent = user.username;
           document.getElementById('profile-email').textContent = user.email || '';
-        } else {
-          // If in guest mode, clicking Sign In takes you back to Welcome gate
-          localStorage.removeItem('lifebuddy_guest_active');
-          this.updateUI();
-          return;
+          authModal.classList.add('active');
         }
-        authModal.classList.add('active');
       });
     }
 
@@ -184,7 +163,6 @@ export class AuthController {
     if (authLogoutBtn) {
       authLogoutBtn.addEventListener('click', () => {
         API.auth.logout();
-        localStorage.removeItem('lifebuddy_guest_active');
         authModal.classList.remove('active');
         this.updateUI();
         this.onUserChanged(null);

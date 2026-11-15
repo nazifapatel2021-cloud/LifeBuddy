@@ -36,6 +36,10 @@ export class DailyLogController {
   }
 
   async open() {
+    if (!API.isLoggedIn()) {
+      alert('Please sign in to access your daily review and wellness log.');
+      return;
+    }
     if (!this.modal) return;
     this.modal.classList.add('active');
     await this.render();
@@ -229,6 +233,10 @@ export class DailyLogController {
   }
 
   async handleSave() {
+    if (!API.isLoggedIn()) {
+      alert('Please sign in to save your daily check-in.');
+      return;
+    }
     const sleepVal = parseFloat(document.getElementById('log-sleep-range')?.value) || 7.5;
     const notesVal = document.getElementById('log-notes-input')?.value.trim() || '';
     const todayStr = new Date().toISOString().split('T')[0];
