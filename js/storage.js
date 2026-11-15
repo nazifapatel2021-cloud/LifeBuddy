@@ -16,7 +16,8 @@ const DEFAULT_SETTINGS = {
   autoStartBreaks: false,
   autoStartPomodoros: false,
   theme: 'sage',
-  soundVolume: 0.5
+  soundVolume: 0.5,
+  soundEnabled: true
 };
 
 const DEFAULT_STATS = {

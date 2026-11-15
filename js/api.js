@@ -578,8 +578,8 @@ export const API = {
         recommended_window: 'Mon-Fri 09:00 - 11:00 AM',
         peak_days: ['Tue', 'Thu'],
         peak_hours: [9, 10],
-        explanation: 'Cold-start circadian baseline: Morning focus window (9-11 AM) minimizes task interruptions.',
-        confidence: 'Low (Cold-Start Prior)'
+        explanation: 'Morning focus window (9:00 - 11:00 AM) is recommended to protect quiet, uninterrupted deep work.',
+        confidence: '🌱 Getting to know you'
       };
     },
 
@@ -598,8 +598,8 @@ export const API = {
       const pred = defaults[category.toLowerCase()] || 2;
       return {
         predicted_pomodoros: pred,
-        confidence: 'Low (Cold-Start Rule)',
-        explanation: `Estimated ${pred} pomodoros (~${pred*25} mins) using standard category baseline.`
+        confidence: '✨ Smart Estimate',
+        explanation: `Estimated ${pred} focus blocks (~${pred*25} mins) based on standard category baselines.`
       };
     },
 
@@ -617,8 +617,8 @@ export const API = {
       return {
         category: 'Food',
         confidence: 0.60,
-        confidence_label: 'Rule-Based Heuristic',
-        explanation: 'Auto-assigned to Food based on keyword rules.'
+        confidence_label: '✨ Smart Suggestion',
+        explanation: 'Suggested category based on typical daily expenses.'
       };
     },
 
@@ -638,7 +638,7 @@ export const API = {
         confidence_interval_95: [710.0, 850.0],
         anomaly_count: 0,
         anomalies: [],
-        explanation: 'Linear daily run-rate projection based on current month activity.'
+        explanation: 'Projected month-end balance based on your daily spending pace.'
       };
     },
 
@@ -683,7 +683,7 @@ export const API = {
         }
       }
       return {
-        source: 'Deterministic Cognitive Template',
+        source: 'Weekly Mindful Reflection',
         period: 'Past 7 Days',
         reflection: '🌿 **Weekly Reflection**\n\nYou built steady momentum across your key priorities this week. Protecting uninterrupted morning focus blocks will help compound your productivity.',
         metrics: { focus_hours: 8.5, tasks_completed: 6, week_spent: 120.0, habit_adherence_pct: 82 }

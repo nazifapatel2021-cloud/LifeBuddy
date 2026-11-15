@@ -1,82 +1,129 @@
-/* Web Audio API Sound Synthesizer */
+/* LifeBuddy High-Fidelity Web Audio Synthesizer
+   - Smooth seamless ambient loops (crossfade-windowed, zero loop click)
+   - Gentle Tibetan Singing Bowl chime for focus completion
+   - 0.3s fade-in / 0.4s fade-out to prevent speaker popping/crackling
+   - Respects user mute and volume settings
+*/
+import { Storage } from './storage.js';
+
 class SoundSynthesizer {
   constructor() {
     this.ctx = null;
     this.activeNodes = {};
     this.masterGain = null;
+    this.isMuted = false;
   }
 
-  init() {
+  ensureContext() {
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioCtx();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.5;
-      this.masterGain.connect(this.ctx.destination);
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = 0.5;
+        this.masterGain.connect(this.ctx.destination);
+      } catch (e) {
+        console.warn('Web Audio API not supported or initialized', e);
+        return null;
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
     }
+    return this.ctx;
   }
 
   setMasterVolume(val) {
-    if (this.masterGain) {
-      this.masterGain.gain.setValueAtTime(val, this.ctx.currentTime);
+    const settings = Storage.getSettings ? Storage.getSettings() : {};
+    if (settings.soundEnabled === false) return;
+
+    const ctx = this.ensureContext();
+    if (ctx && this.masterGain) {
+      const clamped = Math.max(0, Math.min(1, parseFloat(val) || 0.5));
+      this.masterGain.gain.setValueAtTime(clamped, ctx.currentTime);
     }
   }
 
-  /* Play Warm Zen Chime when timer ends */
+  /* Warm Tibetan Singing Bowl Meditation Gong for timer completion */
   playCompletionChime() {
-    this.init();
-    const now = this.ctx.currentTime;
-    
-    // Multi-harmonic bell synthesis (Zen Tibetan Singing Bowl style)
-    const frequencies = [329.63, 659.25, 987.77, 1318.51]; // E4 harmonic series
-    const gains = [0.6, 0.3, 0.15, 0.08];
+    const settings = Storage.getSettings ? Storage.getSettings() : {};
+    if (settings.soundEnabled === false) return;
 
-    frequencies.forEach((freq, index) => {
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    // Harmonic frequencies for rich, soothing bell (C4, G4, C5, E5)
+    const harmonics = [
+      { freq: 261.63, gain: 0.30, decay: 4.5 },
+      { freq: 392.00, gain: 0.18, decay: 3.8 },
+      { freq: 523.25, gain: 0.12, decay: 3.0 },
+      { freq: 659.25, gain: 0.06, decay: 2.2 }
+    ];
+
+    harmonics.forEach(({ freq, gain, decay }) => {
+      try {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        // Soft attack (prevents click) then exponential ring-down
+        gainNode.gain.setValueAtTime(0.0001, now);
+        gainNode.gain.linearRampToValueAtTime(gain, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+        osc.connect(gainNode);
+        gainNode.connect(this.masterGain);
+
+        osc.start(now);
+        osc.stop(now + decay + 0.1);
+
+        setTimeout(() => {
+          try {
+            osc.disconnect();
+            gainNode.disconnect();
+          } catch {}
+        }, (decay + 0.2) * 1000);
+      } catch (e) {
+        console.warn('Chime generation note skipped', e);
+      }
+    });
+  }
+
+  /* Optional whisper-soft haptic feedback click (inaudible/subtle) */
+  playClickSound() {
+    // Disabled by default to keep the interface calm and uncluttered.
+    const settings = Storage.getSettings ? Storage.getSettings() : {};
+    if (!settings.hapticSound) return;
+
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(110, now + 0.03);
 
-      // Exponential decay over 4 seconds for deep soothing ring
-      gain.gain.setValueAtTime(gains[index], now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 4.0);
+      gain.gain.setValueAtTime(0.02, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03);
 
       osc.connect(gain);
       gain.connect(this.masterGain);
 
       osc.start(now);
-      osc.stop(now + 4.0);
-    });
+      osc.stop(now + 0.03);
+    } catch {}
   }
 
-  /* Play Subtle Button Click Sound */
-  playClickSound() {
-    this.init();
-    const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.exponentialRampToValueAtTime(200, now + 0.04);
-
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-
-    osc.connect(gain);
-    gain.connect(this.masterGain);
-
-    osc.start(now);
-    osc.stop(now + 0.04);
-  }
-
-  /* Toggle Continuous Ambient Noise Track */
+  /* Toggle continuous ambient soundscape */
   toggleAmbientSound(type, volume = 0.5) {
-    this.init();
     if (this.activeNodes[type]) {
       this.stopAmbientSound(type);
       return false;
@@ -87,108 +134,137 @@ class SoundSynthesizer {
   }
 
   setAmbientVolume(type, volume) {
-    if (this.activeNodes[type] && this.activeNodes[type].gainNode) {
-      this.activeNodes[type].gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
+    const ctx = this.ensureContext();
+    if (ctx && this.activeNodes[type] && this.activeNodes[type].gainNode) {
+      const clamped = Math.max(0.001, Math.min(1.0, parseFloat(volume) || 0.5));
+      this.activeNodes[type].gainNode.gain.setValueAtTime(clamped, ctx.currentTime);
     }
   }
 
   startAmbientSound(type, volume = 0.5) {
-    this.init();
+    const ctx = this.ensureContext();
+    if (!ctx) return;
     if (this.activeNodes[type]) return;
 
-    const bufferSize = 2 * this.ctx.sampleRate;
-    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
+    // 5-second sample buffer for smooth ambient texture
+    const sampleRate = ctx.sampleRate;
+    const duration = 5.0;
+    const bufferSize = Math.floor(sampleRate * duration);
+    const buffer = ctx.createBuffer(1, bufferSize, sampleRate);
+    const data = buffer.getChannelData(0);
 
-    const gainNode = this.ctx.createGain();
-    gainNode.gain.setValueAtTime(volume, this.ctx.currentTime);
-
-    const whiteSource = this.ctx.createBufferSource();
-
+    // Synthesize organic sounds with seamless circular boundary crossfading
     if (type === 'rain') {
-      // Soft Rain filter
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      // Soft rainfall: filtered pink-brown noise with gentle micro-droplet impulses
+      let b0 = 0, b1 = 0, b2 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + white * 0.0555179;
-        b1 = 0.99332 * b1 + white * 0.0750759;
-        b2 = 0.96900 * b2 + white * 0.1538520;
-        b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-        output[i] *= 0.11;
-        b6 = white * 0.115926;
+        b0 = 0.99 * b0 + white * 0.06;
+        b1 = 0.95 * b1 + white * 0.08;
+        b2 = 0.85 * b2 + white * 0.12;
+        // occasional soft rain droplet
+        const drop = Math.random() < 0.002 ? (Math.random() * 0.3) : 0;
+        data[i] = (b0 + b1 + b2) * 0.35 + drop;
       }
-
-      noiseBuffer.getChannelData(0).set(output);
-      whiteSource.buffer = noiseBuffer;
-      whiteSource.loop = true;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1000;
-
-      whiteSource.connect(filter);
-      filter.connect(gainNode);
-
     } else if (type === 'brown') {
-      // Deep Brown Noise / Soft Hum
+      // Deep Brown noise: warm 1/f^2 rumble ideal for masking speech & distractions
       let lastOut = 0.0;
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
-        output[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = output[i];
-        output[i] *= 3.5;
+        lastOut = (lastOut + 0.025 * white) / 1.025;
+        data[i] = lastOut * 2.8;
       }
-      noiseBuffer.getChannelData(0).set(output);
-      whiteSource.buffer = noiseBuffer;
-      whiteSource.loop = true;
-
-      const filter = this.ctx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 400;
-
-      whiteSource.connect(filter);
-      filter.connect(gainNode);
-
     } else if (type === 'pink') {
-      // Gentle Breeze Pink Noise
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      // Forest Breeze: soft pink noise with gentle modulation
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
         b0 = 0.99886 * b0 + white * 0.0555179;
         b1 = 0.99332 * b1 + white * 0.0750759;
         b2 = 0.96900 * b2 + white * 0.1538520;
         b3 = 0.86650 * b3 + white * 0.3104856;
-        b4 = 0.55000 * b4 + white * 0.5329522;
-        b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-        output[i] *= 0.11;
-        b6 = white * 0.115926;
+        const breath = 0.8 + 0.2 * Math.sin((2 * Math.PI * i) / (sampleRate * 2.5));
+        data[i] = (b0 + b1 + b2 + b3) * 0.2 * breath;
       }
-      noiseBuffer.getChannelData(0).set(output);
-      whiteSource.buffer = noiseBuffer;
-      whiteSource.loop = true;
-
-      whiteSource.connect(gainNode);
+    } else {
+      // Ocean Waves / Zen Drone
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        const swell = 0.5 + 0.5 * Math.sin((2 * Math.PI * i) / bufferSize);
+        data[i] = white * 0.15 * swell;
+      }
     }
 
-    gainNode.connect(this.masterGain);
-    whiteSource.start();
+    // Apply smooth circular crossfade window to eliminate loop seam clicks
+    const crossfadeLen = Math.floor(sampleRate * 0.2); // 200ms
+    for (let i = 0; i < crossfadeLen; i++) {
+      const factor = i / crossfadeLen;
+      const head = data[i];
+      const tail = data[bufferSize - crossfadeLen + i];
+      data[i] = head * factor + tail * (1 - factor);
+      data[bufferSize - crossfadeLen + i] = data[i];
+    }
 
-    this.activeNodes[type] = {
-      source: whiteSource,
-      gainNode: gainNode
-    };
+    try {
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = type === 'brown' ? 380 : type === 'rain' ? 1200 : 800;
+
+      const gainNode = ctx.createGain();
+      const targetVol = Math.max(0.001, Math.min(1.0, parseFloat(volume) || 0.5));
+      const now = ctx.currentTime;
+
+      // Smooth 0.3s fade-in to prevent pops
+      gainNode.gain.setValueAtTime(0.0001, now);
+      gainNode.gain.linearRampToValueAtTime(targetVol, now + 0.3);
+
+      source.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(this.masterGain);
+
+      source.start(now);
+
+      this.activeNodes[type] = {
+        source,
+        filter,
+        gainNode
+      };
+    } catch (e) {
+      console.warn('Failed to start ambient track', e);
+    }
   }
 
   stopAmbientSound(type) {
-    if (this.activeNodes[type]) {
+    const node = this.activeNodes[type];
+    if (!node) return;
+
+    delete this.activeNodes[type];
+    const ctx = this.ctx;
+
+    if (ctx && node.gainNode) {
       try {
-        this.activeNodes[type].source.stop();
-      } catch (e) {}
-      delete this.activeNodes[type];
+        const now = ctx.currentTime;
+        // Smooth 0.4s fade-out to prevent pops
+        node.gainNode.gain.setValueAtTime(node.gainNode.gain.value, now);
+        node.gainNode.linearRampToValueAtTime(0.0001, now + 0.4);
+
+        setTimeout(() => {
+          try {
+            node.source.stop();
+            node.source.disconnect();
+            node.filter.disconnect();
+            node.gainNode.disconnect();
+          } catch {}
+        }, 450);
+      } catch {
+        try { node.source.stop(); } catch {}
+      }
+    } else {
+      try { node.source.stop(); } catch {}
     }
   }
 

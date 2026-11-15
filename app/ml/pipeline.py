@@ -5,6 +5,7 @@ and transparent model governance metadata.
 """
 
 import time
+import threading
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 
@@ -21,27 +22,30 @@ class MLPipelineRegistry:
     def __init__(self):
         # Per-user model state cache: { user_id: { "models": ..., "last_trained": ..., "data_hashes": ... } }
         self._user_registries: Dict[int, Dict[str, Any]] = {}
+        self._lock = threading.RLock()
         self.nl_parser = NLTaskParser()
         self.reflection_gen = ReflectionGenerator()
 
     def _get_user_bundle(self, user_id: int) -> Dict[str, Any]:
-        if user_id not in self._user_registries:
-            self._user_registries[user_id] = {
-                "focus_recommender": FocusRecommender(),
-                "task_estimator": TaskDurationEstimator(),
-                "expense_categorizer": ExpenseCategorizer(),
-                "spending_detector": SpendingAnomalyDetector(),
-                "habit_predictor": HabitRiskPredictor(),
-                "insight_engine": CrossModuleInsightEngine(),
-                "last_trained": None,
-                "data_counts": {}
-            }
-        return self._user_registries[user_id]
+        with self._lock:
+            if user_id not in self._user_registries:
+                self._user_registries[user_id] = {
+                    "focus_recommender": FocusRecommender(),
+                    "task_estimator": TaskDurationEstimator(),
+                    "expense_categorizer": ExpenseCategorizer(),
+                    "spending_detector": SpendingAnomalyDetector(),
+                    "habit_predictor": HabitRiskPredictor(),
+                    "insight_engine": CrossModuleInsightEngine(),
+                    "last_trained": None,
+                    "data_counts": {}
+                }
+            return self._user_registries[user_id]
 
     def delete_user_data(self, user_id: int):
         """Clears all in-memory ML model state and caches for a user."""
-        if user_id in self._user_registries:
-            del self._user_registries[user_id]
+        with self._lock:
+            if user_id in self._user_registries:
+                del self._user_registries[user_id]
 
     def get_focus_recommendations(self, user_id: int, sessions: List[Dict[str, Any]]) -> Dict[str, Any]:
         bundle = self._get_user_bundle(user_id)

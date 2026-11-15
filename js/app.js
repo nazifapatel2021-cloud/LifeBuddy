@@ -157,7 +157,6 @@ function initApp() {
   const appViews = document.querySelectorAll('.app-view');
 
   function switchView(viewName) {
-    audioSynth.playClickSound();
 
     navTabs.forEach(t => {
       if (t.dataset.view === viewName) t.classList.add('active');
@@ -190,8 +189,7 @@ function initApp() {
 
   if (startPauseBtn) {
     startPauseBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      if (timerEngine.isRunning) {
+        if (timerEngine.isRunning) {
         timerEngine.pause();
         updateStartPauseBtn(false);
       } else {
@@ -203,16 +201,14 @@ function initApp() {
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      timerEngine.reset();
+        timerEngine.reset();
       updateStartPauseBtn(false);
     });
   }
 
   modeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-      audioSynth.playClickSound();
-      const mode = e.currentTarget.dataset.mode;
+        const mode = e.currentTarget.dataset.mode;
       timerEngine.switchMode(mode);
       updateStartPauseBtn(false);
     });
@@ -365,8 +361,7 @@ function initApp() {
 
     card.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT') return;
-      audioSynth.playClickSound();
-      const volume = slider ? parseFloat(slider.value) : 0.5;
+        const volume = slider ? parseFloat(slider.value) : 0.5;
       const isPlaying = audioSynth.toggleAmbientSound(type, volume);
       if (isPlaying) card.classList.add('active');
       else card.classList.remove('active');
@@ -387,8 +382,7 @@ function initApp() {
 
   if (fabBtn && expenseModal) {
     fabBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      expenseModal.classList.add('active');
+        expenseModal.classList.add('active');
     });
   }
 
@@ -401,8 +395,7 @@ function initApp() {
   // Theme Swatches
   document.querySelectorAll('.theme-swatch').forEach(swatch => {
     swatch.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      const theme = swatch.dataset.theme;
+        const theme = swatch.dataset.theme;
       themeManager.applyTheme(theme);
       showToast(`Applied ${theme.charAt(0).toUpperCase() + theme.slice(1)} theme`);
     });
@@ -418,8 +411,7 @@ function initApp() {
 
   if (settingsBtn && settingsModal) {
     settingsBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      const curr = Storage.getSettings();
+        const curr = Storage.getSettings();
       const fInput = document.getElementById('input-focus-time');
       const sbInput = document.getElementById('input-short-break-time');
       const lbInput = document.getElementById('input-long-break-time');
@@ -431,6 +423,8 @@ function initApp() {
       if (lbInput) lbInput.value = curr.longBreakDuration;
       if (abCheck) abCheck.checked = curr.autoStartBreaks;
       if (apCheck) apCheck.checked = curr.autoStartPomodoros;
+      const sndCheck = document.getElementById('input-sound-enabled');
+      if (sndCheck) sndCheck.checked = curr.soundEnabled !== false;
 
       settingsModal.classList.add('active');
     });
@@ -444,12 +438,12 @@ function initApp() {
 
   if (saveSettingsBtn && settingsModal) {
     saveSettingsBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
+        const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
       const shortMin = parseInt(document.getElementById('input-short-break-time')?.value) || 5;
       const longMin = parseInt(document.getElementById('input-long-break-time')?.value) || 15;
       const autoBreaks = !!document.getElementById('input-auto-breaks')?.checked;
       const autoPomo = !!document.getElementById('input-auto-pomo')?.checked;
+      const soundEnabled = document.getElementById('input-sound-enabled') ? document.getElementById('input-sound-enabled').checked : true;
 
       const curr = Storage.getSettings();
       curr.focusDuration = focusMin;
@@ -457,6 +451,10 @@ function initApp() {
       curr.longBreakDuration = longMin;
       curr.autoStartBreaks = autoBreaks;
       curr.autoStartPomodoros = autoPomo;
+      curr.soundEnabled = soundEnabled;
+      if (!soundEnabled) {
+        audioSynth.stopAllAmbientSounds();
+      }
 
       Storage.saveSettings(curr);
       timerEngine.setDurations(focusMin, shortMin, longMin);
@@ -467,8 +465,7 @@ function initApp() {
 
   if (zenToggleBtn) {
     zenToggleBtn.addEventListener('click', () => {
-      audioSynth.playClickSound();
-      document.body.classList.add('zen-mode');
+        document.body.classList.add('zen-mode');
       showToast('Entered Zen Mode (Esc to exit)');
     });
   }

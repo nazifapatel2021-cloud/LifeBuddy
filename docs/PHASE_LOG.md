@@ -184,3 +184,22 @@ This document tracks all engineering deliverables, verification commands, test r
   3. Added lifecycle guard checking document.readyState so the application bootstraps properly even when cached or deferred.
   4. Added defensive null-safe property access in js/api.js and js/stats.js for date formatting and statistics aggregation.
 - **Verification**: Full test suite re-verified (16/16 tests passing, 92% coverage on pp/ml), backend root serving verified on port 8000.
+
+---
+
+## v1.1 Refinement — Consumer-Grade UX, Audio Architecture & Multi-User Concurrency
+- **Plain-English UX & Copywriting**:
+  - Removed algorithmic terminology ('Bayesian Shrinkage Smoothing', 'Isolation Forest', 'L2 Logistic Regression', 'Cold-Start Prior') from consumer-facing cards and badges.
+  - Replaced technical badges with friendly labels: '⭐ High Confidence', '🌱 Getting to know you', '✨ Reliable Pattern'.
+  - Restructured 'Why am I seeing this?' drawer to present intuitive behavioral explanations first, with an expandable '🔬 Academic & Evaluation Mode' section for university examiners and viva evaluation.
+- **Audio Synthesis Overhaul**:
+  - Eliminated artificial click sounds on everyday navigation tabs and buttons.
+  - Re-engineered ambient noise buffers with seamless circular windowed crossfading, eliminating the 2-second loop click/pop artifact.
+  - Added smooth 0.3s fade-in and 0.4s fade-out ramps to prevent speaker/headphone popping on start/stop.
+  - Replaced harsh multi-sine frequencies with warm Tibetan Singing Bowl meditation chime (C4, G4, C5, E5) with harmonic decay.
+  - Added user-facing sound toggle in Settings preferences.
+- **Multi-User Backend Concurrency (10-50 Users)**:
+  - Enabled SQLite Write-Ahead Logging (WAL) mode (PRAGMA journal_mode=WAL) and 10,000ms busy timeout, allowing concurrent readers and writers without database locking.
+  - Hardened ML pipeline registry with threading.RLock for thread-safe multi-tenant inference and retraining.
+  - Added /api/health endpoint for uptime and container health checks.
+  - Created tests/test_concurrency.py validating 50 simultaneous concurrent requests across task creation, dashboard reads, and ML predictions.
