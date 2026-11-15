@@ -51,128 +51,147 @@ export class DashboardManager {
     const habitsTotal = summary.habits.total || 0;
 
     container.innerHTML = `
-      <div class="dashboard-hero glass-card">
-        <div class="hero-header">
-          <div>
-            <div class="hero-date">${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</div>
-            <h1 class="hero-title">${greeting}, <span class="highlight-text">${userName}</span> 🌱</h1>
-            <p class="hero-quote">"${quote}"</p>
+      <!-- Hero Briefing Header -->
+      <div class="today-hero-panel">
+        <div class="today-hero-left">
+          <div class="today-date-badge">
+            <span class="pulse-dot"></span>
+            <span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
           </div>
-          <div class="hero-quick-actions">
-            <button id="hero-quick-focus-btn" class="btn-primary">
-              <span>▶</span> <span>Start Focus</span>
-            </button>
-            <button id="hero-quick-expense-btn" class="btn-secondary">
-              <span>+</span> <span>Log Expense</span>
-            </button>
-          </div>
+          <h1 class="today-greeting">${greeting}, <span class="highlight-name">${userName}</span></h1>
+          <p class="today-quote">"${quote}"</p>
+        </div>
+        <div class="today-hero-actions">
+          <button id="hero-quick-focus-btn" class="btn-primary btn-hero-cta">
+            <span>▶</span> <span>Start Focus</span>
+          </button>
+          <button id="hero-quick-expense-btn" class="btn-secondary btn-hero-cta">
+            <span>+</span> <span>Log Expense (₹)</span>
+          </button>
         </div>
       </div>
 
-      <!-- Natural Language Quick-Add Bar -->
-      <div class="glass-card nl-quick-add-container" style="margin-bottom: 24px;">
-        <form id="nl-task-form" class="nl-task-form">
-          <div class="nl-input-wrapper">
-            <span class="nl-magic-icon">✨</span>
+      <!-- Raycast-Style AI Natural Language Quick-Add Command Bar -->
+      <div class="command-bar-container">
+        <form id="nl-task-form" class="command-bar-form">
+          <div class="command-input-frame">
+            <span class="command-sparkle-icon">✨</span>
             <input 
               type="text" 
               id="nl-task-input" 
-              class="nl-input-field" 
-              placeholder="Natural-language task add (e.g., 'finish DBMS report friday 5pm urgent study 3 pomos')" 
+              class="command-input-field" 
+              placeholder="Natural-language task add (e.g., 'Finish DBMS report friday 5pm urgent study 3 pomos')" 
               autocomplete="off"
             >
-            <button type="submit" class="btn-primary" style="padding: 10px 20px;">
-              Add Task
-            </button>
+            <div class="command-action-right">
+              <span class="kbd-badge">⏎ Enter</span>
+              <button type="submit" class="btn-primary btn-command-submit">
+                Add Task
+              </button>
+            </div>
           </div>
-          <div id="nl-preview-pills" class="nl-preview-pills" style="display: none;"></div>
+          <div id="nl-preview-pills" class="command-preview-row" style="display: none;"></div>
         </form>
       </div>
 
-      <!-- Quick Metrics Grid -->
-      <div class="metrics-grid">
-        <div class="metric-card glass-card" data-nav="focus">
-          <div class="metric-header">
-            <span class="metric-icon">⏱️</span>
-            <span class="metric-badge">${focusPct}% of Goal</span>
+      <!-- Executive Metric KPI Cards Grid -->
+      <div class="metrics-kpi-grid">
+        <div class="kpi-card" data-nav="focus">
+          <div class="kpi-top">
+            <span class="kpi-icon">⏱️</span>
+            <span class="kpi-badge">${focusPct}% of Goal</span>
           </div>
-          <div class="metric-value">${focusMins} <span class="metric-unit">mins</span></div>
-          <div class="metric-label">Deep Focus Today</div>
-          <div class="metric-progress-bg">
-            <div class="metric-progress-fill" style="width: ${focusPct}%;"></div>
+          <div class="kpi-body">
+            <div class="kpi-number">${focusMins}<span class="kpi-unit">mins</span></div>
+            <div class="kpi-title">Deep Focus Today</div>
           </div>
-        </div>
-
-        <div class="metric-card glass-card" data-nav="planner">
-          <div class="metric-header">
-            <span class="metric-icon">📋</span>
-            <span class="metric-badge">${summary.tasks.completed}/${summary.tasks.total} done</span>
-          </div>
-          <div class="metric-value">${summary.tasks.total - summary.tasks.completed}</div>
-          <div class="metric-label">Pending Tasks</div>
-          <div class="metric-progress-bg">
-            <div class="metric-progress-fill" style="width: ${summary.tasks.total > 0 ? (summary.tasks.completed / summary.tasks.total) * 100 : 0}%;"></div>
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill" style="width: ${focusPct}%;"></div>
           </div>
         </div>
 
-        <div class="metric-card glass-card" data-nav="finances">
-          <div class="metric-header">
-            <span class="metric-icon">💰</span>
-            <span class="metric-badge">${currency}${todayExpense.toFixed(0)} today</span>
+        <div class="kpi-card" data-nav="planner">
+          <div class="kpi-top">
+            <span class="kpi-icon">📋</span>
+            <span class="kpi-badge">${summary.tasks.completed}/${summary.tasks.total} done</span>
           </div>
-          <div class="metric-value">${currency}${monthExpense.toFixed(0)}</div>
-          <div class="metric-label">Spent This Month</div>
-          <div class="metric-progress-bg">
-            <div class="metric-progress-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
+          <div class="kpi-body">
+            <div class="kpi-number">${summary.tasks.total - summary.tasks.completed}<span class="kpi-unit">tasks</span></div>
+            <div class="kpi-title">Pending Milestones</div>
+          </div>
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill" style="width: ${summary.tasks.total > 0 ? (summary.tasks.completed / summary.tasks.total) * 100 : 0}%;"></div>
           </div>
         </div>
 
-        <div class="metric-card glass-card" data-nav="planner">
-          <div class="metric-header">
-            <span class="metric-icon">🌱</span>
-            <span class="metric-badge">${habitsDone}/${habitsTotal} checked</span>
+        <div class="kpi-card" data-nav="finances">
+          <div class="kpi-top">
+            <span class="kpi-icon">💰</span>
+            <span class="kpi-badge">${currency}${todayExpense.toFixed(0)} today</span>
           </div>
-          <div class="metric-value">${habitsDone} <span class="metric-unit">done</span></div>
-          <div class="metric-label">Habits Today</div>
-          <div class="metric-progress-bg">
-            <div class="metric-progress-fill" style="width: ${habitsTotal > 0 ? (habitsDone / habitsTotal) * 100 : 0}%;"></div>
+          <div class="kpi-body">
+            <div class="kpi-number">${currency}${monthExpense.toFixed(0)}</div>
+            <div class="kpi-title">Month-to-Date Spending</div>
+          </div>
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
+          </div>
+        </div>
+
+        <div class="kpi-card" data-nav="habits">
+          <div class="kpi-top">
+            <span class="kpi-icon">🌱</span>
+            <span class="kpi-badge">${habitsDone}/${habitsTotal} checked</span>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-number">${habitsDone}<span class="kpi-unit">done</span></div>
+            <div class="kpi-title">Habits Compounded</div>
+          </div>
+          <div class="kpi-progress-bar">
+            <div class="kpi-progress-fill" style="width: ${habitsTotal > 0 ? (habitsDone / habitsTotal) * 100 : 0}%;"></div>
           </div>
         </div>
       </div>
 
-      <!-- Two-Column Today Content -->
-      <div class="dashboard-columns">
-        <!-- Column 1: Priority Tasks -->
-        <div class="glass-card">
-          <div class="section-header-flex">
-            <h2 class="section-title"><span>Top Priorities</span></h2>
-            <button class="btn-text" data-nav="planner">View All →</button>
+      <!-- Main Two-Column Balanced Content Stream -->
+      <div class="today-dual-grid">
+        <!-- Column 1: Top Priority Execution -->
+        <div class="content-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Top Priority Execution</h2>
+              <p class="panel-subtitle">Immediate high-impact focus targets</p>
+            </div>
+            <button class="btn-link" data-nav="planner">Open Planner →</button>
           </div>
-          <div id="dash-priority-tasks-container">
+          <div id="dash-priority-tasks-container" class="priority-tasks-stream">
             ${this.renderTopTasks(summary.tasks.top_pending)}
           </div>
         </div>
 
-        <!-- Column 2: Mindful Finance Snapshot -->
-        <div class="glass-card">
-          <div class="section-header-flex">
-            <h2 class="section-title"><span>Monthly Budget Meter</span></h2>
-            <button class="btn-text" data-nav="finances">Open Tracker →</button>
+        <!-- Column 2: Financial Pulse & Budget Meter -->
+        <div class="content-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Monthly Budget Meter (₹)</h2>
+              <p class="panel-subtitle">Spending pacing vs ${currency}${budget.toFixed(0)} cap</p>
+            </div>
+            <button class="btn-link" data-nav="finances">Open Finances →</button>
           </div>
-          <div class="dash-budget-box">
-            <div class="budget-stat-row">
-              <span>Budget Cap:</span>
-              <strong>${currency}${budget.toFixed(2)}</strong>
+          <div class="budget-snapshot-box">
+            <div class="budget-stat-item">
+              <span class="stat-label">Monthly Budget</span>
+              <span class="stat-num">${currency}${budget.toFixed(2)}</span>
             </div>
-            <div class="budget-stat-row">
-              <span>Total Spent:</span>
-              <strong class="text-expense">${currency}${monthExpense.toFixed(2)}</strong>
+            <div class="budget-stat-item">
+              <span class="stat-label">Spent This Month</span>
+              <span class="stat-num text-expense">${currency}${monthExpense.toFixed(2)}</span>
             </div>
-            <div class="budget-stat-row">
-              <span>Remaining:</span>
-              <strong class="text-income">${currency}${Math.max(0, budget - monthExpense).toFixed(2)}</strong>
+            <div class="budget-stat-item">
+              <span class="stat-label">Available Balance</span>
+              <span class="stat-num text-income">${currency}${Math.max(0, budget - monthExpense).toFixed(2)}</span>
             </div>
-            <div class="progress-bar-bg" style="margin-top: 14px;">
+            <div class="progress-bar-bg" style="margin-top: 16px;">
               <div class="progress-bar-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
             </div>
           </div>
@@ -286,13 +305,14 @@ export class DashboardManager {
     }
 
     return tasks.map(t => `
-      <div class="dash-task-row glass-pill">
-        <div class="dash-task-info">
-          <span class="dash-task-title">${t.title}</span>
-          <span class="badge ${t.priority === 'urgent' ? 'badge-urgent' : 'badge-subtle'}">${t.priority}</span>
+      <div class="task-stream-item">
+        <div class="task-stream-left">
+          <div class="task-stream-priority-dot dot-${t.priority || 'medium'}"></div>
+          <span class="task-stream-title">${t.title}</span>
+          <span class="badge badge-${t.priority === 'urgent' ? 'urgent' : 'subtle'}">${t.priority}</span>
         </div>
-        <button class="btn-task-quick-focus btn-icon-small" data-id="${t.id}" title="Focus on this task">
-          🎯 Focus
+        <button class="btn-task-quick-focus btn-focus-action" data-id="${t.id}" title="Set as active focus target">
+          <span>🎯</span> <span>Focus</span>
         </button>
       </div>
     `).join('');

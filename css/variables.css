@@ -1,164 +1,281 @@
-/* CSS Variables & Theme Definitions */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+/* ==========================================================================
+   LIFEBUDDY DESIGN SYSTEM — TOKENS & THEMING
+   Inspired by Linear, Notion, Raycast & Modern Fintech.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Font Families */
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: 'Outfit', sans-serif;
-  --font-mono: 'Space Mono', monospace;
+  /* Typography Scale */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', "SF Mono", Monaco, Consolas, monospace;
+  --font-main: var(--font-sans);
+  --font-display: var(--font-sans);
 
-  /* Spacing & Radius */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  /* Spacing Scale (4px / 8px Grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radii — Crisp & Tailored (Not Bloated) */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
   --radius-full: 9999px;
 
-  /* Transitions */
-  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-normal: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Micro-Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s var(--ease-out);
+  --transition-normal: 0.25s var(--ease-out);
+  --transition-slow: 0.4s var(--ease-out);
 
-  /* Elevation & Shadows */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 40px var(--accent-glow);
-
-  /* Glassmorphism Blur */
-  --glass-blur: blur(20px);
-  --glass-border: 1px solid var(--border-color);
-
-  /* Semantic Colors */
+  /* Semantic Status Colors */
   --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.12);
+  --color-success-border: rgba(16, 185, 129, 0.25);
+
   --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-warning-bg: rgba(245, 158, 11, 0.12);
+  --color-warning-border: rgba(245, 158, 11, 0.25);
+
+  --color-danger: #f43f5e;
+  --color-danger-bg: rgba(244, 63, 94, 0.12);
+  --color-danger-border: rgba(244, 63, 94, 0.25);
+
   --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.12);
+  --color-info-border: rgba(59, 130, 246, 0.25);
+
   --text-income: #10b981;
-  --text-expense: #ef4444;
+  --text-expense: #f43f5e;
+  --danger-color: #f43f5e;
 }
 
-/* Theme 1: Sage Garden (Default - Calm Green & Warm Sand) */
-[data-theme="sage"] {
-  --bg-gradient-start: #eef4f0;
-  --bg-gradient-end: #dce7e1;
-  --bg-surface: rgba(255, 255, 255, 0.65);
-  --bg-surface-elevated: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(235, 243, 238, 0.7);
+/* ==========================================================================
+   THEME 1: MIDNIGHT (Default Dark — Linear & Raycast Aesthetic)
+   ========================================================================== */
+[data-theme="midnight"], :root {
+  --bg-app: #090d14;
+  --bg-gradient-start: #090d14;
+  --bg-gradient-end: #0d121c;
 
-  --accent-primary: #3b6e58;
-  --accent-primary-hover: #2e5745;
-  --accent-secondary: #7fa99b;
-  --accent-glow: rgba(59, 110, 88, 0.25);
-  --accent-soft: #e3eee9;
+  --bg-surface: #111723;
+  --bg-surface-elevated: #161e2e;
+  --bg-surface-hover: #1c263a;
+  --bg-surface-active: #222e45;
+  --bg-card: #111723;
 
-  --text-main: #23332c;
-  --text-muted: #5e7368;
-  --text-light: #8ba095;
-  --border-color: rgba(59, 110, 88, 0.12);
+  --bg-input: #0b1018;
+  --bg-input-focus: #0f1522;
 
-  --timer-ring-bg: rgba(59, 110, 88, 0.12);
-  --timer-ring-progress: #3b6e58;
-  --timer-ring-glow: rgba(59, 110, 88, 0.3);
-}
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-focus: #6366f1;
 
-/* Theme 2: Dusk Lavender (Calm Twilight & Muted Rose) */
-[data-theme="lavender"] {
-  --bg-gradient-start: #f2eff9;
-  --bg-gradient-end: #e3ddf2;
-  --bg-surface: rgba(255, 255, 255, 0.65);
-  --bg-surface-elevated: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(240, 235, 248, 0.7);
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #818cf8;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --accent-border: rgba(99, 102, 241, 0.3);
+  --accent-glow: rgba(99, 102, 241, 0.25);
 
-  --accent-primary: #6b5b95;
-  --accent-primary-hover: #554778;
-  --accent-secondary: #9c8bbd;
-  --accent-glow: rgba(107, 91, 149, 0.25);
-  --accent-soft: #eae3f7;
-
-  --text-main: #2a233b;
-  --text-muted: #645780;
-  --text-light: #9488af;
-  --border-color: rgba(107, 91, 149, 0.12);
-
-  --timer-ring-bg: rgba(107, 91, 149, 0.12);
-  --timer-ring-progress: #6b5b95;
-  --timer-ring-glow: rgba(107, 91, 149, 0.3);
-}
-
-/* Theme 3: Nordic Fog (Cool Slate Blue & Soft Grey) */
-[data-theme="nordic"] {
-  --bg-gradient-start: #ebf1f5;
-  --bg-gradient-end: #d7e2e9;
-  --bg-surface: rgba(255, 255, 255, 0.65);
-  --bg-surface-elevated: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(232, 240, 245, 0.7);
-
-  --accent-primary: #4a6fa5;
-  --accent-primary-hover: #375685;
-  --accent-secondary: #88a4cb;
-  --accent-glow: rgba(74, 111, 165, 0.25);
-  --accent-soft: #e0e9f4;
-
-  --text-main: #1f2d3d;
-  --text-muted: #56687a;
-  --text-light: #899ab0;
-  --border-color: rgba(74, 111, 165, 0.12);
-
-  --timer-ring-bg: rgba(74, 111, 165, 0.12);
-  --timer-ring-progress: #4a6fa5;
-  --timer-ring-glow: rgba(74, 111, 165, 0.3);
-}
-
-/* Theme 4: Sunset Terracotta (Warm Dusk & Soft Amber) */
-[data-theme="sunset"] {
-  --bg-gradient-start: #faf0eb;
-  --bg-gradient-end: #f5e0d6;
-  --bg-surface: rgba(255, 255, 255, 0.65);
-  --bg-surface-elevated: rgba(255, 255, 255, 0.85);
-  --bg-surface-hover: rgba(255, 255, 255, 0.95);
-  --bg-input: rgba(250, 237, 230, 0.7);
-
-  --accent-primary: #c86d51;
-  --accent-primary-hover: #a9543a;
-  --accent-secondary: #e09983;
-  --accent-glow: rgba(200, 109, 81, 0.25);
-  --accent-soft: #fbf0ea;
-
-  --text-main: #3d221a;
-  --text-muted: #785348;
-  --text-light: #ab8579;
-  --border-color: rgba(200, 109, 81, 0.12);
-
-  --timer-ring-bg: rgba(200, 109, 81, 0.12);
-  --timer-ring-progress: #c86d51;
-  --timer-ring-glow: rgba(200, 109, 81, 0.3);
-}
-
-/* Theme 5: Midnight Deep Focus (Sleek Dark OLED Mode) */
-[data-theme="midnight"] {
-  --bg-gradient-start: #0f141c;
-  --bg-gradient-end: #171f2c;
-  --bg-surface: rgba(25, 34, 48, 0.65);
-  --bg-surface-elevated: rgba(33, 45, 64, 0.85);
-  --bg-surface-hover: rgba(41, 55, 78, 0.95);
-  --bg-input: rgba(20, 28, 40, 0.8);
-
-  --accent-primary: #5294e2;
-  --accent-primary-hover: #69a3eb;
-  --accent-secondary: #3b73b9;
-  --accent-glow: rgba(82, 148, 226, 0.35);
-  --accent-soft: rgba(82, 148, 226, 0.15);
-
-  --text-main: #f0f4f8;
+  --text-main: #f8fafc;
+  --text-primary: #f8fafc;
   --text-muted: #94a3b8;
   --text-light: #64748b;
-  --border-color: rgba(255, 255, 255, 0.08);
+  --text-subtle: #475569;
 
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #5294e2;
-  --timer-ring-glow: rgba(82, 148, 226, 0.45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --timer-ring-bg: rgba(255, 255, 255, 0.05);
+  --timer-ring-progress: #6366f1;
+  --timer-ring-glow: rgba(99, 102, 241, 0.35);
+}
+
+/* ==========================================================================
+   THEME 2: SAGE (Modern Botanical Luxury)
+   ========================================================================== */
+[data-theme="sage"] {
+  --bg-app: #0b1210;
+  --bg-gradient-start: #0b1210;
+  --bg-gradient-end: #0f1916;
+
+  --bg-surface: #131f1b;
+  --bg-surface-elevated: #182823;
+  --bg-surface-hover: #1e332c;
+  --bg-surface-active: #243d35;
+  --bg-card: #131f1b;
+
+  --bg-input: #0e1714;
+  --bg-input-focus: #14221d;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-focus: #10b981;
+
+  --accent-primary: #10b981;
+  --accent-primary-hover: #059669;
+  --accent-secondary: #34d399;
+  --accent-soft: rgba(16, 185, 129, 0.12);
+  --accent-border: rgba(16, 185, 129, 0.3);
+  --accent-glow: rgba(16, 185, 129, 0.25);
+
+  --text-main: #f0fdf4;
+  --text-primary: #f0fdf4;
+  --text-muted: #93c5aa;
+  --text-light: #5e8d76;
+  --text-subtle: #416855;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --timer-ring-bg: rgba(255, 255, 255, 0.05);
+  --timer-ring-progress: #10b981;
+  --timer-ring-glow: rgba(16, 185, 129, 0.35);
+}
+
+/* ==========================================================================
+   THEME 3: NORDIC (Cool Slate & Arctic Minimalist)
+   ========================================================================== */
+[data-theme="nordic"] {
+  --bg-app: #0b0f15;
+  --bg-gradient-start: #0b0f15;
+  --bg-gradient-end: #101620;
+
+  --bg-surface: #141c27;
+  --bg-surface-elevated: #1a2433;
+  --bg-surface-hover: #222f42;
+  --bg-surface-active: #29384e;
+  --bg-card: #141c27;
+
+  --bg-input: #0e141d;
+  --bg-input-focus: #151e2b;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-focus: #0ea5e9;
+
+  --accent-primary: #0ea5e9;
+  --accent-primary-hover: #0284c7;
+  --accent-secondary: #38bdf8;
+  --accent-soft: rgba(14, 165, 233, 0.12);
+  --accent-border: rgba(14, 165, 233, 0.3);
+  --accent-glow: rgba(14, 165, 233, 0.25);
+
+  --text-main: #f0f9ff;
+  --text-primary: #f0f9ff;
+  --text-muted: #94a9c2;
+  --text-light: #627894;
+  --text-subtle: #475a72;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --timer-ring-bg: rgba(255, 255, 255, 0.05);
+  --timer-ring-progress: #0ea5e9;
+  --timer-ring-glow: rgba(14, 165, 233, 0.35);
+}
+
+/* ==========================================================================
+   THEME 4: LAVENDER (Amethyst Studio)
+   ========================================================================== */
+[data-theme="lavender"] {
+  --bg-app: #0e0a16;
+  --bg-gradient-start: #0e0a16;
+  --bg-gradient-end: #140f20;
+
+  --bg-surface: #181326;
+  --bg-surface-elevated: #201a33;
+  --bg-surface-hover: #292141;
+  --bg-surface-active: #322950;
+  --bg-card: #181326;
+
+  --bg-input: #120e1d;
+  --bg-input-focus: #1a1429;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-focus: #a855f7;
+
+  --accent-primary: #a855f7;
+  --accent-primary-hover: #9333ea;
+  --accent-secondary: #c084fc;
+  --accent-soft: rgba(168, 85, 247, 0.12);
+  --accent-border: rgba(168, 85, 247, 0.3);
+  --accent-glow: rgba(168, 85, 247, 0.25);
+
+  --text-main: #faf5ff;
+  --text-primary: #faf5ff;
+  --text-muted: #b8a7cb;
+  --text-light: #7c6b91;
+  --text-subtle: #574969;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --timer-ring-bg: rgba(255, 255, 255, 0.05);
+  --timer-ring-progress: #a855f7;
+  --timer-ring-glow: rgba(168, 85, 247, 0.35);
+}
+
+/* ==========================================================================
+   THEME 5: SUNSET (Warm Obsidian & Terracotta)
+   ========================================================================== */
+[data-theme="sunset"] {
+  --bg-app: #120c0a;
+  --bg-gradient-start: #120c0a;
+  --bg-gradient-end: #1a110e;
+
+  --bg-surface: #1e1310;
+  --bg-surface-elevated: #281a16;
+  --bg-surface-hover: #34221d;
+  --bg-surface-active: #402a24;
+  --bg-card: #1e1310;
+
+  --bg-input: #160e0b;
+  --bg-input-focus: #1f1410;
+
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-focus: #f97316;
+
+  --accent-primary: #f97316;
+  --accent-primary-hover: #ea580c;
+  --accent-secondary: #fb923c;
+  --accent-soft: rgba(249, 115, 22, 0.12);
+  --accent-border: rgba(249, 115, 22, 0.3);
+  --accent-glow: rgba(249, 115, 22, 0.25);
+
+  --text-main: #fff7ed;
+  --text-primary: #fff7ed;
+  --text-muted: #c9a499;
+  --text-light: #8f6c62;
+  --text-subtle: #634840;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --timer-ring-bg: rgba(255, 255, 255, 0.05);
+  --timer-ring-progress: #f97316;
+  --timer-ring-glow: rgba(249, 115, 22, 0.35);
 }

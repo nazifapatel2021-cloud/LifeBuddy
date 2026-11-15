@@ -181,6 +181,12 @@ function initApp() {
     } else if (viewName === 'insights') {
       insightsCoordinator.render().catch(console.warn);
       statsVisualizer.updateStatsUI().catch(console.warn);
+    } else if (viewName === 'habits') {
+      habitManager.renderHabitsList(document.getElementById('habits-list-container'));
+    } else if (viewName === 'planner') {
+      taskManager.renderTaskList(document.getElementById('planner-task-list'));
+    } else if (viewName === 'focus') {
+      taskManager.renderTaskList(document.getElementById('task-list-container'));
     }
   }
 

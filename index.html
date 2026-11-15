@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="sage">
+<html lang="en" data-theme="midnight">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LifeBuddy — Intelligent Focus, Habit & Finance OS</title>
-  <meta name="description" content="A self-learning, privacy-first everyday operating system uniting deep work focus, task execution, habit compounding, and mindful finances in ₹.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>">
+  <title>LifeBuddy — Your Life. Smarter, Every Day.</title>
+  <meta name="description" content="A premium, AI-powered personal life-management platform uniting deep focus, intelligent task planning, habit consistency, and personal finances in ₹ INR.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%236366f1%22/><path d=%22M16 6 C10 6 7 11 7 17 C7 23 11 26 16 26 C21 26 25 23 25 17 C25 11 22 6 16 6 Z%22 fill=%22none%22 stroke=%22%23ffffff%22 stroke-width=%222.5%22/><circle cx=%2216%22 cy=%2216%22 r=%223.5%22 fill=%22%23ffffff%22/></svg>">
   <link rel="manifest" href="static/manifest.json">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/styles.css">
@@ -13,406 +13,521 @@
 </head>
 <body>
 
-  <!-- Ambient Animated Background Orbs -->
-  <div class="bg-ambient-orb bg-ambient-orb-1"></div>
-  <div class="bg-ambient-orb bg-ambient-orb-2"></div>
-
   <!-- Exit Zen Mode Button -->
   <button id="exit-zen-btn" class="btn-secondary zen-exit-btn">
-    <span>✕</span> <span>Exit Zen Mode</span>
+    <span>✕</span> <span>Exit Zen Mode (Esc)</span>
   </button>
 
-  <div id="app">
-    <!-- Header -->
+  <div id="app" class="app-layout">
+    <!-- Top Global Header -->
     <header class="app-header">
-      <div class="brand">
-        <div class="brand-icon">🌱</div>
-        <div>
-          <h1 class="brand-title">LifeBuddy</h1>
-          <span class="brand-subtitle">Focus • Habits • Finances</span>
+      <div class="header-inner">
+        <!-- Brand Signature -->
+        <div class="brand">
+          <div class="brand-logo-mark">
+            <svg class="brand-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-title">LifeBuddy</span>
+            <span class="brand-tagline">Your Life. Smarter, Every Day.</span>
+          </div>
         </div>
-      </div>
 
-      <div id="workspace-header-actions" class="header-actions" style="display: none;">
-        <!-- Ambient Sound Kill Button (appears only when sound is playing) -->
-        <button id="global-sound-stop-btn" class="btn-secondary sound-kill-pill" style="display: none;" title="Click to Stop Sound Immediately">
-          <span>🔊 Sound Playing</span> <span style="font-weight: 700; margin-left: 4px;">✕ Stop</span>
-        </button>
+        <!-- Center Workspace Segmented Navigation -->
+        <nav id="main-nav-bar" class="main-nav-bar" aria-label="LifeBuddy Views">
+          <button class="nav-tab active" data-view="dashboard">
+            <span class="nav-icon">☀️</span>
+            <span class="nav-label">Today</span>
+          </button>
+          <button class="nav-tab" data-view="focus">
+            <span class="nav-icon">⏱️</span>
+            <span class="nav-label">Focus Room</span>
+          </button>
+          <button class="nav-tab" data-view="planner">
+            <span class="nav-icon">📋</span>
+            <span class="nav-label">Planner</span>
+          </button>
+          <button class="nav-tab" data-view="habits">
+            <span class="nav-icon">🌱</span>
+            <span class="nav-label">Habits</span>
+          </button>
+          <button class="nav-tab" data-view="finances">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Finances</span>
+          </button>
+          <button class="nav-tab" data-view="insights">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Insights</span>
+          </button>
+        </nav>
 
-        <!-- Daily Log / Review My Day Button -->
-        <button id="daily-log-btn" class="btn-secondary header-btn" title="Daily Check-In & Reflection">
-          <span>📖</span> <span class="hide-mobile">Daily Log</span>
-        </button>
+        <!-- Right Header Actions -->
+        <div id="workspace-header-actions" class="header-actions" style="display: none;">
+          <!-- Ambient Sound Kill Pill -->
+          <button id="global-sound-stop-btn" class="sound-kill-pill" style="display: none;" title="Stop active ambient sounds">
+            <span class="sound-wave-icon">🔊</span>
+            <span class="sound-kill-text">Playing</span>
+            <span class="sound-kill-x">✕</span>
+          </button>
 
-        <!-- User Profile / Sign In Button -->
-        <button id="auth-modal-btn" class="btn-secondary header-btn" title="Account & Workspace">
-          <span>👤</span> <span id="auth-btn-text">Sign In</span>
-        </button>
+          <!-- Daily Review CTA -->
+          <button id="daily-log-btn" class="btn-action header-btn" title="Daily Review & Wellness Log">
+            <span class="btn-action-icon">📖</span>
+            <span class="hide-mobile">Review Day</span>
+          </button>
 
-        <!-- Zen Mode Toggle -->
-        <button id="zen-toggle-btn" class="btn-icon" title="Toggle Zen Mode (Fullscreen Focus)">
-          <span>👁️</span>
-        </button>
+          <!-- User Profile / Account -->
+          <button id="auth-modal-btn" class="btn-action header-btn" title="Account & Preferences">
+            <span class="user-avatar-tiny">👤</span>
+            <span id="auth-btn-text">Account</span>
+          </button>
 
-        <!-- Preferences & Themes -->
-        <button id="settings-btn" class="btn-icon" title="Preferences & Themes">
-          <span>⚙️</span>
-        </button>
+          <!-- Zen Mode Toggle -->
+          <button id="zen-toggle-btn" class="btn-icon" title="Toggle Zen Mode (Fullscreen Distraction-Free)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+            </svg>
+          </button>
+
+          <!-- Settings & Theme Modal -->
+          <button id="settings-btn" class="btn-icon" title="Preferences & Themes">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </header>
 
     <!-- ================= WELCOME & AUTH GATE SCREEN ================= -->
-    <!-- Displayed when not signed in so visitors experience a mature onboarding flow -->
     <section id="welcome-gate" class="welcome-gate-container" style="display: none;">
-      <div class="welcome-hero-card glass-card">
-        <div class="welcome-badge">
-          <span>✨</span> <span>PRIVACY-FIRST EVERYDAY OPERATING SYSTEM</span>
-        </div>
+      <div class="welcome-container-inner">
+        <!-- Hero Pitch Banner -->
+        <div class="welcome-hero-panel">
+          <div class="welcome-pill-badge">
+            <span class="badge-dot"></span>
+            <span>INTELLIGENT LIFE MANAGEMENT PLATFORM</span>
+          </div>
 
-        <h2 class="welcome-headline">
-          Master your focus, daily habits, and finances in <span class="highlight-text">₹ INR</span>.
-        </h2>
-        <p class="welcome-description">
-          A self-learning, mindful workspace connecting deep work pomodoros, task management, streak compounding, and personal spending with zero clutter.
-        </p>
+          <h1 class="welcome-headline">
+            Your Life.<br>
+            <span class="gradient-text">Smarter, Every Day.</span>
+          </h1>
 
-        <!-- Quick 1-Click Demo Personas for Recruiters & Reviewers -->
-        <div class="demo-personas-box">
-          <div class="demo-box-label">⚡ 1-Click Recruiter & Reviewer Demos (Pre-loaded with 90 Days of Activity):</div>
-          <div class="demo-buttons-flex">
-            <button id="quick-demo-alex" class="btn-demo">
-              <span>🎓 Alex (Student)</span>
-              <span class="badge badge-subtle">90 Days Data</span>
-            </button>
-            <button id="quick-demo-maya" class="btn-demo">
-              <span>💼 Maya (Freelancer)</span>
-              <span class="badge badge-subtle">90 Days Data</span>
-            </button>
+          <p class="welcome-description">
+            A unified, privacy-first personal operating system uniting deep work focus, intelligent task execution, habit compounding, and personal finances in ₹ INR.
+          </p>
+
+          <!-- 1-Click Interactive Demo Personas -->
+          <div class="demo-personas-section">
+            <div class="demo-section-label">⚡ 1-Click Recruiter & Reviewer Interactive Demos:</div>
+            <div class="demo-cards-grid">
+              <button id="quick-demo-alex" class="demo-card-item">
+                <div class="demo-avatar">🎓</div>
+                <div class="demo-info">
+                  <div class="demo-name">Alex — Student Persona</div>
+                  <div class="demo-meta">Study focus blocks, semester coursework, ₹18k budget</div>
+                </div>
+                <span class="demo-badge">90 Days Data →</span>
+              </button>
+
+              <button id="quick-demo-maya" class="demo-card-item">
+                <div class="demo-avatar">💼</div>
+                <div class="demo-info">
+                  <div class="demo-name">Maya — Freelancer Persona</div>
+                  <div class="demo-meta">Client milestones, morning routine, ₹45k budget</div>
+                </div>
+                <span class="demo-badge">90 Days Data →</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Auth Form Card -->
-        <div class="welcome-auth-card">
-          <div class="segmented-auth-tabs">
-            <button id="gate-tab-login" class="seg-tab active" type="button">Sign In</button>
-            <button id="gate-tab-register" class="seg-tab" type="button">Create Account</button>
+        <div class="welcome-auth-panel">
+          <div class="auth-card-frame">
+            <div class="auth-tabs-row">
+              <button id="gate-tab-login" class="auth-tab-pill active" type="button">Sign In</button>
+              <button id="gate-tab-register" class="auth-tab-pill" type="button">Create Account</button>
+            </div>
+
+            <form id="gate-auth-form" class="auth-form-body">
+              <div id="gate-error-msg" class="auth-error-banner" style="display: none;"></div>
+
+              <div class="form-field-group" id="gate-email-group" style="display: none;">
+                <label class="field-label" for="gate-email-input">Email Address</label>
+                <input type="email" id="gate-email-input" class="field-input" placeholder="name@example.com" autocomplete="email">
+              </div>
+
+              <div class="form-field-group">
+                <label class="field-label" for="gate-username-input">Username</label>
+                <input type="text" id="gate-username-input" class="field-input" placeholder="Enter username" required autocomplete="username">
+              </div>
+
+              <div class="form-field-group">
+                <label class="field-label" for="gate-password-input">Password</label>
+                <input type="password" id="gate-password-input" class="field-input" placeholder="••••••••" required autocomplete="current-password">
+              </div>
+
+              <button type="submit" id="gate-submit-btn" class="btn-primary btn-submit-auth">
+                <span>Sign In to LifeBuddy</span>
+                <span>→</span>
+              </button>
+
+              <div class="auth-privacy-foot">
+                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
+              </div>
+            </form>
           </div>
-
-          <form id="gate-auth-form" class="gate-form">
-            <div id="gate-error-msg" class="auth-error" style="display: none;"></div>
-
-            <div class="form-group" id="gate-email-group" style="display: none;">
-              <label class="form-label" for="gate-email-input">Email Address</label>
-              <input type="email" id="gate-email-input" class="input-field" placeholder="your.name@example.com" autocomplete="email">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="gate-username-input">Username</label>
-              <input type="text" id="gate-username-input" class="input-field" placeholder="Enter username" required autocomplete="username">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="gate-password-input">Password</label>
-              <input type="password" id="gate-password-input" class="input-field" placeholder="••••••••" required autocomplete="current-password">
-            </div>
-
-            <button type="submit" id="gate-submit-btn" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">
-              Sign In to LifeBuddy →
-            </button>
-          </form>
-
-
         </div>
       </div>
     </section>
 
     <!-- ================= MAIN WORKSPACE ================= -->
-    <div id="main-workspace">
-      <!-- Main Navigation Bar -->
-      <nav id="main-nav-bar" class="main-nav-bar" aria-label="LifeBuddy Views">
-        <button class="nav-tab active" data-view="dashboard">
-          <span>☀️</span> <span>Today</span>
-        </button>
-        <button class="nav-tab" data-view="focus">
-          <span>⏱️</span> <span>Focus Room</span>
-        </button>
-        <button class="nav-tab" data-view="planner">
-          <span>📋</span> <span>Planner & Habits</span>
-        </button>
-        <button class="nav-tab" data-view="finances">
-          <span>💰</span> <span>Finances</span>
-        </button>
-        <button class="nav-tab" data-view="insights">
-          <span>📊</span> <span>Insights</span>
-        </button>
-      </nav>
+    <div id="main-workspace" class="main-workspace-wrapper">
 
-      <!-- ================= VIEW 1: TODAY DASHBOARD ================= -->
+      <!-- ================= VIEW 1: TODAY COMMAND CENTER ================= -->
       <main id="view-dashboard" class="app-view active">
-        <!-- Injected dynamically by DashboardManager -->
+        <!-- Rendered dynamically by DashboardManager -->
       </main>
 
       <!-- ================= VIEW 2: FOCUS ROOM ================= -->
       <section id="view-focus" class="app-view">
-        <div class="main-grid">
-          <!-- Pomodoro Timer Box -->
-          <div class="glass-card timer-container">
-            <!-- Mode Tabs -->
-            <nav class="timer-modes" aria-label="Timer Mode Navigation">
+        <div class="focus-room-layout">
+          <!-- Main Distraction-Free Timer Arena -->
+          <div class="timer-arena-card">
+            <!-- Mode Selector Switcher -->
+            <div class="timer-mode-switcher" role="tablist">
               <button class="mode-btn active" data-mode="focus">Focus Block</button>
               <button class="mode-btn" data-mode="shortBreak">Short Break</button>
               <button class="mode-btn" data-mode="longBreak">Long Break</button>
-            </nav>
+            </div>
 
-            <!-- SVG Circular Progress Ring -->
-            <div class="timer-display-wrapper">
+            <!-- Precision Circular Timer Display -->
+            <div class="timer-display-frame">
               <svg class="timer-svg" viewBox="0 0 300 300">
-                <circle class="timer-bg-ring" cx="150" cy="150" r="140" />
-                <circle id="timer-progress-ring" class="timer-progress-ring" cx="150" cy="150" r="140" />
+                <circle class="timer-bg-ring" cx="150" cy="150" r="136" />
+                <circle id="timer-progress-ring" class="timer-progress-ring" cx="150" cy="150" r="136" />
               </svg>
 
-              <div class="timer-content">
+              <div class="timer-center-content">
                 <div id="timer-digits" class="timer-digits">25:00</div>
                 <div id="timer-label" class="timer-label">Focus Session</div>
                 <div id="active-task-badge" class="active-task-badge" style="display: none;"></div>
               </div>
             </div>
 
-            <!-- Controls -->
-            <div class="timer-controls">
-              <button id="start-pause-btn" class="btn-primary">
+            <!-- Tactile Session Controls -->
+            <div class="timer-action-controls">
+              <button id="start-pause-btn" class="btn-primary timer-btn-main">
                 <span>▶</span> <span>Start</span>
               </button>
-              <button id="reset-btn" class="btn-secondary" title="Reset Session">
+              <button id="reset-btn" class="btn-secondary timer-btn-sub" title="Reset Session">
                 <span>↺</span> <span>Reset</span>
               </button>
             </div>
 
-            <!-- Mindful Breathing Guide -->
-            <div class="breath-widget">
-              <div class="breath-circle"></div>
-              <span>Breathe in... Breathe out...</span>
+            <!-- Mindful Breathing Bar -->
+            <div class="mindful-pacing-indicator">
+              <div class="breath-pulse-dot"></div>
+              <span class="pacing-text">Deep breath in... Smooth exhale...</span>
             </div>
           </div>
 
-          <!-- Side Column: Active Tasks & Ambient Audio Synthesizer -->
-          <div class="side-column">
-            <!-- Focus Quick Tasks -->
-            <section class="glass-card">
-              <h2 class="section-title">
-                <span>Focus Queue</span>
-                <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Est. 🍅</span>
-              </h2>
+          <!-- Side Workspace: Task Queue & Ambient Sound Mixer -->
+          <div class="focus-side-workspace">
+            <!-- Focus Task Queue -->
+            <div class="content-panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Focus Target Queue</h2>
+                  <p class="panel-subtitle">Select a task to attribute completed pomodoros</p>
+                </div>
+                <span class="badge-tag">Est. 🍅</span>
+              </div>
 
-              <form id="task-form" class="task-input-wrapper">
-                <input type="text" id="task-title-input" class="input-field" placeholder="What are you working on?" required autocomplete="off">
-                <input type="number" id="task-pomo-input" class="input-field input-number" value="1" min="1" max="10" title="Estimated Pomodoros">
-                <button type="submit" class="btn-primary" style="padding: 12px 18px;" title="Add Task">+</button>
+              <form id="task-form" class="task-quick-composer">
+                <input type="text" id="task-title-input" class="field-input" placeholder="What are you focusing on?" required autocomplete="off">
+                <input type="number" id="task-pomo-input" class="field-input input-pomo" value="1" min="1" max="12" title="Estimated Pomodoros">
+                <button type="submit" class="btn-primary btn-add-queue" title="Add to focus queue">+</button>
               </form>
 
-              <div id="task-list-container" class="task-list"></div>
-            </section>
+              <div id="task-list-container" class="task-stream"></div>
+            </div>
 
-            <!-- Ambient Audio Synthesizer -->
-            <section class="glass-card">
-              <h2 class="section-title">
-                <span>Ambient Soundscapes</span>
-                <span style="font-size: 0.8rem; font-weight: 500; color: var(--text-muted);">Fade-In Loops</span>
-              </h2>
+            <!-- Ambient Sound Synthesizer Mixer -->
+            <div class="content-panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Ambient Soundscapes</h2>
+                  <p class="panel-subtitle">Synthesized in Web Audio API • Zero audio lag</p>
+                </div>
+                <span class="badge-tag">Mixer</span>
+              </div>
 
-              <div class="sound-grid">
+              <div class="sound-mixer-grid">
                 <div class="sound-card" data-sound="rain">
-                  <div class="sound-icon">🌧️</div>
-                  <div class="sound-name">Gentle Rain</div>
+                  <div class="sound-card-top">
+                    <span class="sound-icon">🌧️</span>
+                    <span class="sound-title">Gentle Rain</span>
+                  </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
 
                 <div class="sound-card" data-sound="brown">
-                  <div class="sound-icon">🪵</div>
-                  <div class="sound-name">Deep Focus</div>
+                  <div class="sound-card-top">
+                    <span class="sound-icon">🪵</span>
+                    <span class="sound-title">Deep Focus</span>
+                  </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
 
                 <div class="sound-card" data-sound="pink">
-                  <div class="sound-icon">🍃</div>
-                  <div class="sound-name">Forest Breeze</div>
+                  <div class="sound-card-top">
+                    <span class="sound-icon">🍃</span>
+                    <span class="sound-title">Forest Breeze</span>
+                  </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
               </div>
-            </section>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- ================= VIEW 3: PLANNER & HABITS ================= -->
+      <!-- ================= VIEW 3: PLANNER ================= -->
       <section id="view-planner" class="app-view">
-        <div class="planner-grid">
-          <!-- Column 1: Task Management -->
-          <div class="glass-card">
-            <div class="section-header-flex">
-              <h2 class="section-title"><span>Task Planner</span></h2>
-              <div class="task-filters">
-                <button class="task-filter-btn active" data-filter="all">All</button>
-                <button class="task-filter-btn" data-filter="pending">Pending</button>
-                <button class="task-filter-btn" data-filter="completed">Done</button>
-              </div>
-            </div>
+        <div class="view-header-strip">
+          <div>
+            <h1 class="view-heading">Task Planner & Execution</h1>
+            <p class="view-subheading">Organize milestones, categories, priorities, and pomodoro estimates</p>
+          </div>
+          <div class="task-filter-pills">
+            <button class="task-filter-btn active" data-filter="all">All Tasks</button>
+            <button class="task-filter-btn" data-filter="pending">Pending</button>
+            <button class="task-filter-btn" data-filter="completed">Completed</button>
+          </div>
+        </div>
 
-            <!-- Task Creation Form -->
-            <form id="planner-task-form" class="planner-task-form" style="margin-top: 16px;">
-              <div class="form-row">
-                <input type="text" id="planner-task-title" class="input-field" placeholder="Task title (e.g. Finish DBMS Project)" required autocomplete="off" style="flex: 2;">
-                <select id="planner-task-cat" class="input-field" style="flex: 1;">
-                  <option value="study">📚 Study</option>
+        <div class="planner-layout-grid">
+          <!-- Main Task Stream -->
+          <div class="content-panel planner-main-panel">
+            <!-- Structured Task Composer -->
+            <form id="planner-task-form" class="planner-composer-card">
+              <div class="composer-row-primary">
+                <input type="text" id="planner-task-title" class="field-input" placeholder="Task title (e.g. Design Systems Architecture or DBMS Final)" required autocomplete="off">
+                <select id="planner-task-cat" class="field-input select-category">
                   <option value="work" selected>💼 Work</option>
+                  <option value="study">📚 Study</option>
                   <option value="personal">🏠 Personal</option>
                   <option value="health">🌱 Health</option>
                 </select>
               </div>
 
-              <div class="form-row" style="margin-top: 10px;">
-                <select id="planner-task-priority" class="input-field" style="flex: 1;">
-                  <option value="low">Low Priority</option>
-                  <option value="medium" selected>Medium Priority</option>
-                  <option value="high">High Priority</option>
-                  <option value="urgent">Urgent</option>
-                </select>
-                <input type="number" id="planner-task-pomo" class="input-field" value="2" min="1" max="12" style="width: 90px;" title="Estimated Pomodoros">
-                <input type="date" id="planner-task-due" class="input-field" style="flex: 1;">
-                <button type="submit" class="btn-primary" style="padding: 10px 18px;">Add Task</button>
+              <div class="composer-row-secondary">
+                <div class="field-pair">
+                  <label class="sub-label">Priority</label>
+                  <select id="planner-task-priority" class="field-input select-priority">
+                    <option value="low">Low Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="high">High Priority</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+
+                <div class="field-pair">
+                  <label class="sub-label">Est. 🍅</label>
+                  <input type="number" id="planner-task-pomo" class="field-input input-pomo" value="2" min="1" max="12" title="Estimated Pomodoros">
+                </div>
+
+                <div class="field-pair flex-1">
+                  <label class="sub-label">Due Date</label>
+                  <input type="date" id="planner-task-due" class="field-input input-date">
+                </div>
+
+                <button type="submit" class="btn-primary btn-save-task">
+                  <span>+ Add Task</span>
+                </button>
               </div>
             </form>
 
-            <div id="planner-task-list" class="task-list" style="margin-top: 20px;"></div>
-          </div>
-
-          <!-- Column 2: Habit Streaks -->
-          <div class="glass-card">
-            <div class="section-header-flex">
-              <h2 class="section-title"><span>Daily Routines</span></h2>
-              <span class="badge badge-subtle">Streak Tracker</span>
-            </div>
-
-            <form id="habit-form" class="habit-form" style="margin-top: 16px;">
-              <div class="form-row">
-                <input type="text" id="habit-title-input" class="input-field" placeholder="New daily habit (e.g., Read 15 mins)" required autocomplete="off" style="flex: 3;">
-                <select id="habit-icon-select" class="input-field" style="width: 80px;">
-                  <option value="🌱">🌱</option>
-                  <option value="💧">💧</option>
-                  <option value="📖">📖</option>
-                  <option value="🏃">🏃</option>
-                  <option value="🧘">🧘</option>
-                  <option value="✍️">✍️</option>
-                </select>
-                <button type="submit" class="btn-primary" style="padding: 10px 18px;">+</button>
-              </div>
-            </form>
-
-            <div id="habits-list-container" class="habits-list" style="margin-top: 20px;"></div>
+            <!-- Planner Tasks List -->
+            <div id="planner-task-list" class="task-stream"></div>
           </div>
         </div>
       </section>
 
-      <!-- ================= VIEW 4: FINANCES (IN ₹) ================= -->
-      <section id="view-finances" class="app-view">
-        <div class="finance-grid">
-          <!-- Left Column: Budget Progress & Expense List -->
-          <div class="glass-card">
-            <div class="section-header-flex">
-              <h2 class="section-title"><span>Monthly Budget & Expense Log</span></h2>
-              <button id="btn-add-expense-modal" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">+ Log Expense (₹)</button>
+      <!-- ================= VIEW 4: HABITS ================= -->
+      <section id="view-habits" class="app-view">
+        <div class="view-header-strip">
+          <div>
+            <h1 class="view-heading">Habits & Consistency</h1>
+            <p class="view-subheading">Build compounding daily momentum with streak tracking and risk predictions</p>
+          </div>
+          <span class="badge-tag">Daily Compounding</span>
+        </div>
+
+        <div class="habits-layout-grid">
+          <!-- Habit List & Creator -->
+          <div class="content-panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Active Daily Habits</h2>
+                <p class="panel-subtitle">Check in every day to reinforce your consistency neural pathways</p>
+              </div>
             </div>
 
-            <!-- Budget Tracker Widget -->
-            <div id="budget-widget-container" style="margin-top: 16px;"></div>
+            <!-- New Habit Form -->
+            <form id="habit-form" class="habit-quick-composer">
+              <input type="text" id="habit-title-input" class="field-input" placeholder="New habit (e.g. Read 20 pages or morning meditation)" required autocomplete="off">
+              <select id="habit-icon-select" class="field-input select-icon">
+                <option value="🌱">🌱 Wellness</option>
+                <option value="💧">💧 Hydration</option>
+                <option value="📖">📖 Reading</option>
+                <option value="🏃">🏃 Exercise</option>
+                <option value="🧘">🧘 Mindfulness</option>
+                <option value="✍️">✍️ Writing</option>
+              </select>
+              <button type="submit" class="btn-primary btn-add-habit">+</button>
+            </form>
 
-            <!-- Expense List -->
-            <div id="expense-list-container" class="expense-list" style="margin-top: 24px;"></div>
+            <div id="habits-list-container" class="habits-stream"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= VIEW 5: FINANCES (IN ₹ INR) ================= -->
+      <section id="view-finances" class="app-view">
+        <div class="view-header-strip">
+          <div>
+            <h1 class="view-heading">Mindful Personal Finances</h1>
+            <p class="view-subheading">Track everyday spending in ₹ INR with budget pacing and smart categorization</p>
+          </div>
+          <button id="btn-add-expense-modal" class="btn-primary">
+            <span>+</span> <span>Log Expense (₹)</span>
+          </button>
+        </div>
+
+        <div class="finances-layout-grid">
+          <!-- Left Column: Budget Pacing Meter & Transaction Feed -->
+          <div class="content-panel finances-main-panel">
+            <!-- Budget Tracker Widget -->
+            <div id="budget-widget-container"></div>
+
+            <!-- Expense List Feed -->
+            <div class="panel-header" style="margin-top: 24px;">
+              <div>
+                <h2 class="panel-title">Recent Transactions</h2>
+                <p class="panel-subtitle">Auto-categorized spending records</p>
+              </div>
+            </div>
+            <div id="expense-list-container" class="expense-stream"></div>
           </div>
 
           <!-- Right Column: Visual Category Breakdown -->
-          <div class="glass-card">
-            <div class="section-header-flex">
-              <h2 class="section-title"><span>Spending Breakdown</span></h2>
-              <span class="badge badge-subtle">This Month (₹)</span>
+          <div class="content-panel finances-side-panel">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Category Distribution</h2>
+                <p class="panel-subtitle">Month-to-date spending breakdown in ₹</p>
+              </div>
             </div>
-            <div id="finance-category-chart" style="margin-top: 16px;"></div>
+            <div id="finance-category-chart" class="category-chart-container"></div>
           </div>
         </div>
       </section>
 
-      <!-- ================= VIEW 5: INSIGHTS ================= -->
+      <!-- ================= VIEW 6: INSIGHTS & ML ================= -->
       <section id="view-insights" class="app-view">
+        <div class="view-header-strip">
+          <div>
+            <h1 class="view-heading">Intelligent Insights & Predictions</h1>
+            <p class="view-subheading">Personalized patterns, habit nudges, and spending forecasts from your data</p>
+          </div>
+          <span class="badge-tag">Explainable AI</span>
+        </div>
+
         <div id="ml-insights-container"></div>
       </section>
+
     </div>
-
-
   </div>
 
-  <!-- ================= MODALS ================= -->
+  <!-- ================= MODALS & DRAWERS ================= -->
 
-  <!-- 1. Daily Log & Reflection Modal -->
+  <!-- 1. Daily Log & Wellness Reflection Modal -->
   <div id="daily-log-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="daily-log-title">
-    <div class="modal-card modal-large" style="max-width: 680px; max-height: 88vh; overflow-y: auto;">
+    <div class="modal-card modal-large">
       <div class="modal-header">
-        <h2 id="daily-log-title" class="modal-title"><span>📖 Daily Review & Wellness Log</span></h2>
-        <button id="close-daily-log-modal" class="btn-icon">✕</button>
+        <div class="modal-header-text">
+          <h2 id="daily-log-title" class="modal-title">Daily Review & Wellness Log</h2>
+          <p class="modal-subtitle">Review your focus, energy, and mindful reflections</p>
+        </div>
+        <button id="close-daily-log-modal" class="btn-close-modal">✕</button>
       </div>
-      <div id="daily-log-modal-body"></div>
+      <div id="daily-log-modal-body" class="modal-body"></div>
     </div>
   </div>
 
   <!-- 2. Auth Profile Modal -->
   <div id="auth-modal" class="modal-overlay" role="dialog" aria-modal="true">
-    <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-card modal-compact">
       <div class="modal-header">
-        <h2 class="modal-title">Account & Profile</h2>
-        <button id="close-auth-btn" class="btn-icon">✕</button>
+        <div class="modal-header-text">
+          <h2 class="modal-title">Account & Workspace</h2>
+        </div>
+        <button id="close-auth-btn" class="btn-close-modal">✕</button>
       </div>
 
       <div id="auth-logged-in-view" style="display: none;">
-        <div style="text-align: center; padding: 20px 0;">
-          <div class="user-avatar-circle" style="width: 64px; height: 64px; border-radius: 50%; background: var(--accent-primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 12px;">👤</div>
-          <h3 id="profile-username" style="font-size: 1.25rem; font-weight: 700;">Username</h3>
-          <p id="profile-email" style="font-size: 0.88rem; color: var(--text-muted); margin-top: 4px;">email@example.com</p>
+        <div class="user-profile-center">
+          <div class="profile-avatar-circle">👤</div>
+          <h3 id="profile-username" class="profile-username-text">Username</h3>
+          <p id="profile-email" class="profile-email-text">email@example.com</p>
         </div>
 
-        <button id="auth-logout-btn" class="btn-secondary" style="width: 100%; justify-content: center; margin-top: 14px; color: var(--color-danger); border-color: rgba(239, 68, 68, 0.3);">
+        <button id="auth-logout-btn" class="btn-danger-outline">
           Sign Out of LifeBuddy
         </button>
       </div>
 
       <div id="auth-logged-out-view" style="display: block;">
-        <div class="empty-state-sm">
-          <span>🔒</span> <span>Sign in to access your cloud-synchronized workspace.</span>
+        <div class="empty-state-card">
+          <span>🔒</span>
+          <p>Please sign in to access your cloud workspace.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 3. Add Expense Modal (in ₹) -->
+  <!-- 3. Add Expense Modal (in ₹ INR) -->
   <div id="expense-modal" class="modal-overlay" role="dialog" aria-modal="true">
-    <div class="modal-card">
+    <div class="modal-card modal-compact">
       <div class="modal-header">
-        <h2 class="modal-title">Record Expense (₹)</h2>
-        <button id="close-expense-modal" class="btn-icon">✕</button>
+        <div class="modal-header-text">
+          <h2 class="modal-title">Log Expense (₹ INR)</h2>
+          <p class="modal-subtitle">Auto-categorized by local machine learning</p>
+        </div>
+        <button id="close-expense-modal" class="btn-close-modal">✕</button>
       </div>
 
-      <form id="expense-form">
-        <div class="form-group">
-          <label class="form-label" for="exp-amount-input">Amount (₹ INR)</label>
-          <input type="number" id="exp-amount-input" class="input-field" step="1" min="1" placeholder="e.g. 250" required autofocus>
+      <form id="expense-form" class="modal-form">
+        <div class="form-field-group">
+          <label class="field-label" for="exp-amount-input">Amount (₹ INR)</label>
+          <input type="number" id="exp-amount-input" class="field-input" step="1" min="1" placeholder="e.g. 250" required autofocus>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="exp-note-input">Description / Note</label>
-          <input type="text" id="exp-note-input" class="input-field" placeholder="e.g. Swiggy lunch or metro recharge" required autocomplete="off">
+        <div class="form-field-group">
+          <label class="field-label" for="exp-note-input">Description / Note</label>
+          <input type="text" id="exp-note-input" class="field-input" placeholder="e.g. Swiggy dinner or books" required autocomplete="off">
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="exp-category-select">Category</label>
-          <select id="exp-category-select" class="input-field">
+        <div class="form-field-group">
+          <label class="field-label" for="exp-category-select">Category</label>
+          <select id="exp-category-select" class="field-input">
             <option value="Food">🍔 Food</option>
             <option value="Study">📚 Study</option>
             <option value="Transport">🚗 Transport</option>
@@ -424,19 +539,19 @@
           </select>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="exp-date-input">Date</label>
-          <input type="date" id="exp-date-input" class="input-field">
+        <div class="form-field-group">
+          <label class="field-label" for="exp-date-input">Date</label>
+          <input type="date" id="exp-date-input" class="field-input">
         </div>
 
-        <div class="form-group" style="display: none;">
-          <select id="exp-type-select" class="input-field">
+        <div class="form-field-group" style="display: none;">
+          <select id="exp-type-select" class="field-input">
             <option value="expense" selected>Expense</option>
             <option value="income">Income</option>
           </select>
         </div>
 
-        <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 14px;">
+        <button type="submit" class="btn-primary btn-submit-modal">
           Save Expense
         </button>
       </form>
@@ -447,83 +562,101 @@
   <div id="settings-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="settings-title" class="modal-title">Preferences & Themes</h2>
-        <button id="close-settings-btn" class="btn-icon">✕</button>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="input-focus-time">Focus Duration (Minutes)</label>
-        <input type="number" id="input-focus-time" class="input-field" min="1" max="120" value="25">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="input-short-break-time">Short Break Duration (Minutes)</label>
-        <input type="number" id="input-short-break-time" class="input-field" min="1" max="60" value="5">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="input-long-break-time">Long Break Duration (Minutes)</label>
-        <input type="number" id="input-long-break-time" class="input-field" min="1" max="60" value="15">
-      </div>
-
-      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
-        <label class="form-label" for="input-auto-breaks">Auto-start Breaks</label>
-        <input type="checkbox" id="input-auto-breaks" style="width: 20px; height: 20px; accent-color: var(--accent-primary);">
-      </div>
-
-      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
-        <label class="form-label" for="input-auto-pomo">Auto-start Pomodoros</label>
-        <input type="checkbox" id="input-auto-pomo" style="width: 20px; height: 20px; accent-color: var(--accent-primary);">
-      </div>
-
-      <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
-        <label class="form-label" for="input-sound-enabled">Sound Effects & Meditation Chimes</label>
-        <input type="checkbox" id="input-sound-enabled" checked style="width: 20px; height: 20px; accent-color: var(--accent-primary);">
-      </div>
-
-      <div class="form-group" style="margin-top: 14px;">
-        <label class="form-label">Aesthetic Themes</label>
-        <div class="theme-options">
-          <button class="theme-swatch swatch-sage active" data-theme="sage" title="Sage Garden">🌿</button>
-          <button class="theme-swatch swatch-lavender" data-theme="lavender" title="Dusk Lavender">🔮</button>
-          <button class="theme-swatch swatch-nordic" data-theme="nordic" title="Nordic Fog">❄️</button>
-          <button class="theme-swatch swatch-sunset" data-theme="sunset" title="Sunset Terracotta">🌅</button>
-          <button class="theme-swatch swatch-midnight" data-theme="midnight" title="Midnight Focus">🌌</button>
+        <div class="modal-header-text">
+          <h2 id="settings-title" class="modal-title">Preferences & Themes</h2>
+          <p class="modal-subtitle">Customize focus intervals and aesthetic style</p>
         </div>
+        <button id="close-settings-btn" class="btn-close-modal">✕</button>
       </div>
 
-      <!-- Easy to understand Activity Tracking Guide -->
-      <div class="tracking-guide-card" style="margin-top: 18px; padding: 14px; border-radius: 12px; background: var(--bg-input); border: 1px solid var(--border-color);">
-        <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
-          <span>🔒</span> <span>How LifeBuddy Understands Your Routine</span>
-        </h3>
-        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 8px;">
-          LifeBuddy is 100% private. All insights are generated locally for your account. Here is how your activity is used:
-        </p>
-        <ul style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; padding-left: 18px; margin-bottom: 8px;">
-          <li><strong>Focus Sessions:</strong> Counts completed pomodoro minutes to find your peak energy hours.</li>
-          <li><strong>Tasks:</strong> Learns how long tasks take so future duration estimates improve over time.</li>
-          <li><strong>Habits:</strong> Counts your streaks to give you gentle reminders before you miss a day.</li>
-          <li><strong>Finances (₹):</strong> Tracks your daily pace to project whether you will finish within your budget.</li>
-          <li><strong>Daily Reflections:</strong> Connects your sleep and mood with your deep-work focus hours.</li>
-        </ul>
-        <div style="font-size: 0.78rem; color: var(--accent-primary); font-weight: 600;">
-          🛡️ No third-party trackers, no ad cookies, and zero data sharing.
+      <div class="modal-body-scroll">
+        <div class="form-field-group">
+          <label class="field-label" for="input-focus-time">Focus Duration (Minutes)</label>
+          <input type="number" id="input-focus-time" class="field-input" min="1" max="120" value="25">
         </div>
-      </div>
 
-      <div style="margin-top: 20px;">
-        <button id="save-settings-btn" class="btn-primary" style="width: 100%; justify-content: center;">Save Preferences</button>
+        <div class="form-field-group">
+          <label class="field-label" for="input-short-break-time">Short Break Duration (Minutes)</label>
+          <input type="number" id="input-short-break-time" class="field-input" min="1" max="60" value="5">
+        </div>
+
+        <div class="form-field-group">
+          <label class="field-label" for="input-long-break-time">Long Break Duration (Minutes)</label>
+          <input type="number" id="input-long-break-time" class="field-input" min="1" max="60" value="15">
+        </div>
+
+        <div class="form-toggle-row">
+          <label class="toggle-label" for="input-auto-breaks">Auto-start Breaks</label>
+          <input type="checkbox" id="input-auto-breaks" class="toggle-checkbox">
+        </div>
+
+        <div class="form-toggle-row">
+          <label class="toggle-label" for="input-auto-pomo">Auto-start Pomodoros</label>
+          <input type="checkbox" id="input-auto-pomo" class="toggle-checkbox">
+        </div>
+
+        <div class="form-toggle-row">
+          <label class="toggle-label" for="input-sound-enabled">Sound Effects & Meditation Chimes</label>
+          <input type="checkbox" id="input-sound-enabled" checked class="toggle-checkbox">
+        </div>
+
+        <div class="form-field-group" style="margin-top: 18px;">
+          <label class="field-label">Aesthetic Themes</label>
+          <div class="theme-options-grid">
+            <button class="theme-swatch swatch-midnight active" data-theme="midnight" title="Midnight Studio">
+              <span class="swatch-color" style="background: #6366f1;"></span>
+              <span class="swatch-name">Midnight</span>
+            </button>
+            <button class="theme-swatch swatch-sage" data-theme="sage" title="Sage Botanical">
+              <span class="swatch-color" style="background: #10b981;"></span>
+              <span class="swatch-name">Sage</span>
+            </button>
+            <button class="theme-swatch swatch-nordic" data-theme="nordic" title="Nordic Frost">
+              <span class="swatch-color" style="background: #0ea5e9;"></span>
+              <span class="swatch-name">Nordic</span>
+            </button>
+            <button class="theme-swatch swatch-lavender" data-theme="lavender" title="Lavender Studio">
+              <span class="swatch-color" style="background: #a855f7;"></span>
+              <span class="swatch-name">Lavender</span>
+            </button>
+            <button class="theme-swatch swatch-sunset" data-theme="sunset" title="Sunset Terracotta">
+              <span class="swatch-color" style="background: #f97316;"></span>
+              <span class="swatch-name">Sunset</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Privacy & Activity Tracking Guide Card -->
+        <div class="tracking-guide-card">
+          <h3 class="guide-title">
+            <span>🔒</span> <span>How LifeBuddy Understands Your Routine</span>
+          </h3>
+          <p class="guide-intro">
+            LifeBuddy is 100% private. All predictions and insights are computed locally for your account. Here is how your activity is used:
+          </p>
+          <ul class="guide-list">
+            <li><strong>Focus Sessions:</strong> Identifies your peak energy hours with Bayesian smoothing.</li>
+            <li><strong>Tasks:</strong> Learns actual duration history to predict future task estimates.</li>
+            <li><strong>Habits:</strong> Tracks streak compounding to alert you before you break a rhythm.</li>
+            <li><strong>Finances (₹):</strong> Computes daily spending burn rate to project month-end budgets.</li>
+            <li><strong>Daily Reflections:</strong> Discovers correlations between rest and focus energy.</li>
+          </ul>
+          <div class="guide-privacy-pill">
+            🛡️ Zero third-party trackers, zero ad cookies, and zero external telemetry.
+          </div>
+        </div>
+
+        <button id="save-settings-btn" class="btn-primary btn-save-settings">
+          Save Preferences
+        </button>
       </div>
     </div>
   </div>
 
-
-
   <!-- Toast Notifications Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Application Logic -->
+  <!-- Application Bootstrap -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

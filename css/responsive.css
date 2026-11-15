@@ -1,111 +1,195 @@
-/* Responsive Adaptations */
-@media (max-width: 900px) {
-  .main-grid {
+/* ==========================================================================
+   LIFEBUDDY RESPONSIVE BREAKPOINTS & MOBILE ADAPTATIONS
+   ========================================================================== */
+
+/* 1. Large Tablets & Small Desktops (<= 1080px) */
+@media (max-width: 1080px) {
+  .welcome-container-inner {
     grid-template-columns: 1fr;
+    gap: var(--space-8);
   }
 
-  .side-column {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+  .focus-room-layout {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .finances-layout-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  .metrics-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .today-dual-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 650px) {
-  #app {
-    padding: 16px 14px 40px;
-    gap: 20px;
+/* 2. Tablets & Landscape Mobiles (<= 768px) */
+@media (max-width: 768px) {
+  .header-inner {
+    padding: 0 var(--space-4);
+    height: auto;
+    min-height: 58px;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 8px;
   }
 
-  .side-column {
-    grid-template-columns: 1fr;
-  }
-
-  .dashboard-columns {
-    grid-template-columns: 1fr;
+  .brand-tagline {
+    display: none;
   }
 
   .main-nav-bar {
+    order: 3;
+    width: 100%;
     overflow-x: auto;
     justify-content: flex-start;
-    padding: 6px;
+    padding: 3px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .main-nav-bar::-webkit-scrollbar {
+    display: none;
   }
 
   .nav-tab {
-    padding: 8px 12px;
+    padding: 6px 11px;
     font-size: 0.8rem;
-    white-space: nowrap;
   }
 
-  .metrics-grid {
-    grid-template-columns: 1fr 1fr;
+  .main-workspace-wrapper {
+    padding: var(--space-5) var(--space-4) var(--space-12);
+  }
+
+  .view-header-strip {
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
   }
 
-  .dashboard-hero {
-    padding: 20px 18px;
+  .today-hero-panel {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-5);
+    padding: var(--space-6);
   }
 
-  .hero-title {
-    font-size: 1.45rem;
+  .today-hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
   }
 
-  .fab-container {
-    bottom: 20px;
-    right: 20px;
+  .today-greeting {
+    font-size: 1.55rem;
   }
 
-  .habit-risks-grid {
+  .hide-mobile {
+    display: none !important;
+  }
+
+  .welcome-headline {
+    font-size: 2.3rem;
+  }
+
+  .demo-cards-grid {
     grid-template-columns: 1fr;
   }
 
-  .explain-drawer-content {
-    width: 100%;
-    max-width: 100%;
+  .composer-row-primary,
+  .composer-row-secondary {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .nl-input-row {
+  .select-category,
+  .select-priority,
+  .input-pomo,
+  .input-date {
+    width: 100% !important;
+  }
+
+  .task-quick-composer {
     flex-direction: column;
   }
 
-  .header-actions {
-    gap: 6px;
+  .habit-quick-composer {
+    flex-direction: column;
+  }
+
+  .select-icon {
+    width: 100%;
+  }
+
+  .sound-mixer-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* 3. Small Mobile Devices (<= 480px) */
 @media (max-width: 480px) {
-  .timer-display-wrapper {
-    width: 260px;
-    height: 260px;
+  .metrics-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-display-frame {
+    width: 250px;
+    height: 250px;
   }
 
   .timer-digits {
-    font-size: 3.5rem;
+    font-size: 3.4rem;
   }
 
-  .glass-card {
-    padding: 22px 18px;
+  .timer-arena-card {
+    padding: var(--space-6) var(--space-4);
   }
 
-  .timer-modes {
-    padding: 4px;
-  }
-
-  .mode-btn {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-  }
-
-  .btn-primary {
-    padding: 12px 32px;
-    font-size: 1rem;
-  }
-
-  .ambient-controls {
+  .sound-mixer-grid {
     grid-template-columns: 1fr;
   }
 
-  .metrics-grid {
-    grid-template-columns: 1fr;
+  .command-input-frame {
+    flex-wrap: wrap;
+  }
+
+  .command-action-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .welcome-headline {
+    font-size: 1.95rem;
+  }
+
+  .welcome-container-inner {
+    padding: var(--space-2) 0;
+  }
+
+  .auth-card-frame {
+    padding: var(--space-5);
+  }
+
+  .modal-card {
+    padding: var(--space-4);
+  }
+
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .task-actions-right {
+    width: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 6px;
   }
 }
