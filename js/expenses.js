@@ -16,8 +16,8 @@ export const CATEGORY_ICONS = {
 export class ExpenseManager {
   constructor(options = {}) {
     this.expenses = [];
-    this.monthlyBudget = 1000.0;
-    this.currency = '$';
+    this.monthlyBudget = 25000.0;
+    this.currency = '₹';
     this.onChanged = options.onChanged || (() => {});
   }
 

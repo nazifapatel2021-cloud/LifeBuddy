@@ -1,4 +1,4 @@
-/* LifeBuddy Authentication & Cloud Sync Controller */
+/* LifeBuddy Authentication & Workspace Access Controller */
 import { API } from './api.js';
 
 export class AuthController {
@@ -9,7 +9,8 @@ export class AuthController {
   async init() {
     this.bindEvents();
     this.updateUI();
-    // Try to verify token if logged in
+
+    // Verify token if logged in
     if (API.isLoggedIn()) {
       try {
         const me = await API.auth.getMe();
@@ -25,54 +26,150 @@ export class AuthController {
 
   updateUI() {
     const user = API.getUser();
-    const syncStatusEl = document.getElementById('cloud-sync-status');
-    const authBtn = document.getElementById('auth-modal-btn');
+    const isLoggedIn = API.isLoggedIn();
+    const isGuest = localStorage.getItem('lifebuddy_guest_active') === 'true';
+
+    const welcomeGate = document.getElementById('welcome-gate');
+    const mainWorkspace = document.getElementById('main-workspace');
+    const mainNav = document.getElementById('main-nav-bar');
     const authBtnText = document.getElementById('auth-btn-text');
 
-    if (user && API.isLoggedIn()) {
-      if (syncStatusEl) {
-        syncStatusEl.innerHTML = `<span class="status-dot online"></span> <span>Cloud Synced</span>`;
-        syncStatusEl.className = 'status-pill status-online';
-      }
-      if (authBtnText) {
-        authBtnText.textContent = user.username;
-      }
+    if (isLoggedIn) {
+      if (welcomeGate) welcomeGate.style.display = 'none';
+      if (mainWorkspace) mainWorkspace.style.display = 'block';
+      if (mainNav) mainNav.style.display = 'flex';
+      if (authBtnText) authBtnText.textContent = user ? user.username : 'Account';
+    } else if (isGuest) {
+      if (welcomeGate) welcomeGate.style.display = 'none';
+      if (mainWorkspace) mainWorkspace.style.display = 'block';
+      if (mainNav) mainNav.style.display = 'flex';
+      if (authBtnText) authBtnText.textContent = 'Sign In';
     } else {
-      if (syncStatusEl) {
-        syncStatusEl.innerHTML = `<span class="status-dot offline"></span> <span>Local Mode</span>`;
-        syncStatusEl.className = 'status-pill status-offline';
-      }
-      if (authBtnText) {
-        authBtnText.textContent = 'Sign In';
-      }
+      // Show Welcome & Sign-In Screen first!
+      if (welcomeGate) welcomeGate.style.display = 'block';
+      if (mainWorkspace) mainWorkspace.style.display = 'none';
+      if (mainNav) mainNav.style.display = 'none';
+      if (authBtnText) authBtnText.textContent = 'Sign In';
     }
   }
 
   bindEvents() {
+    // 1. Welcome Screen Demo Buttons
+    const demoAlexBtn = document.getElementById('quick-demo-alex');
+    const demoMayaBtn = document.getElementById('quick-demo-maya');
+    const exploreGuestBtn = document.getElementById('btn-explore-guest');
+
+    if (demoAlexBtn) {
+      demoAlexBtn.addEventListener('click', async () => {
+        demoAlexBtn.textContent = 'Logging in as Alex...';
+        try {
+          await API.auth.login('alex_student', 'password123');
+          localStorage.removeItem('lifebuddy_guest_active');
+          window.location.reload();
+        } catch (e) {
+          alert('Could not log in as Alex. Ensure server is running.');
+          demoAlexBtn.innerHTML = `<span>🎓 Alex (Student)</span> <span class="badge badge-subtle">90 Days Activity</span>`;
+        }
+      });
+    }
+
+    if (demoMayaBtn) {
+      demoMayaBtn.addEventListener('click', async () => {
+        demoMayaBtn.textContent = 'Logging in as Maya...';
+        try {
+          await API.auth.login('maya_freelancer', 'password123');
+          localStorage.removeItem('lifebuddy_guest_active');
+          window.location.reload();
+        } catch (e) {
+          alert('Could not log in as Maya. Ensure server is running.');
+          demoMayaBtn.innerHTML = `<span>💼 Maya (Freelancer)</span> <span class="badge badge-subtle">90 Days Activity</span>`;
+        }
+      });
+    }
+
+    if (exploreGuestBtn) {
+      exploreGuestBtn.addEventListener('click', () => {
+        localStorage.setItem('lifebuddy_guest_active', 'true');
+        this.updateUI();
+      });
+    }
+
+    // 2. Welcome Gate Form (Sign In / Register)
+    const gateForm = document.getElementById('gate-auth-form');
+    const gateTabLogin = document.getElementById('gate-tab-login');
+    const gateTabRegister = document.getElementById('gate-tab-register');
+    const gateEmailGroup = document.getElementById('gate-email-group');
+    const gateSubmitBtn = document.getElementById('gate-submit-btn');
+    const gateErrorMsg = document.getElementById('gate-error-msg');
+    let gateMode = 'login';
+
+    if (gateTabLogin && gateTabRegister) {
+      gateTabLogin.addEventListener('click', () => {
+        gateMode = 'login';
+        gateTabLogin.classList.add('active');
+        gateTabRegister.classList.remove('active');
+        if (gateEmailGroup) gateEmailGroup.style.display = 'none';
+        if (gateSubmitBtn) gateSubmitBtn.textContent = 'Sign In to LifeBuddy →';
+      });
+
+      gateTabRegister.addEventListener('click', () => {
+        gateMode = 'register';
+        gateTabRegister.classList.add('active');
+        gateTabLogin.classList.remove('active');
+        if (gateEmailGroup) gateEmailGroup.style.display = 'block';
+        if (gateSubmitBtn) gateSubmitBtn.textContent = 'Create Free Account →';
+      });
+    }
+
+    if (gateForm) {
+      gateForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('gate-username-input')?.value.trim();
+        const password = document.getElementById('gate-password-input')?.value;
+        const email = document.getElementById('gate-email-input')?.value.trim();
+
+        if (gateErrorMsg) gateErrorMsg.style.display = 'none';
+        if (gateSubmitBtn) gateSubmitBtn.disabled = true;
+
+        try {
+          if (gateMode === 'login') {
+            await API.auth.login(username, password);
+          } else {
+            if (!email) throw new Error('Please enter an email address');
+            await API.auth.register(username, email, password);
+          }
+          localStorage.removeItem('lifebuddy_guest_active');
+          window.location.reload();
+        } catch (err) {
+          if (gateErrorMsg) {
+            gateErrorMsg.textContent = err.message || 'Authentication failed. Please verify credentials.';
+            gateErrorMsg.style.display = 'block';
+          }
+        } finally {
+          if (gateSubmitBtn) gateSubmitBtn.disabled = false;
+        }
+      });
+    }
+
+    // 3. Header Auth Modal (Sign Out / Manage Profile)
     const authModalBtn = document.getElementById('auth-modal-btn');
     const authModal = document.getElementById('auth-modal');
     const closeAuthBtn = document.getElementById('close-auth-btn');
-    const authForm = document.getElementById('auth-form');
-    const authToggleTabLogin = document.getElementById('auth-tab-login');
-    const authToggleTabRegister = document.getElementById('auth-tab-register');
-    const authSubmitBtn = document.getElementById('auth-submit-btn');
-    const authEmailGroup = document.getElementById('auth-email-group');
     const authLogoutBtn = document.getElementById('auth-logout-btn');
-
-    let mode = 'login'; // 'login' or 'register'
 
     if (authModalBtn && authModal) {
       authModalBtn.addEventListener('click', () => {
         const user = API.getUser();
         if (user && API.isLoggedIn()) {
-          // Show logged in profile state
           document.getElementById('auth-logged-in-view').style.display = 'block';
           document.getElementById('auth-logged-out-view').style.display = 'none';
           document.getElementById('profile-username').textContent = user.username;
           document.getElementById('profile-email').textContent = user.email || '';
         } else {
-          document.getElementById('auth-logged-in-view').style.display = 'none';
-          document.getElementById('auth-logged-out-view').style.display = 'block';
+          // If in guest mode, clicking Sign In takes you back to Welcome gate
+          localStorage.removeItem('lifebuddy_guest_active');
+          this.updateUI();
+          return;
         }
         authModal.classList.add('active');
       });
@@ -84,61 +181,10 @@ export class AuthController {
       });
     }
 
-    if (authToggleTabLogin && authToggleTabRegister) {
-      authToggleTabLogin.addEventListener('click', () => {
-        mode = 'login';
-        authToggleTabLogin.classList.add('active');
-        authToggleTabRegister.classList.remove('active');
-        authEmailGroup.style.display = 'none';
-        authSubmitBtn.textContent = 'Sign In';
-      });
-
-      authToggleTabRegister.addEventListener('click', () => {
-        mode = 'register';
-        authToggleTabRegister.classList.add('active');
-        authToggleTabLogin.classList.remove('active');
-        authEmailGroup.style.display = 'block';
-        authSubmitBtn.textContent = 'Create Account';
-      });
-    }
-
-    if (authForm) {
-      authForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const username = document.getElementById('auth-username-input').value.trim();
-        const password = document.getElementById('auth-password-input').value;
-        const email = document.getElementById('auth-email-input').value.trim();
-        const errorEl = document.getElementById('auth-error-msg');
-
-        if (errorEl) errorEl.style.display = 'none';
-        authSubmitBtn.disabled = true;
-
-        try {
-          if (mode === 'login') {
-            await API.auth.login(username, password);
-          } else {
-            if (!email) throw new Error('Please provide an email address');
-            await API.auth.register(username, email, password);
-          }
-
-          authModal.classList.remove('active');
-          this.updateUI();
-          this.onUserChanged(API.getUser());
-          window.location.reload(); // Refresh clean state
-        } catch (err) {
-          if (errorEl) {
-            errorEl.textContent = err.message || 'Authentication failed. Please check credentials or start server.';
-            errorEl.style.display = 'block';
-          }
-        } finally {
-          authSubmitBtn.disabled = false;
-        }
-      });
-    }
-
     if (authLogoutBtn) {
       authLogoutBtn.addEventListener('click', () => {
         API.auth.logout();
+        localStorage.removeItem('lifebuddy_guest_active');
         authModal.classList.remove('active');
         this.updateUI();
         this.onUserChanged(null);

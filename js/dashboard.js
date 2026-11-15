@@ -44,8 +44,8 @@ export class DashboardManager {
 
     const todayExpense = summary.finances.today_expense || 0;
     const monthExpense = summary.finances.month_expense || 0;
-    const budget = summary.finances.monthly_budget || 1000;
-    const currency = summary.finances.currency_symbol || '$';
+    const budget = summary?.finances?.monthly_budget || 25000;
+    const currency = summary?.finances?.currency_symbol || '₹';
 
     const habitsDone = summary.habits.done_today || 0;
     const habitsTotal = summary.habits.total || 0;

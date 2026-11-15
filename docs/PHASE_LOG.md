@@ -203,3 +203,26 @@ This document tracks all engineering deliverables, verification commands, test r
   - Hardened ML pipeline registry with threading.RLock for thread-safe multi-tenant inference and retraining.
   - Added /api/health endpoint for uptime and container health checks.
   - Created tests/test_concurrency.py validating 50 simultaneous concurrent requests across task creation, dashboard reads, and ML predictions.
+
+---
+
+## v2.0 Overhaul — Portfolio-Grade UI, Welcome Gateway, Daily Log & INR (₹) Currency
+- **Header & Layout Cleanup**:
+  - Removed 'Local Mode' pill, 'AI Models' button, and 'User Study' button from the main navigation header.
+  - Added clean, mature brand identity with 'LifeBuddy — Everyday Productivity OS' subtitle.
+  - Added '📖 Daily Log' button in header for daily energy, sleep, and mindful reflection check-ins.
+- **Dedicated Welcome & Auth Gateway**:
+  - Unauthenticated visitors are greeted with a portfolio-grade, executive landing screen rather than an empty dashboard.
+  - Added 1-Click Recruiter/Reviewer Demo Persona Logins:
+    - Alex (Deep Work Student, 90 Days Longitudinal Data)
+    - Maya (Burnout Freelancer, 90 Days Longitudinal Data)
+  - Seamless Sign In / Create Account tabs and 'Continue as Guest' sandbox option.
+- **Indian Rupees (₹) Financial Architecture**:
+  - Replaced all dollar ($) currency indicators across database defaults, API serialization, and frontend components with Indian Rupees (₹).
+  - Scaled monthly default budget to ₹25,000.
+  - Re-seeded realistic Indian price baselines across all 5 demo personas.
+- **Daily Reflection & Activity Log System**:
+  - Replaced the research questionnaire with an interactive Daily Log modal (js/daily_log.js).
+  - Features 5-level emoji mood check-in (Drained, Low, Steady, Focused, Thriving), sleep duration slider, today's metrics recap, mindful reflection notes, and 7-day historical timeline.
+- **Model Transparency Refinement**:
+  - Moved AI Architecture & Governance specifications to a discrete, professional link inside Settings / Preferences ('🧠 View Architecture & Privacy Specifications (Viva Mode) →'), keeping the UI clean for everyday consumers while fully accessible to academic examiners.

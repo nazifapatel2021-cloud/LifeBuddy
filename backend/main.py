@@ -766,8 +766,8 @@ def get_dashboard(user: dict = Depends(get_current_user)):
             "today_expense": finance_data["today_expense"],
             "month_expense": finance_data["month_expense"],
             "month_income": finance_data["month_income"],
-            "monthly_budget": user_settings.get("monthly_budget", 1000.0),
-            "currency_symbol": user_settings.get("currency_symbol", "$")
+            "monthly_budget": user_settings.get("monthly_budget", 25000.0),
+            "currency_symbol": user_settings.get("currency_symbol", "₹")
         },
         "habits": {
             "total": len(habits),
@@ -812,7 +812,7 @@ def get_spending_forecast(user: dict = Depends(get_current_user)):
     expenses = [dict(r) for r in cursor.fetchall()]
     cursor.execute("SELECT monthly_budget FROM user_settings WHERE user_id = ?", (user["id"],))
     s_row = cursor.fetchone()
-    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 1000.0
+    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 25000.0
     conn.close()
     return ml_registry.detect_spending_anomalies(user["id"], expenses, budget)
 
@@ -884,7 +884,7 @@ def get_weekly_reflection(user: dict = Depends(get_current_user)):
 
     cursor.execute("SELECT monthly_budget FROM user_settings WHERE user_id = ?", (user["id"],))
     s_row = cursor.fetchone()
-    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 1000.0
+    budget = float(s_row["monthly_budget"]) if s_row and s_row["monthly_budget"] else 25000.0
     conn.close()
 
     return ml_registry.generate_reflection(

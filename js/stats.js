@@ -90,7 +90,7 @@ export class StatsVisualizer {
           <div class="category-breakdown-row">
             <div class="cat-row-top">
               <span class="cat-name">${cat}</span>
-              <span class="cat-amt">$${amt.toFixed(2)} (${pct}%)</span>
+              <span class="cat-amt">₹${amt.toFixed(2)} (${pct}%)</span>
             </div>
             <div class="progress-bar-bg" style="height: 6px;">
               <div class="progress-bar-fill" style="width: ${pct}%;"></div>

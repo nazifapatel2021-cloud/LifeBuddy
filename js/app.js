@@ -13,7 +13,7 @@ import { InsightsCoordinator } from './insights.js';
 import { ModelTransparencyController } from './transparency.js';
 import { API } from './api.js';
 import { syncEngine } from './sync.js';
-import { studyController } from './study.js';
+import { dailyLogController } from './daily_log.js';
 
 function initApp() {
   const CIRCUMFERENCE = 2 * Math.PI * 140; // 879.64
@@ -27,7 +27,7 @@ function initApp() {
 
   // Initialize Modals
   transparencyController.init();
-  studyController.init();
+  dailyLogController.init();
 
   const taskManager = new TaskManager({
     onTasksChanged: () => {
@@ -431,6 +431,15 @@ function initApp() {
   const saveSettingsBtn = document.getElementById('save-settings-btn');
   const zenToggleBtn = document.getElementById('zen-toggle-btn');
   const exitZenBtn = document.getElementById('exit-zen-btn');
+
+  const openTransLink = document.getElementById('open-transparency-link');
+  if (openTransLink) {
+    openTransLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (settingsModal) settingsModal.classList.remove('active');
+      transparencyController.open();
+    });
+  }
 
   if (settingsBtn && settingsModal) {
     settingsBtn.addEventListener('click', () => {

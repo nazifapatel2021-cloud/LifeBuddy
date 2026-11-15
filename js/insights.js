@@ -188,7 +188,7 @@ export class InsightsCoordinator {
 
         <!-- Grid Lines -->
         <line x1="${padX}" y1="${budgetY}" x2="${endX}" y2="${budgetY}" stroke="var(--danger-color)" stroke-dasharray="6,4" stroke-width="1.5" opacity="0.8"/>
-        <text x="${endX - 8}" y="${budgetY - 8}" text-anchor="end" fill="var(--danger-color)" font-size="11" font-weight="600">Budget Limit ($${budget.toFixed(0)})</text>
+        <text x="${endX - 8}" y="${budgetY - 8}" text-anchor="end" fill="var(--danger-color)" font-size="11" font-weight="600">Budget Limit (₹${budget.toFixed(0)})</text>
 
         <!-- 95% Confidence Interval Projected Cone -->
         <polygon points="${currentX},${currentY} ${endX},${ciUpperY} ${endX},${ciLowerY}" fill="url(#forecastBandGrad)" />
@@ -201,11 +201,11 @@ export class InsightsCoordinator {
 
         <!-- Current Day Data Point -->
         <circle cx="${currentX}" cy="${currentY}" r="5" fill="var(--bg-card)" stroke="var(--accent-primary)" stroke-width="3"/>
-        <text x="${currentX}" y="${currentY - 12}" text-anchor="middle" fill="var(--text-primary)" font-size="11" font-weight="600">Today: $${spent.toFixed(0)}</text>
+        <text x="${currentX}" y="${currentY - 12}" text-anchor="middle" fill="var(--text-primary)" font-size="11" font-weight="600">Today: ₹${spent.toFixed(0)}</text>
 
         <!-- End of Month Projection Point -->
         <circle cx="${endX}" cy="${projY}" r="5" fill="var(--accent-primary)"/>
-        <text x="${endX}" y="${projY - 10}" text-anchor="end" fill="var(--text-primary)" font-size="11" font-weight="600">Est. Total: $${projected.toFixed(0)}</text>
+        <text x="${endX}" y="${projY - 10}" text-anchor="end" fill="var(--text-primary)" font-size="11" font-weight="600">Est. Total: ₹${projected.toFixed(0)}</text>
 
         <!-- Axis Labels -->
         <text x="${padX}" y="${height - 8}" fill="var(--text-muted)" font-size="11">Day 1</text>

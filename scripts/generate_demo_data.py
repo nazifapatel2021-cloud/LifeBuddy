@@ -31,7 +31,7 @@ PERSONAS = [
         "email": "alex@lifebuddy.edu",
         "password": "password123",
         "name": "Alex (Deep Work Student)",
-        "budget": 600.0,
+        "budget": 18000.0,
         "days": 90,
         "type": "student"
     },
@@ -40,7 +40,7 @@ PERSONAS = [
         "email": "maya@lifebuddy.dev",
         "password": "password123",
         "name": "Maya (Burnout Freelancer)",
-        "budget": 1800.0,
+        "budget": 45000.0,
         "days": 90,
         "type": "burnout"
     },
@@ -49,7 +49,7 @@ PERSONAS = [
         "email": "sam@lifebuddy.org",
         "password": "password123",
         "name": "Sam (Disciplined Habit Builder)",
-        "budget": 1200.0,
+        "budget": 30000.0,
         "days": 90,
         "type": "habit_builder"
     },
@@ -101,13 +101,13 @@ PERSONAL_TASKS = [
 ]
 
 EXPENSE_ITEMS = {
-    "Food": [("Campus cafeteria lunch", 8.50), ("Matcha latte & croissant", 6.20), ("Grocery haul at Trader Joe's", 58.40), ("Chipotle burrito bowl", 12.80), ("Takeout sushi dinner", 24.50)],
-    "Transport": [("Metro monthly pass reload", 25.00), ("Uber ride home from late lab", 18.50), ("Gas station refill", 38.00)],
-    "Study": [("Used Database System Concepts textbook", 45.00), ("Notion student plus renewal", 12.00), ("Technical notebook & gel pens", 9.50)],
-    "Shopping": [("Ergonomic desk wrist rest", 22.00), ("Uniqlo warm hoodie", 49.90), ("Noise-canceling foam tips", 14.99), ("Mechanical keyboard keycaps", 65.00)],
-    "Bills": [("Electric & utility bill", 65.00), ("Fiber internet split", 35.00), ("Cloud server VPS hosting", 12.00)],
-    "Health": [("Gym membership monthly", 40.00), ("Multivitamins & Omega-3", 19.50), ("Pharmacy cold medicine", 11.20)],
-    "Entertainment": [("Cinema tickets & popcorn", 16.50), ("Spotify Premium subscription", 10.99), ("Steam indie game on sale", 14.99)]
+    "Food": [("Campus cafeteria lunch", 180.0), ("Chai latte & snack", 120.0), ("Weekly grocery haul", 1450.0), ("Biryani dinner takeout", 380.0), ("South Indian breakfast combo", 160.0)],
+    "Transport": [("Metro card recharge", 600.0), ("Auto / Cab ride home", 280.0), ("Petrol refill", 950.0)],
+    "Study": [("DBMS & System Design reference book", 850.0), ("Notion student subscription renewal", 350.0), ("Spiral notebook & study stationery", 220.0)],
+    "Shopping": [("Ergonomic mousepad & wrist rest", 499.0), ("Winter hoodie", 1699.0), ("Earphone foam tips", 299.0), ("Mechanical keyboard deskmat", 850.0)],
+    "Bills": [("Electricity utility bill", 1200.0), ("High-speed broadband split", 799.0), ("Cloud VPS developer server", 650.0)],
+    "Health": [("Monthly gym membership", 1500.0), ("Daily vitamins & health supplements", 680.0), ("Pharmacy medication", 240.0)],
+    "Entertainment": [("Movie tickets & cinema snacks", 480.0), ("Spotify Premium subscription", 119.0), ("Steam indie puzzle game", 450.0)]
 }
 
 def generate_data():
@@ -147,7 +147,7 @@ def generate_data():
         # 2. Settings
         cursor.execute("""
             INSERT INTO user_settings (user_id, monthly_budget, currency_symbol, focus_duration, short_break, long_break, theme)
-            VALUES (?, ?, '$', 25, 5, 15, 'sage')
+            VALUES (?, ?, '₹', 25, 5, 15, 'sage')
         """, (user_id, persona["budget"]))
 
         # 3. Habits
@@ -299,7 +299,7 @@ def generate_data():
 
             # Add monthly income once a month on 1st
             if current_date.day == 1:
-                income_amt = 1200.0 if p_type == "student" else 3200.0
+                income_amt = 25000.0 if p_type == "student" else 65000.0
                 cursor.execute("""
                     INSERT INTO expenses (id, user_id, type, amount, category, note, date, time, created_at)
                     VALUES (?, ?, 'income', ?, 'Income', 'Monthly stipend / salary payment', ?, '09:00:00', ?)

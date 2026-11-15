@@ -49,8 +49,8 @@ def init_db():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS user_settings (
         user_id INTEGER PRIMARY KEY,
-        monthly_budget REAL DEFAULT 1000.0,
-        currency_symbol TEXT DEFAULT '$',
+        monthly_budget REAL DEFAULT 25000.0,
+        currency_symbol TEXT DEFAULT '₹',
         focus_duration INTEGER DEFAULT 25,
         short_break INTEGER DEFAULT 5,
         long_break INTEGER DEFAULT 15,

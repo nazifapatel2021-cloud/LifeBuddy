@@ -633,7 +633,7 @@ export const API = {
       return {
         status: 'cold_start',
         spent_so_far: 240.0,
-        monthly_budget: 1000.0,
+        monthly_budget: 25000.0,
         projected_month_end: 780.0,
         confidence_interval_95: [710.0, 850.0],
         anomaly_count: 0,
@@ -773,8 +773,8 @@ export const API = {
           today_expense: todayExpenses,
           month_expense: monthExpenses,
           month_income: 0,
-          monthly_budget: 1000.0,
-          currency_symbol: '$'
+          monthly_budget: 25000.0,
+          currency_symbol: '₹'
         },
         habits: {
           total: habits.length,
