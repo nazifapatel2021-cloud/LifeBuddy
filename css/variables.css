@@ -89,9 +89,9 @@
 
   --text-main: #0f172a;
   --text-primary: #0f172a;
-  --text-muted: #475569;
-  --text-light: #64748b;
-  --text-subtle: #94a3b8;
+  --text-muted: #334155;
+  --text-light: #475569;
+  --text-subtle: #64748b;
 
   --shadow-sm: 0 1px 3px rgba(99, 102, 241, 0.06);
   --shadow-md: 0 4px 16px rgba(99, 102, 241, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
@@ -131,117 +131,122 @@
 
   --text-main: #13241d;
   --text-primary: #13241d;
-  --text-muted: #435b50;
-  --text-light: #7c968b;
-  --text-subtle: #c3d4cc;
-
-  --timer-ring-bg: rgba(16, 185, 129, 0.08);
-  --timer-ring-progress: #10b981;
-  --timer-ring-glow: rgba(16, 185, 129, 0.2);
+  --text-muted: #1e3a2b;
+  --text-light: #2d543e;
+  --text-subtle: #416b52;
 }
 
 /* ==========================================================================
    THEME 2: NORDIC (Aesthetic Arctic Slate Light)
    ========================================================================== */
 [data-theme="nordic"] {
-  --bg-app: #f8fafc;
-  --bg-header: #ffffff;
+  --bg-app: #f4f8fb;
+  --bg-mesh: radial-gradient(circle at 10% 12%, rgba(2, 132, 199, 0.12) 0%, transparent 45%), radial-gradient(circle at 90% 15%, rgba(99, 102, 241, 0.10) 0%, transparent 45%), radial-gradient(circle at 50% 80%, rgba(16, 185, 129, 0.10) 0%, transparent 50%);
+  --bg-header: rgba(255, 255, 255, 0.92);
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #f0f4f8;
-  --bg-surface-hover: #e6edf5;
-  --bg-surface-active: #d6e2ef;
+  --bg-surface-elevated: #eef5fa;
+  --bg-surface-hover: #e2eef7;
+  --bg-surface-active: #d0e4f3;
   --bg-card: #ffffff;
 
-  --bg-input: #f8fafc;
+  --bg-input: #f4f8fb;
   --bg-input-focus: #ffffff;
 
-  --border-color: rgba(14, 45, 75, 0.09);
-  --border-subtle: rgba(14, 45, 75, 0.05);
-  --border-hover: rgba(14, 45, 75, 0.18);
+  --border-color: rgba(2, 132, 199, 0.18);
+  --border-subtle: rgba(2, 132, 199, 0.10);
+  --border-hover: rgba(2, 132, 199, 0.35);
   --border-focus: #0284c7;
 
   --accent-primary: #0284c7;
   --accent-primary-hover: #0369a1;
   --accent-secondary: #38bdf8;
-  --accent-soft: rgba(2, 132, 199, 0.08);
-  --accent-border: rgba(2, 132, 199, 0.22);
-  --accent-glow: rgba(2, 132, 199, 0.15);
+  --accent-soft: rgba(2, 132, 199, 0.12);
+  --accent-border: rgba(2, 132, 199, 0.28);
+  --accent-glow: rgba(2, 132, 199, 0.22);
 
   --text-main: #0c1e30;
   --text-primary: #0c1e30;
-  --text-muted: #3d546e;
-  --text-light: #7a94b0;
-  --text-subtle: #c2d5e8;
+  --text-muted: #1e3a54;
+  --text-light: #2d5275;
+  --text-subtle: #416891;
 
-  --timer-ring-bg: rgba(2, 132, 199, 0.08);
+  --timer-ring-bg: rgba(2, 132, 199, 0.10);
   --timer-ring-progress: #0284c7;
-  --timer-ring-glow: rgba(2, 132, 199, 0.2);
+  --timer-ring-glow: rgba(2, 132, 199, 0.3);
 }
 
 /* ==========================================================================
    THEME 3: LAVENDER (Aesthetic Amethyst Light)
    ========================================================================== */
 [data-theme="lavender"] {
-  --bg-app: #faf8fc;
-  --bg-header: #ffffff;
+  --bg-app: #f9f6fc;
+  --bg-mesh: radial-gradient(circle at 10% 12%, rgba(124, 58, 237, 0.14) 0%, transparent 45%), radial-gradient(circle at 90% 15%, rgba(236, 72, 153, 0.10) 0%, transparent 45%), radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.10) 0%, transparent 50%);
+  --bg-header: rgba(255, 255, 255, 0.92);
   --bg-surface: #ffffff;
   --bg-surface-elevated: #f4effa;
   --bg-surface-hover: #ede5f7;
   --bg-surface-active: #decff2;
   --bg-card: #ffffff;
 
-  --bg-input: #faf8fc;
+  --bg-input: #f9f6fc;
   --bg-input-focus: #ffffff;
 
-  --border-color: rgba(70, 20, 100, 0.09);
-  --border-subtle: rgba(70, 20, 100, 0.05);
-  --border-hover: rgba(70, 20, 100, 0.18);
+  --border-color: rgba(124, 58, 237, 0.18);
+  --border-subtle: rgba(124, 58, 237, 0.10);
+  --border-hover: rgba(124, 58, 237, 0.35);
   --border-focus: #7c3aed;
 
   --accent-primary: #7c3aed;
   --accent-primary-hover: #6d28d9;
   --accent-secondary: #a78bfa;
-  --accent-soft: rgba(124, 58, 237, 0.08);
-  --accent-border: rgba(124, 58, 237, 0.22);
-  --accent-glow: rgba(124, 58, 237, 0.15);
+  --accent-soft: rgba(124, 58, 237, 0.12);
+  --accent-border: rgba(124, 58, 237, 0.28);
+  --accent-glow: rgba(124, 58, 237, 0.22);
 
   --text-main: #210d3d;
   --text-primary: #210d3d;
-  --text-muted: #564075;
-  --text-light: #947ea8;
-  --text-subtle: #d8cde3;
+  --text-muted: #3b1e63;
+  --text-light: #522f85;
+  --text-subtle: #6d42a8;
 
-  --timer-ring-bg: rgba(124, 58, 237, 0.08);
+  --timer-ring-bg: rgba(124, 58, 237, 0.10);
   --timer-ring-progress: #7c3aed;
-  --timer-ring-glow: rgba(124, 58, 237, 0.2);
+  --timer-ring-glow: rgba(124, 58, 237, 0.3);
 }
 
 /* ==========================================================================
    THEME 4: SUNSET (Aesthetic Terracotta Light)
    ========================================================================== */
 [data-theme="sunset"] {
-  --bg-app: #faf8f6;
-  --bg-header: #ffffff;
+  --bg-app: #fcf7f4;
+  --bg-mesh: radial-gradient(circle at 10% 12%, rgba(234, 88, 12, 0.12) 0%, transparent 45%), radial-gradient(circle at 90% 15%, rgba(245, 158, 11, 0.10) 0%, transparent 45%), radial-gradient(circle at 50% 80%, rgba(239, 68, 68, 0.08) 0%, transparent 50%);
+  --bg-header: rgba(255, 255, 255, 0.92);
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #f7eee9;
-  --bg-surface-hover: #f2e2da;
-  --bg-surface-active: #e7cfc4;
+  --bg-surface-elevated: #f9ede7;
+  --bg-surface-hover: #f3dfd6;
+  --bg-surface-active: #e8c8ba;
   --bg-card: #ffffff;
 
-  --bg-input: #faf8f6;
+  --bg-input: #fcf7f4;
   --bg-input-focus: #ffffff;
 
-  --border-color: rgba(90, 40, 20, 0.09);
-  --border-subtle: rgba(90, 40, 20, 0.05);
-  --border-hover: rgba(90, 40, 20, 0.18);
+  --border-color: rgba(234, 88, 12, 0.18);
+  --border-subtle: rgba(234, 88, 12, 0.10);
+  --border-hover: rgba(234, 88, 12, 0.35);
   --border-focus: #ea580c;
 
   --accent-primary: #ea580c;
   --accent-primary-hover: #c2410c;
   --accent-secondary: #fb923c;
-  --accent-soft: rgba(234, 88, 12, 0.08);
-  --accent-border: rgba(234, 88, 12, 0.22);
-  --accent-glow: rgba(234, 88, 12, 0.15);
+  --accent-soft: rgba(234, 88, 12, 0.12);
+  --accent-border: rgba(234, 88, 12, 0.28);
+  --accent-glow: rgba(234, 88, 12, 0.22);
+
+  --text-main: #2b140a;
+  --text-primary: #2b140a;
+  --text-muted: #4a2718;
+  --text-light: #6e3d29;
+  --text-subtle: #8f533b;
 
   --text-main: #2b140a;
   --text-primary: #2b140a;
