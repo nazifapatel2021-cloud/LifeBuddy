@@ -1,10 +1,10 @@
 /* ==========================================================================
-   LIFEBUDDY DESIGN TOKENS — CALM, PROFESSIONAL SAAS SYSTEM
-   Inspired by Linear, Notion & Raycast. Zero visual noise.
+   LIFEBUDDY DESIGN TOKENS — AESTHETIC, CLEAN SAAS DESIGN SYSTEM
+   Default: Calm, Elegant Light Theme (Notion & Linear Light Aesthetic)
    ========================================================================== */
 
 :root {
-  /* System Typography — Smooth, Legible, Calm on the Eyes */
+  /* System Typography — Crisp, Calm, Zero Eye Strain */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: "SF Mono", Monaco, Consolas, "JetBrains Mono", monospace;
   --font-main: var(--font-sans);
@@ -20,12 +20,12 @@
   --space-8: 32px;
   --space-10: 40px;
 
-  /* Crisp, Tailored Radii — Zero Bubbly Blobs */
-  --radius-xs: 3px;
-  --radius-sm: 5px;
-  --radius-md: 7px;
-  --radius-lg: 9px;
-  --radius-xl: 12px;
+  /* Tailored Crisp Radii — 4px to 10px */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -35,30 +35,220 @@
 
   /* Semantic Status Colors */
   --color-success: #10b981;
-  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-success-bg: rgba(16, 185, 129, 0.08);
   --color-success-border: rgba(16, 185, 129, 0.2);
 
   --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-warning-bg: rgba(245, 158, 11, 0.08);
   --color-warning-border: rgba(245, 158, 11, 0.2);
 
   --color-danger: #ef4444;
-  --color-danger-bg: rgba(239, 68, 68, 0.1);
+  --color-danger-bg: rgba(239, 68, 68, 0.08);
   --color-danger-border: rgba(239, 68, 68, 0.2);
 
   --color-info: #3b82f6;
-  --color-info-bg: rgba(59, 130, 246, 0.1);
+  --color-info-bg: rgba(59, 130, 246, 0.08);
   --color-info-border: rgba(59, 130, 246, 0.2);
 
   --text-income: #10b981;
   --text-expense: #ef4444;
   --danger-color: #ef4444;
+
+  /* DEFAULT AESTHETIC LIGHT THEME (Notion / Linear Light Style) */
+  --bg-app: #f8fafc;
+  --bg-header: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f8fafc;
+  --bg-surface-hover: #f1f5f9;
+  --bg-surface-active: #e2e8f0;
+  --bg-card: #ffffff;
+
+  --bg-input: #f8fafc;
+  --bg-input-focus: #ffffff;
+
+  --border-color: rgba(15, 23, 42, 0.08);
+  --border-subtle: rgba(15, 23, 42, 0.05);
+  --border-hover: rgba(15, 23, 42, 0.16);
+  --border-focus: #4f46e5;
+
+  --accent-primary: #4f46e5;
+  --accent-primary-hover: #4338ca;
+  --accent-secondary: #6366f1;
+  --accent-soft: rgba(79, 70, 229, 0.08);
+  --accent-border: rgba(79, 70, 229, 0.22);
+  --accent-glow: rgba(79, 70, 229, 0.15);
+
+  --text-main: #0f172a;
+  --text-primary: #0f172a;
+  --text-muted: #475569;
+  --text-light: #94a3b8;
+  --text-subtle: #cbd5e1;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.08);
+
+  --timer-ring-bg: rgba(79, 70, 229, 0.08);
+  --timer-ring-progress: #4f46e5;
+  --timer-ring-glow: rgba(79, 70, 229, 0.2);
 }
 
 /* ==========================================================================
-   THEME 1: MIDNIGHT (Default Dark — Linear & Notion Dark Mode)
+   THEME 1: SAGE (Aesthetic Botanic Light)
    ========================================================================== */
-[data-theme="midnight"], :root {
+[data-theme="sage"] {
+  --bg-app: #f7f9f8;
+  --bg-header: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f2f6f4;
+  --bg-surface-hover: #eaf1ed;
+  --bg-surface-active: #dce7e1;
+  --bg-card: #ffffff;
+
+  --bg-input: #f7f9f8;
+  --bg-input-focus: #ffffff;
+
+  --border-color: rgba(16, 70, 48, 0.09);
+  --border-subtle: rgba(16, 70, 48, 0.05);
+  --border-hover: rgba(16, 70, 48, 0.18);
+  --border-focus: #10b981;
+
+  --accent-primary: #10b981;
+  --accent-primary-hover: #059669;
+  --accent-secondary: #34d399;
+  --accent-soft: rgba(16, 185, 129, 0.08);
+  --accent-border: rgba(16, 185, 129, 0.22);
+  --accent-glow: rgba(16, 185, 129, 0.15);
+
+  --text-main: #13241d;
+  --text-primary: #13241d;
+  --text-muted: #435b50;
+  --text-light: #7c968b;
+  --text-subtle: #c3d4cc;
+
+  --timer-ring-bg: rgba(16, 185, 129, 0.08);
+  --timer-ring-progress: #10b981;
+  --timer-ring-glow: rgba(16, 185, 129, 0.2);
+}
+
+/* ==========================================================================
+   THEME 2: NORDIC (Aesthetic Arctic Slate Light)
+   ========================================================================== */
+[data-theme="nordic"] {
+  --bg-app: #f8fafc;
+  --bg-header: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f0f4f8;
+  --bg-surface-hover: #e6edf5;
+  --bg-surface-active: #d6e2ef;
+  --bg-card: #ffffff;
+
+  --bg-input: #f8fafc;
+  --bg-input-focus: #ffffff;
+
+  --border-color: rgba(14, 45, 75, 0.09);
+  --border-subtle: rgba(14, 45, 75, 0.05);
+  --border-hover: rgba(14, 45, 75, 0.18);
+  --border-focus: #0284c7;
+
+  --accent-primary: #0284c7;
+  --accent-primary-hover: #0369a1;
+  --accent-secondary: #38bdf8;
+  --accent-soft: rgba(2, 132, 199, 0.08);
+  --accent-border: rgba(2, 132, 199, 0.22);
+  --accent-glow: rgba(2, 132, 199, 0.15);
+
+  --text-main: #0c1e30;
+  --text-primary: #0c1e30;
+  --text-muted: #3d546e;
+  --text-light: #7a94b0;
+  --text-subtle: #c2d5e8;
+
+  --timer-ring-bg: rgba(2, 132, 199, 0.08);
+  --timer-ring-progress: #0284c7;
+  --timer-ring-glow: rgba(2, 132, 199, 0.2);
+}
+
+/* ==========================================================================
+   THEME 3: LAVENDER (Aesthetic Amethyst Light)
+   ========================================================================== */
+[data-theme="lavender"] {
+  --bg-app: #faf8fc;
+  --bg-header: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f4effa;
+  --bg-surface-hover: #ede5f7;
+  --bg-surface-active: #decff2;
+  --bg-card: #ffffff;
+
+  --bg-input: #faf8fc;
+  --bg-input-focus: #ffffff;
+
+  --border-color: rgba(70, 20, 100, 0.09);
+  --border-subtle: rgba(70, 20, 100, 0.05);
+  --border-hover: rgba(70, 20, 100, 0.18);
+  --border-focus: #7c3aed;
+
+  --accent-primary: #7c3aed;
+  --accent-primary-hover: #6d28d9;
+  --accent-secondary: #a78bfa;
+  --accent-soft: rgba(124, 58, 237, 0.08);
+  --accent-border: rgba(124, 58, 237, 0.22);
+  --accent-glow: rgba(124, 58, 237, 0.15);
+
+  --text-main: #210d3d;
+  --text-primary: #210d3d;
+  --text-muted: #564075;
+  --text-light: #947ea8;
+  --text-subtle: #d8cde3;
+
+  --timer-ring-bg: rgba(124, 58, 237, 0.08);
+  --timer-ring-progress: #7c3aed;
+  --timer-ring-glow: rgba(124, 58, 237, 0.2);
+}
+
+/* ==========================================================================
+   THEME 4: SUNSET (Aesthetic Terracotta Light)
+   ========================================================================== */
+[data-theme="sunset"] {
+  --bg-app: #faf8f6;
+  --bg-header: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f7eee9;
+  --bg-surface-hover: #f2e2da;
+  --bg-surface-active: #e7cfc4;
+  --bg-card: #ffffff;
+
+  --bg-input: #faf8f6;
+  --bg-input-focus: #ffffff;
+
+  --border-color: rgba(90, 40, 20, 0.09);
+  --border-subtle: rgba(90, 40, 20, 0.05);
+  --border-hover: rgba(90, 40, 20, 0.18);
+  --border-focus: #ea580c;
+
+  --accent-primary: #ea580c;
+  --accent-primary-hover: #c2410c;
+  --accent-secondary: #fb923c;
+  --accent-soft: rgba(234, 88, 12, 0.08);
+  --accent-border: rgba(234, 88, 12, 0.22);
+  --accent-glow: rgba(234, 88, 12, 0.15);
+
+  --text-main: #2b140a;
+  --text-primary: #2b140a;
+  --text-muted: #664333;
+  --text-light: #9f7c6e;
+  --text-subtle: #ded0c9;
+
+  --timer-ring-bg: rgba(234, 88, 12, 0.08);
+  --timer-ring-progress: #ea580c;
+  --timer-ring-glow: rgba(234, 88, 12, 0.2);
+}
+
+/* ==========================================================================
+   THEME 5: MIDNIGHT (Sleek Dark OLED Focus Mode)
+   ========================================================================== */
+[data-theme="midnight"] {
   --bg-app: #0e1117;
   --bg-header: #11141c;
   --bg-surface: #151922;
@@ -95,172 +285,4 @@
   --timer-ring-bg: rgba(255, 255, 255, 0.06);
   --timer-ring-progress: #6366f1;
   --timer-ring-glow: rgba(99, 102, 241, 0.3);
-}
-
-/* ==========================================================================
-   THEME 2: SAGE (Calm Botanical Dark)
-   ========================================================================== */
-[data-theme="sage"] {
-  --bg-app: #0d1210;
-  --bg-header: #101714;
-  --bg-surface: #141c19;
-  --bg-surface-elevated: #18231f;
-  --bg-surface-hover: #1e2b26;
-  --bg-surface-active: #24332e;
-  --bg-card: #141c19;
-
-  --bg-input: #090e0c;
-  --bg-input-focus: #0d1411;
-
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-focus: #10b981;
-
-  --accent-primary: #10b981;
-  --accent-primary-hover: #059669;
-  --accent-secondary: #34d399;
-  --accent-soft: rgba(16, 185, 129, 0.12);
-  --accent-border: rgba(16, 185, 129, 0.25);
-  --accent-glow: rgba(16, 185, 129, 0.2);
-
-  --text-main: #e2ece7;
-  --text-primary: #e2ece7;
-  --text-muted: #8ca399;
-  --text-light: #5f756b;
-  --text-subtle: #45574f;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
-
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #10b981;
-  --timer-ring-glow: rgba(16, 185, 129, 0.3);
-}
-
-/* ==========================================================================
-   THEME 3: NORDIC (Cool Slate Frost)
-   ========================================================================== */
-[data-theme="nordic"] {
-  --bg-app: #0d1017;
-  --bg-header: #10141d;
-  --bg-surface: #141924;
-  --bg-surface-elevated: #181f2d;
-  --bg-surface-hover: #1e2637;
-  --bg-surface-active: #242d41;
-  --bg-card: #141924;
-
-  --bg-input: #090c12;
-  --bg-input-focus: #0d121b;
-
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-focus: #0ea5e9;
-
-  --accent-primary: #0ea5e9;
-  --accent-primary-hover: #0284c7;
-  --accent-secondary: #38bdf8;
-  --accent-soft: rgba(14, 165, 233, 0.12);
-  --accent-border: rgba(14, 165, 233, 0.25);
-  --accent-glow: rgba(14, 165, 233, 0.2);
-
-  --text-main: #e2e8f0;
-  --text-primary: #e2e8f0;
-  --text-muted: #8d9bb0;
-  --text-light: #5e6d82;
-  --text-subtle: #455263;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
-
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #0ea5e9;
-  --timer-ring-glow: rgba(14, 165, 233, 0.3);
-}
-
-/* ==========================================================================
-   THEME 4: LAVENDER (Amethyst Charcoal)
-   ========================================================================== */
-[data-theme="lavender"] {
-  --bg-app: #100d17;
-  --bg-header: #14101d;
-  --bg-surface: #181423;
-  --bg-surface-elevated: #1e192c;
-  --bg-surface-hover: #241f36;
-  --bg-surface-active: #2b2540;
-  --bg-card: #181423;
-
-  --bg-input: #0b0911;
-  --bg-input-focus: #100d18;
-
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-focus: #a855f7;
-
-  --accent-primary: #a855f7;
-  --accent-primary-hover: #9333ea;
-  --accent-secondary: #c084fc;
-  --accent-soft: rgba(168, 85, 247, 0.12);
-  --accent-border: rgba(168, 85, 247, 0.25);
-  --accent-glow: rgba(168, 85, 247, 0.2);
-
-  --text-main: #eae5f2;
-  --text-primary: #eae5f2;
-  --text-muted: #9c92ab;
-  --text-light: #6e647d;
-  --text-subtle: #4e465c;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
-
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #a855f7;
-  --timer-ring-glow: rgba(168, 85, 247, 0.3);
-}
-
-/* ==========================================================================
-   THEME 5: SUNSET (Warm Charcoal Terracotta)
-   ========================================================================== */
-[data-theme="sunset"] {
-  --bg-app: #120e0c;
-  --bg-header: #16120f;
-  --bg-surface: #1b1613;
-  --bg-surface-elevated: #221c18;
-  --bg-surface-hover: #2a231f;
-  --bg-surface-active: #322b26;
-  --bg-card: #1b1613;
-
-  --bg-input: #0d0a08;
-  --bg-input-focus: #130f0d;
-
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-focus: #f97316;
-
-  --accent-primary: #f97316;
-  --accent-primary-hover: #ea580c;
-  --accent-secondary: #fb923c;
-  --accent-soft: rgba(249, 115, 22, 0.12);
-  --accent-border: rgba(249, 115, 22, 0.25);
-  --accent-glow: rgba(249, 115, 22, 0.2);
-
-  --text-main: #eee6e2;
-  --text-primary: #eee6e2;
-  --text-muted: #a6968f;
-  --text-light: #73655f;
-  --text-subtle: #524742;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
-
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #f97316;
-  --timer-ring-glow: rgba(249, 115, 22, 0.3);
 }

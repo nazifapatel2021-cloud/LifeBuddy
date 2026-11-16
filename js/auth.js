@@ -31,55 +31,30 @@ export class AuthController {
     const welcomeGate = document.getElementById('welcome-gate');
     const mainWorkspace = document.getElementById('main-workspace');
     const workspaceHeaderActions = document.getElementById('workspace-header-actions');
+    const mainNavBar = document.getElementById('main-nav-bar');
     const authBtnText = document.getElementById('auth-btn-text');
 
     if (isLoggedIn) {
+      document.body.classList.remove('unauthenticated');
       if (welcomeGate) welcomeGate.style.display = 'none';
       if (mainWorkspace) mainWorkspace.style.display = 'block';
       if (workspaceHeaderActions) workspaceHeaderActions.style.display = 'flex';
+      if (mainNavBar) mainNavBar.style.display = 'flex';
       if (authBtnText) authBtnText.textContent = user ? user.username : 'Account';
     } else {
       // Unauthenticated Welcome State:
-      // Show ONLY the welcome hero and login dialog.
-      // Hide workspace, navigation, and all header utility buttons!
-      if (welcomeGate) welcomeGate.style.display = 'block';
+      // Show ONLY the clean brand in the header and the welcome hero/auth card.
+      // Hide workspace, navigation tabs, and header utility actions!
+      document.body.classList.add('unauthenticated');
+      if (welcomeGate) welcomeGate.style.display = 'flex';
       if (mainWorkspace) mainWorkspace.style.display = 'none';
       if (workspaceHeaderActions) workspaceHeaderActions.style.display = 'none';
+      if (mainNavBar) mainNavBar.style.display = 'none';
     }
   }
 
   bindEvents() {
-    // 1. Welcome Screen Quick 1-Click Demo Buttons
-    const demoAlexBtn = document.getElementById('quick-demo-alex');
-    const demoMayaBtn = document.getElementById('quick-demo-maya');
-
-    if (demoAlexBtn) {
-      demoAlexBtn.addEventListener('click', async () => {
-        demoAlexBtn.textContent = 'Logging in as Alex...';
-        try {
-          await API.auth.login('alex_student', 'password123');
-          window.location.reload();
-        } catch (e) {
-          alert('Could not log in as Alex. Ensure server is running.');
-          demoAlexBtn.innerHTML = `<span>🎓 Alex (Student)</span> <span class="badge badge-subtle">90 Days Data</span>`;
-        }
-      });
-    }
-
-    if (demoMayaBtn) {
-      demoMayaBtn.addEventListener('click', async () => {
-        demoMayaBtn.textContent = 'Logging in as Maya...';
-        try {
-          await API.auth.login('maya_freelancer', 'password123');
-          window.location.reload();
-        } catch (e) {
-          alert('Could not log in as Maya. Ensure server is running.');
-          demoMayaBtn.innerHTML = `<span>💼 Maya (Freelancer)</span> <span class="badge badge-subtle">90 Days Data</span>`;
-        }
-      });
-    }
-
-    // 2. Welcome Gate Form (Sign In / Register)
+    // Welcome Gate Form (Sign In / Register)
     const gateForm = document.getElementById('gate-auth-form');
     const gateTabLogin = document.getElementById('gate-tab-login');
     const gateTabRegister = document.getElementById('gate-tab-register');

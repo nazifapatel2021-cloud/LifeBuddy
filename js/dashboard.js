@@ -1,5 +1,6 @@
 /* LifeBuddy Today's Command Center & Overview */
 import { API } from './api.js';
+import { dailyLogController } from './daily_log.js';
 
 const MINDFUL_QUOTES = [
   "Small daily disciplines compound into extraordinary life outcomes.",
@@ -49,6 +50,25 @@ export class DashboardManager {
 
     const habitsDone = summary.habits.done_today || 0;
     const habitsTotal = summary.habits.total || 0;
+
+    // Load recent daily logs for the dashboard reflection section
+    let wellnessLogs = [];
+    try {
+      wellnessLogs = await API.wellness.getLogs();
+    } catch {}
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayLog = Array.isArray(wellnessLogs) ? wellnessLogs.find(l => l.date === todayStr) : null;
+    const currentMood = todayLog ? todayLog.mood : 3;
+    const currentSleep = todayLog ? todayLog.sleep_hours : 7.5;
+    const currentNotes = todayLog ? (todayLog.notes || '') : '';
+
+    const moodList = [
+      { level: 1, emoji: '😫', label: 'Drained' },
+      { level: 2, emoji: '😕', label: 'Low' },
+      { level: 3, emoji: '😐', label: 'Steady' },
+      { level: 4, emoji: '😊', label: 'Focused' },
+      { level: 5, emoji: '🤩', label: 'Thriving' }
+    ];
 
     container.innerHTML = `
       <!-- Hero Briefing Header -->
@@ -197,6 +217,70 @@ export class DashboardManager {
           </div>
         </div>
       </div>
+
+      <!-- Section 3: Today's Wellness & Daily Reflection Log (Grounded Dashboard Footer) -->
+      <div class="content-panel" style="margin-top: 20px;">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">Daily Wellness & Activity Reflection</h2>
+            <p class="panel-subtitle">Review your energy, sleep, and record today's mindful thoughts</p>
+          </div>
+          <button id="dash-open-review-btn" class="btn-primary" style="padding: 5px 12px; font-size: 0.78rem;">
+            <span>📖</span> <span>Open Full Review</span>
+          </button>
+        </div>
+
+        <div class="dash-wellness-grid">
+          <!-- Column A: Quick Mood & Energy Check-in -->
+          <div class="dash-wellness-col">
+            <span class="sub-label">Today's Energy Check-In</span>
+            <div class="dash-mood-row" style="margin-top: 6px;">
+              ${moodList.map(m => `
+                <button 
+                  type="button" 
+                  class="dash-quick-mood-btn ${currentMood === m.level ? 'active' : ''}" 
+                  data-mood="${m.level}"
+                  title="${m.label}"
+                >
+                  <span class="mood-emoji">${m.emoji}</span>
+                  <span class="mood-text">${m.label}</span>
+                </button>
+              `).join('')}
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">
+              <span>🛌 Sleep Last Night: <strong style="color: var(--text-main);">${currentSleep} hrs</strong></span>
+              <span>⚡ Status: <strong style="color: var(--accent-primary);">${todayLog ? 'Checked In' : 'Pending Today'}</strong></span>
+            </div>
+          </div>
+
+          <!-- Column B: Quick Daily Reflection Note -->
+          <div class="dash-wellness-col">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="sub-label">Mindful Reflection & Takeaway</span>
+              <span id="dash-note-status" style="font-size: 0.72rem; color: var(--color-success); display: none;">Saved ✓</span>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+              <input 
+                type="text" 
+                id="dash-quick-note-input" 
+                class="field-input" 
+                placeholder="What went well today? What will you prioritize tomorrow?" 
+                value="${this.escapeHtml(currentNotes)}"
+                autocomplete="off"
+              >
+              <button id="dash-save-note-btn" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem; flex-shrink: 0;">
+                Save Note
+              </button>
+            </div>
+
+            <!-- Recent 7-Day Reflection Consistency Recap -->
+            <div class="dash-recent-history-row" style="margin-top: 10px;">
+              ${this.renderRecentWellnessDots(wellnessLogs)}
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
     this.bindEvents(container);
@@ -293,6 +377,127 @@ export class DashboardManager {
         }
       });
     }
+
+    // Wellness & Daily Reflection Log Handlers
+    const openReviewBtn = container.querySelector('#dash-open-review-btn');
+    if (openReviewBtn) {
+      openReviewBtn.addEventListener('click', () => {
+        dailyLogController.open();
+      });
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    container.querySelectorAll('.dash-quick-mood-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const selectedMood = parseInt(btn.dataset.mood, 10);
+        try {
+          const currentLogs = await API.wellness.getLogs();
+          const todayEntry = (currentLogs || []).find(l => l.date === todayStr);
+          await API.wellness.saveLog({
+            date: todayStr,
+            mood: selectedMood,
+            sleep_hours: todayEntry && todayEntry.sleep_hours !== undefined ? todayEntry.sleep_hours : 7.5,
+            notes: todayEntry ? (todayEntry.notes || '') : ''
+          });
+          await this.render(container);
+        } catch (err) {
+          console.warn('Failed to save quick mood', err);
+        }
+      });
+    });
+
+    const noteInput = container.querySelector('#dash-quick-note-input');
+    const saveNoteBtn = container.querySelector('#dash-save-note-btn');
+    const noteStatus = container.querySelector('#dash-note-status');
+
+    if (saveNoteBtn && noteInput) {
+      const handleSaveNote = async () => {
+        const text = noteInput.value.trim();
+        try {
+          const currentLogs = await API.wellness.getLogs();
+          const todayEntry = (currentLogs || []).find(l => l.date === todayStr);
+          await API.wellness.saveLog({
+            date: todayStr,
+            mood: todayEntry && todayEntry.mood !== undefined ? todayEntry.mood : 3,
+            sleep_hours: todayEntry && todayEntry.sleep_hours !== undefined ? todayEntry.sleep_hours : 7.5,
+            notes: text
+          });
+          if (noteStatus) {
+            noteStatus.style.display = 'inline';
+            setTimeout(() => {
+              if (noteStatus) noteStatus.style.display = 'none';
+            }, 2500);
+          }
+        } catch (err) {
+          console.warn('Failed to save quick note', err);
+        }
+      };
+
+      saveNoteBtn.addEventListener('click', handleSaveNote);
+      noteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleSaveNote();
+        }
+      });
+    }
+  }
+
+  renderRecentWellnessDots(wellnessLogs) {
+    const days = [];
+    const logMap = new Map();
+    (wellnessLogs || []).forEach(l => {
+      if (l.date) logMap.set(l.date, l);
+    });
+
+    const moodIcons = { 1: '😞', 2: '😐', 3: '🙂', 4: '😊', 5: '⚡' };
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const dayLabel = dayNames[d.getDay()];
+      const log = logMap.get(dateStr);
+      days.push({
+        date: dateStr,
+        dayLabel,
+        isToday: i === 0,
+        log
+      });
+    }
+
+    return `
+      <div class="wellness-history-strip">
+        <span class="history-label">Last 7 Days:</span>
+        <div class="wellness-dots-container">
+          ${days.map(d => {
+            const hasLog = Boolean(d.log);
+            const icon = hasLog ? (moodIcons[d.log.mood] || '✓') : '○';
+            const tooltip = hasLog 
+              ? `${d.date}: Mood ${d.log.mood}/5, ${d.log.sleep_hours || 0}h sleep`
+              : `${d.date}: No check-in`;
+            return `
+              <div class="wellness-dot-pill ${hasLog ? 'logged' : 'unlogged'} ${d.isToday ? 'is-today' : ''}" title="${tooltip}">
+                <span class="dot-day">${d.dayLabel}</span>
+                <span class="dot-icon">${icon}</span>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   renderTopTasks(tasks) {

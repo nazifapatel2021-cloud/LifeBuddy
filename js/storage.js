@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS = {
   longBreakInterval: 4,
   autoStartBreaks: false,
   autoStartPomodoros: false,
-  theme: 'midnight',
+  theme: 'nordic',
   soundVolume: 0.5,
   soundEnabled: true
 };
