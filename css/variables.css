@@ -54,43 +54,52 @@
   --text-expense: #ef4444;
   --danger-color: #ef4444;
 
-  /* DEFAULT AESTHETIC LIGHT THEME (Notion / Linear Light Style) */
-  --bg-app: #f8fafc;
-  --bg-header: #ffffff;
-  --bg-surface: #ffffff;
-  --bg-surface-elevated: #f8fafc;
-  --bg-surface-hover: #f1f5f9;
-  --bg-surface-active: #e2e8f0;
-  --bg-card: #ffffff;
+  /* DEFAULT AESTHETIC VIBRANT SAAS THEME (Rich, Colorful, Modern) */
+  --bg-app: #f6f8fd;
+  --bg-mesh: radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.12) 0%, transparent 45%), radial-gradient(circle at 90% 15%, rgba(236, 72, 153, 0.10) 0%, transparent 45%), radial-gradient(circle at 50% 80%, rgba(14, 165, 233, 0.10) 0%, transparent 50%), radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.08) 0%, transparent 45%);
+  --bg-header: rgba(255, 255, 255, 0.88);
+  --bg-surface: rgba(255, 255, 255, 0.92);
+  --bg-surface-elevated: #f1f4fc;
+  --bg-surface-hover: #e8eefa;
+  --bg-surface-active: #dce5f7;
+  --bg-card: rgba(255, 255, 255, 0.92);
 
-  --bg-input: #f8fafc;
+  --bg-input: #ffffff;
   --bg-input-focus: #ffffff;
 
-  --border-color: rgba(15, 23, 42, 0.08);
-  --border-subtle: rgba(15, 23, 42, 0.05);
-  --border-hover: rgba(15, 23, 42, 0.16);
-  --border-focus: #4f46e5;
+  --border-color: rgba(99, 102, 241, 0.14);
+  --border-subtle: rgba(99, 102, 241, 0.08);
+  --border-hover: rgba(99, 102, 241, 0.32);
+  --border-focus: #6366f1;
 
-  --accent-primary: #4f46e5;
-  --accent-primary-hover: #4338ca;
-  --accent-secondary: #6366f1;
-  --accent-soft: rgba(79, 70, 229, 0.08);
-  --accent-border: rgba(79, 70, 229, 0.22);
-  --accent-glow: rgba(79, 70, 229, 0.15);
+  --accent-primary: #6366f1;
+  --accent-primary-hover: #4f46e5;
+  --accent-secondary: #8b5cf6;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --accent-border: rgba(99, 102, 241, 0.30);
+  --accent-glow: rgba(99, 102, 241, 0.25);
+
+  /* Colorful Module Gradients */
+  --grad-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #ec4899 100%);
+  --grad-focus: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+  --grad-habit: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  --grad-finance: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  --grad-planner: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+  --grad-hero: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(139, 92, 246, 0.12) 40%, rgba(236, 72, 153, 0.10) 100%);
 
   --text-main: #0f172a;
   --text-primary: #0f172a;
   --text-muted: #475569;
-  --text-light: #94a3b8;
-  --text-subtle: #cbd5e1;
+  --text-light: #64748b;
+  --text-subtle: #94a3b8;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
-  --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 1px 3px rgba(99, 102, 241, 0.06);
+  --shadow-md: 0 4px 16px rgba(99, 102, 241, 0.08), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 32px rgba(99, 102, 241, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05);
 
-  --timer-ring-bg: rgba(79, 70, 229, 0.08);
-  --timer-ring-progress: #4f46e5;
-  --timer-ring-glow: rgba(79, 70, 229, 0.2);
+  --timer-ring-bg: rgba(99, 102, 241, 0.10);
+  --timer-ring-progress: #6366f1;
+  --timer-ring-glow: rgba(99, 102, 241, 0.35);
 }
 
 /* ==========================================================================
@@ -249,40 +258,48 @@
    THEME 5: MIDNIGHT (Sleek Dark OLED Focus Mode)
    ========================================================================== */
 [data-theme="midnight"] {
-  --bg-app: #0e1117;
-  --bg-header: #11141c;
-  --bg-surface: #151922;
-  --bg-surface-elevated: #1a1f2c;
-  --bg-surface-hover: #1f2535;
-  --bg-surface-active: #242b3d;
-  --bg-card: #151922;
+  --bg-app: #0c0f17;
+  --bg-mesh: radial-gradient(circle at 10% 12%, rgba(99, 102, 241, 0.20) 0%, transparent 45%), radial-gradient(circle at 90% 15%, rgba(217, 70, 239, 0.16) 0%, transparent 45%), radial-gradient(circle at 50% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 50%), radial-gradient(circle at 85% 85%, rgba(245, 158, 11, 0.12) 0%, transparent 45%);
+  --bg-header: rgba(17, 20, 28, 0.88);
+  --bg-surface: rgba(21, 25, 34, 0.88);
+  --bg-surface-elevated: #1a202c;
+  --bg-surface-hover: #222938;
+  --bg-surface-active: #2a3346;
+  --bg-card: rgba(21, 25, 34, 0.88);
 
   --bg-input: #0b0d13;
   --bg-input-focus: #0f121b;
 
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --border-focus: #6366f1;
+  --border-color: rgba(99, 102, 241, 0.22);
+  --border-subtle: rgba(99, 102, 241, 0.12);
+  --border-hover: rgba(99, 102, 241, 0.45);
+  --border-focus: #818cf8;
 
-  --accent-primary: #6366f1;
-  --accent-primary-hover: #4f46e5;
-  --accent-secondary: #818cf8;
-  --accent-soft: rgba(99, 102, 241, 0.12);
-  --accent-border: rgba(99, 102, 241, 0.25);
-  --accent-glow: rgba(99, 102, 241, 0.2);
+  --accent-primary: #818cf8;
+  --accent-primary-hover: #6366f1;
+  --accent-secondary: #a78bfa;
+  --accent-soft: rgba(99, 102, 241, 0.20);
+  --accent-border: rgba(99, 102, 241, 0.35);
+  --accent-glow: rgba(99, 102, 241, 0.35);
 
-  --text-main: #e2e8f0;
-  --text-primary: #e2e8f0;
+  --grad-primary: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  --grad-focus: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
+  --grad-habit: linear-gradient(135deg, #10b981 0%, #22d3ee 100%);
+  --grad-finance: linear-gradient(135deg, #fbbf24 0%, #f43f5e 100%);
+  --grad-planner: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  --grad-hero: linear-gradient(135deg, rgba(99, 102, 241, 0.22) 0%, rgba(168, 85, 247, 0.18) 40%, rgba(236, 72, 153, 0.14) 100%);
+
+  --text-main: #f8fafc;
+  --text-primary: #f8fafc;
   --text-muted: #94a3b8;
   --text-light: #64748b;
   --text-subtle: #475569;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(99, 102, 241, 0.15);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(99, 102, 241, 0.20);
 
-  --timer-ring-bg: rgba(255, 255, 255, 0.06);
-  --timer-ring-progress: #6366f1;
-  --timer-ring-glow: rgba(99, 102, 241, 0.3);
+  --timer-ring-bg: rgba(255, 255, 255, 0.08);
+  --timer-ring-progress: #818cf8;
+  --timer-ring-glow: rgba(129, 140, 248, 0.45);
 }

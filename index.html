@@ -113,38 +113,43 @@
       <div class="welcome-container-inner">
         <!-- Hero Pitch Banner -->
         <div class="welcome-hero-panel">
+          <div class="welcome-pill-badge">
+            <span class="pill-sparkle">✨</span>
+            <span>Intelligent Life-Management Platform</span>
+          </div>
+
           <h1 class="welcome-headline">
             Your Life.<br>
             <span class="gradient-text">Smarter, Every Day.</span>
           </h1>
 
           <p class="welcome-description">
-            A unified workspace designed for deep focus, daily momentum, task execution, and mindful personal finances.
+            A unified, privacy-first personal workspace engineered for deep work focus, habit compounding, mindful planning, and personal finances.
           </p>
 
-          <!-- Core Value Proposition Cards (Clean & Minimalist) -->
+          <!-- Core Value Proposition Cards (Vibrant, Colorful & Attractive) -->
           <div class="welcome-features-list">
-            <div class="welcome-feature-card">
-              <span class="feature-icon">⏱️</span>
+            <div class="welcome-feature-card feature-card-focus">
+              <span class="feature-icon feature-icon-focus">⏱️</span>
               <div class="feature-text">
-                <span class="feature-title">Deep Work & Focus</span>
-                <span class="feature-desc">Pomodoro flow paired with ambient soundscapes</span>
+                <span class="feature-title">Deep Work & Focus Flow</span>
+                <span class="feature-desc">Pomodoro blocks paired with soothing ambient soundscapes</span>
               </div>
             </div>
 
-            <div class="welcome-feature-card">
-              <span class="feature-icon">🌱</span>
+            <div class="welcome-feature-card feature-card-habits">
+              <span class="feature-icon feature-icon-habits">🌱</span>
               <div class="feature-text">
-                <span class="feature-title">Habits & Consistency</span>
-                <span class="feature-desc">Streak momentum, daily reflections, and gentle nudges</span>
+                <span class="feature-title">Habit Compounding</span>
+                <span class="feature-desc">Streak tracking, daily reflections, and consistent momentum</span>
               </div>
             </div>
 
-            <div class="welcome-feature-card">
-              <span class="feature-icon">💰</span>
+            <div class="welcome-feature-card feature-card-finance">
+              <span class="feature-icon feature-icon-finance">💰</span>
               <div class="feature-text">
-                <span class="feature-title">Personal Finances</span>
-                <span class="feature-desc">Frictionless expense tracking with monthly budget pacing</span>
+                <span class="feature-title">Mindful Personal Finances</span>
+                <span class="feature-desc">Income & expense tracking, category donut chart, and monthly ledger</span>
               </div>
             </div>
           </div>
@@ -314,8 +319,15 @@
             <!-- Precision Circular Timer Display -->
             <div class="timer-display-frame">
               <svg class="timer-svg" viewBox="0 0 300 300">
+                <defs>
+                  <linearGradient id="timer-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#6366f1" />
+                    <stop offset="50%" stop-color="#8b5cf6" />
+                    <stop offset="100%" stop-color="#ec4899" />
+                  </linearGradient>
+                </defs>
                 <circle class="timer-bg-ring" cx="150" cy="150" r="136" />
-                <circle id="timer-progress-ring" class="timer-progress-ring" cx="150" cy="150" r="136" />
+                <circle id="timer-progress-ring" class="timer-progress-ring" cx="150" cy="150" r="136" stroke="url(#timer-grad)" />
               </svg>
 
               <div class="timer-center-content">
