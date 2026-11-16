@@ -32,12 +32,14 @@ function initApp() {
 
   const taskManager = new TaskManager({
     onTasksChanged: () => {
-      taskManager.renderTaskList(document.getElementById('task-list-container'));
+      taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
       dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
+      updateSessionCounterUI();
     },
     onActiveTaskChanged: (activeTask) => {
       updateActiveTaskBadge(activeTask);
+      updateSessionCounterUI();
     }
   });
 
@@ -67,6 +69,7 @@ function initApp() {
     },
     onTaskFocus: (taskId) => {
       taskManager.setActiveTask(taskId);
+      updateSessionCounterUI();
     },
     onTaskCreated: () => {
       taskManager.loadTasks ? taskManager.loadTasks() : null;
@@ -77,12 +80,14 @@ function initApp() {
     onUserChanged: async () => {
       try {
         await store.fetchState();
+        taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
         taskManager.renderTaskList(document.getElementById('planner-task-list'));
         habitManager.renderHabitsList(document.getElementById('habits-list-container'));
         expenseManager.render();
         await dashboardManager.render(document.getElementById('view-dashboard'));
         statsVisualizer.updateStatsUI();
         insightsCoordinator.render();
+        updateSessionCounterUI();
       } catch (e) {
         console.warn('User change reload error:', e);
       }
@@ -153,9 +158,40 @@ function initApp() {
 
   function updateSessionCounterUI() {
     const counterEl = document.getElementById('pomodoro-session-counter');
+    const addPomoBtn = document.getElementById('btn-add-pomo-to-task');
+    const activeTask = taskManager.getActiveTask();
+
     if (!counterEl) return;
-    const current = (timerEngine.completedFocusSessions % 4) + 1;
-    counterEl.textContent = `Pomodoro ${current} of 4`;
+
+    if (activeTask) {
+      counterEl.style.display = 'block';
+      const act = activeTask.completed_pomodoros || 0;
+      const est = activeTask.estimated_pomodoros || 1;
+      const current = act + 1;
+      if (current > est) {
+        counterEl.textContent = `Pomodoro ${current} of ${est} (Extended)`;
+      } else {
+        counterEl.textContent = `Pomodoro ${current} of ${est}`;
+      }
+      if (addPomoBtn) addPomoBtn.style.display = 'inline-block';
+    } else {
+      counterEl.style.display = 'none';
+      counterEl.textContent = '';
+      if (addPomoBtn) addPomoBtn.style.display = 'none';
+    }
+  }
+
+  // Add Pomodoro button event
+  const addPomoBtn = document.getElementById('btn-add-pomo-to-task');
+  if (addPomoBtn) {
+    addPomoBtn.addEventListener('click', async () => {
+      const activeTask = taskManager.getActiveTask();
+      if (activeTask) {
+        await taskManager.addPomodoroToTask(activeTask.id);
+        updateSessionCounterUI();
+        showToast('🍅 Added +1 Pomodoro to target');
+      }
+    });
   }
 
   // ==========================================
@@ -195,7 +231,8 @@ function initApp() {
     } else if (viewName === 'planner') {
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
     } else if (viewName === 'focus') {
-      taskManager.renderTaskList(document.getElementById('task-list-container'));
+      taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
+      updateSessionCounterUI();
     } else if (viewName === 'finances') {
       expenseManager.render();
     }
@@ -287,6 +324,7 @@ function initApp() {
     } else {
       badge.style.display = 'none';
     }
+    updateSessionCounterUI();
   }
 
   // Quick Task Forms (Focus Room & Planner)
@@ -300,10 +338,10 @@ function initApp() {
       const title = taskTitleInput ? taskTitleInput.value : '';
       const estPomo = taskPomoInput ? taskPomoInput.value : 1;
       if (title.trim()) {
-        await taskManager.addTask(title, estPomo);
+        await taskManager.addTask(title, estPomo, 'work', 'medium', null, true);
         if (taskTitleInput) taskTitleInput.value = '';
         if (taskPomoInput) taskPomoInput.value = '1';
-        showToast('Task added to queue');
+        showToast('Task added to focus queue');
       }
     });
   }
@@ -317,11 +355,14 @@ function initApp() {
       const priority = document.getElementById('planner-task-priority')?.value || 'medium';
       const estPomo = document.getElementById('planner-task-pomo')?.value || 1;
       const dueDate = document.getElementById('planner-task-due')?.value || null;
+      const inFocusQueue = document.getElementById('planner-task-focus-queue') ? document.getElementById('planner-task-focus-queue').checked : true;
 
       if (title.trim()) {
-        await taskManager.addTask(title, estPomo, category, priority, dueDate || null);
+        await taskManager.addTask(title, estPomo, category, priority, dueDate || null, inFocusQueue);
         plannerTaskForm.reset();
-        showToast('Task created');
+        const queueCheck = document.getElementById('planner-task-focus-queue');
+        if (queueCheck) queueCheck.checked = true;
+        showToast('Task created in Planner');
       }
     });
   }
@@ -462,6 +503,7 @@ function initApp() {
     });
   }
 
+  // Reliably closes modal upon saving preferences
   if (saveSettingsBtn && settingsModal) {
     saveSettingsBtn.addEventListener('click', async () => {
       const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
@@ -487,13 +529,61 @@ function initApp() {
       Storage.saveSettings(curr);
       timerEngine.setDurations(focusMin, shortMin, longMin);
 
-      // Save budget and focus goal to store
-      await store.setMonthlyBudget(monthlyBudget);
-      store.state.settings.daily_focus_goal = dailyFocusGoal;
-      store.persist();
+      try {
+        await store.setMonthlyBudget(monthlyBudget);
+        store.state.settings.daily_focus_goal = dailyFocusGoal;
+        store.persist();
+      } catch (err) {
+        console.warn('Failed saving settings to store:', err);
+      } finally {
+        settingsModal.classList.remove('active');
+        showToast('Preferences saved');
+      }
+    });
+  }
 
-      settingsModal.classList.remove('active');
-      showToast('Preferences saved');
+  // Account Modal & Profile Details
+  const authModalBtn = document.getElementById('auth-modal-btn');
+  const authModal = document.getElementById('auth-modal');
+  const closeAuthBtn = document.getElementById('close-auth-btn');
+
+  if (authModalBtn && authModal) {
+    authModalBtn.addEventListener('click', () => {
+      const user = API.getUser() || store.state.user;
+      const settings = store.state.settings || {};
+      const loggedInView = document.getElementById('auth-logged-in-view');
+      const loggedOutView = document.getElementById('auth-logged-out-view');
+
+      if (API.isLoggedIn()) {
+        if (loggedInView) loggedInView.style.display = 'block';
+        if (loggedOutView) loggedOutView.style.display = 'none';
+
+        const fullNameEl = document.getElementById('profile-fullname');
+        const usernameEl = document.getElementById('profile-username');
+        const emailEl = document.getElementById('profile-email');
+        const profEl = document.getElementById('profile-profession');
+        const ageEl = document.getElementById('profile-age-group');
+        const goalEl = document.getElementById('profile-focus-goal');
+
+        const displayName = settings.full_name || (user ? user.full_name : '') || (user ? user.username : 'Friend');
+        if (fullNameEl) fullNameEl.textContent = displayName;
+        if (usernameEl) usernameEl.textContent = `@${user ? user.username : 'user'}`;
+        if (emailEl) emailEl.textContent = user ? user.email : 'local@workspace';
+        if (profEl) profEl.textContent = settings.profession || (user ? user.profession : '') || 'Professional';
+        if (ageEl) ageEl.textContent = settings.age_group || (user ? user.age_group : '') || 'General';
+        if (goalEl) goalEl.textContent = settings.focus_goal || (user ? user.focus_goal : '') || 'Deep Work & Consistency';
+      } else {
+        if (loggedInView) loggedInView.style.display = 'none';
+        if (loggedOutView) loggedOutView.style.display = 'block';
+      }
+
+      authModal.classList.add('active');
+    });
+  }
+
+  if (closeAuthBtn && authModal) {
+    closeAuthBtn.addEventListener('click', () => {
+      authModal.classList.remove('active');
     });
   }
 
@@ -564,9 +654,11 @@ function initApp() {
 
     try {
       await store.fetchState();
+      taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
       habitManager.renderHabitsList(document.getElementById('habits-list-container'));
       expenseManager.render();
+      updateSessionCounterUI();
     } catch (e) {
       console.warn('Data collections load error:', e);
     }

@@ -43,6 +43,7 @@ class TaskCreate(BaseModel):
     estimated_pomodoros: int = 1
     due_date: Optional[str] = None
     completed_at: Optional[str] = None
+    in_focus_queue: bool = True
 
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
@@ -53,6 +54,7 @@ class TaskUpdate(BaseModel):
     completed: Optional[bool] = None
     due_date: Optional[str] = None
     completed_at: Optional[str] = None
+    in_focus_queue: Optional[bool] = None
 
 class HabitCreate(BaseModel):
     id: Optional[str] = None

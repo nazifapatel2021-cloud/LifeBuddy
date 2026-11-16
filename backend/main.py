@@ -142,10 +142,13 @@ def register(user: UserRegister):
 def login(creds: UserLogin):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, username, email, password_hash FROM users WHERE username = ? OR email = ?",
-        (creds.username_or_email.strip(), creds.username_or_email.strip().lower())
-    )
+    cursor.execute("""
+        SELECT u.id, u.username, u.email, u.password_hash,
+               s.full_name, s.profession, s.age_group, s.focus_goal, s.monthly_budget
+        FROM users u
+        LEFT JOIN user_settings s ON u.id = s.user_id
+        WHERE u.username = ? OR u.email = ?
+    """, (creds.username_or_email.strip(), creds.username_or_email.strip().lower()))
     row = cursor.fetchone()
     conn.close()
 
@@ -159,7 +162,15 @@ def login(creds: UserLogin):
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer",
-        "user": {"id": row["id"], "username": row["username"], "email": row["email"]}
+        "user": {
+            "id": row["id"],
+            "username": row["username"],
+            "email": row["email"],
+            "full_name": row["full_name"] or row["username"],
+            "profession": row["profession"] or "",
+            "age_group": row["age_group"] or "",
+            "focus_goal": row["focus_goal"] or ""
+        }
     }
 
 @app.post("/api/auth/refresh")
@@ -474,9 +485,9 @@ def create_task(task: TaskCreate, user: dict = Depends(get_current_user)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO tasks (id, user_id, title, category, priority, estimated_pomodoros, completed_pomodoros, completed, due_date, completed_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
-    """, (task_id, user["id"], task.title.strip(), task.category, task.priority, task.estimated_pomodoros, task.due_date, task.completed_at, now, now))
+        INSERT INTO tasks (id, user_id, title, category, priority, estimated_pomodoros, completed_pomodoros, completed, due_date, completed_at, in_focus_queue, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)
+    """, (task_id, user["id"], task.title.strip(), task.category, task.priority, task.estimated_pomodoros, task.due_date, task.completed_at, 1 if task.in_focus_queue else 0, now, now))
     conn.commit()
     cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
     new_task = dict(cursor.fetchone())

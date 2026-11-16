@@ -19,7 +19,7 @@ export const CATEGORY_ICONS = {
 export class TaskManager {
   constructor(options = {}) {
     this.activeTaskId = localStorage.getItem('lifebuddy_active_task_id') || null;
-    this.filter = 'all'; // all, today, upcoming, overdue, completed
+    this.filter = 'all'; // all, today, upcoming, overdue, pending, completed
     this.priorityFilter = 'all';
     this.categoryFilter = 'all';
     this.searchQuery = '';
@@ -36,15 +36,41 @@ export class TaskManager {
 
   async init() {
     await store.fetchState();
+    this.cleanupDailyTasks();
     this.syncActiveTask();
     this.onTasksChanged(store.state.tasks || []);
     this.onActiveTaskChanged(this.getActiveTask());
   }
 
+  cleanupDailyTasks() {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastCleanup = localStorage.getItem('lifebuddy_last_daily_cleanup');
+    if (lastCleanup && lastCleanup !== todayStr) {
+      // It's a new day: erase completed tasks and lower-priority old pomodoro tasks from the active queue
+      const tasks = store.state.tasks || [];
+      const updatedTasks = tasks.filter(t => {
+        // Erase completed pomodoro tasks
+        if (t.completed) return false;
+        // Keep high and urgent priority tasks in active queue
+        if (t.priority === 'urgent' || t.priority === 'high' || t.due_date === todayStr) {
+          return true;
+        }
+        // Remove low/medium from focus queue, retain in planner
+        t.in_focus_queue = false;
+        return true;
+      });
+      store.state.tasks = updatedTasks;
+      store.persist();
+      localStorage.setItem('lifebuddy_last_daily_cleanup', todayStr);
+    } else if (!lastCleanup) {
+      localStorage.setItem('lifebuddy_last_daily_cleanup', todayStr);
+    }
+  }
+
   syncActiveTask() {
     const tasks = store.state.tasks || [];
     if (!this.getActiveTask() && tasks.length > 0) {
-      const firstPending = tasks.find(t => !t.completed);
+      const firstPending = tasks.find(t => !t.completed && (t.in_focus_queue !== false));
       if (firstPending) this.setActiveTask(firstPending.id);
     }
   }
@@ -58,7 +84,7 @@ export class TaskManager {
     return tasks.find(t => t.id === this.activeTaskId) || null;
   }
 
-  async addTask(title, estPomodoros = 1, category = 'work', priority = 'medium', dueDate = null) {
+  async addTask(title, estPomodoros = 1, category = 'work', priority = 'medium', dueDate = null, inFocusQueue = true) {
     if (!title || !title.trim()) return;
 
     const task = await store.createTask({
@@ -66,10 +92,11 @@ export class TaskManager {
       estimated_pomodoros: Math.max(1, parseInt(estPomodoros, 10) || 1),
       category: category || 'work',
       priority: priority || 'medium',
-      due_date: dueDate || null
+      due_date: dueDate || null,
+      in_focus_queue: inFocusQueue !== false
     });
 
-    if (!this.activeTaskId && task) {
+    if (!this.activeTaskId && task && task.in_focus_queue) {
       this.setActiveTask(task.id);
     }
     return task;
@@ -80,6 +107,27 @@ export class TaskManager {
     if (task) {
       const nextCompleted = !task.completed;
       await store.updateTask(id, { completed: nextCompleted });
+      if (nextCompleted && this.activeTaskId === id) {
+        // Automatically switch active task to the next pending one
+        const pending = (store.state.tasks || []).find(t => t.id !== id && !t.completed && t.in_focus_queue !== false);
+        this.setActiveTask(pending ? pending.id : null);
+      }
+    }
+  }
+
+  async toggleFocusQueue(id) {
+    const task = (store.state.tasks || []).find(t => t.id === id);
+    if (task) {
+      const nextQueue = !(task.in_focus_queue ?? true);
+      await store.updateTask(id, { in_focus_queue: nextQueue });
+    }
+  }
+
+  async addPomodoroToTask(id) {
+    const task = (store.state.tasks || []).find(t => t.id === id);
+    if (task) {
+      const nextEst = (task.estimated_pomodoros || 1) + 1;
+      await store.updateTask(id, { estimated_pomodoros: nextEst });
     }
   }
 
@@ -111,6 +159,83 @@ export class TaskManager {
     }
   }
 
+  /* Render Focus Room Target Queue */
+  renderFocusQueueList(containerEl) {
+    if (!containerEl) return;
+    const allTasks = store.state.tasks || [];
+    // Only pending tasks designated for focus queue
+    const queueTasks = allTasks.filter(t => !t.completed && (t.in_focus_queue !== false));
+
+    if (queueTasks.length === 0) {
+      containerEl.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">🎯</div>
+          <p>Focus queue is clear! Select or add tasks from the Planner to pin them here.</p>
+        </div>
+      `;
+      return;
+    }
+
+    containerEl.innerHTML = queueTasks.map(task => {
+      const isSelected = task.id === this.activeTaskId;
+      const isCompleted = !!task.completed;
+      const act = task.completed_pomodoros || 0;
+      const est = task.estimated_pomodoros || 1;
+
+      return `
+        <div class="task-item glass-pill ${isSelected ? 'selected' : ''}" data-id="${task.id}">
+          <div class="task-left">
+            <button class="task-checkbox ${isCompleted ? 'checked' : ''}" data-action="toggle" title="Mark done">
+              ${isCompleted ? '✓' : ''}
+            </button>
+            <div class="task-details">
+              <span class="task-text">${this.escapeHtml(task.title)}</span>
+              <div class="task-tags">
+                <span class="badge badge-subtle">${CATEGORY_ICONS[task.category] || task.category || 'work'}</span>
+                <span class="badge badge-${task.priority === 'urgent' ? 'urgent' : 'subtle'}">${task.priority}</span>
+              </div>
+            </div>
+          </div>
+          <div class="task-actions-right">
+            <div class="task-pomo-badge" title="Completed / Estimated Pomodoros">
+              <span>🍅</span> <span>${act}/${est}</span>
+            </div>
+            <button class="btn-icon-tiny btn-add-pomo" data-action="add-pomo" title="Need more time? Add +1 Pomodoro">+1 🍅</button>
+            <button class="btn-focus-task btn-icon-small" data-action="select" title="Focus on this task">
+              ${isSelected ? '🎯 Active' : 'Focus'}
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Attach listeners
+    containerEl.querySelectorAll('.task-item').forEach(item => {
+      const id = item.dataset.id;
+      item.querySelector('[data-action="toggle"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleTask(id);
+      });
+
+      item.querySelector('[data-action="add-pomo"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.addPomodoroToTask(id);
+      });
+
+      item.querySelector('[data-action="select"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.setActiveTask(id);
+      });
+
+      item.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) {
+          this.setActiveTask(id);
+        }
+      });
+    });
+  }
+
+  /* Render Full Planner Tasks List */
   renderTaskList(containerEl, filterOverride = null) {
     if (!containerEl) return;
     const activeFilter = filterOverride || this.filter;
@@ -163,6 +288,7 @@ export class TaskManager {
       const priorityInfo = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG['medium'];
       const act = task.completed_pomodoros ?? 0;
       const est = task.estimated_pomodoros ?? 1;
+      const inQueue = task.in_focus_queue !== false;
 
       const isOverdue = task.due_date && task.due_date < todayStr && !isCompleted;
       const isDueToday = task.due_date === todayStr && !isCompleted;
@@ -190,6 +316,9 @@ export class TaskManager {
                 <span class="badge ${priorityInfo.class}">${priorityInfo.label}</span>
                 <span class="badge badge-subtle">${CATEGORY_ICONS[task.category] || task.category || 'work'}</span>
                 ${dueBadge}
+                <button class="btn-icon-tiny ${inQueue ? 'btn-queue-active' : ''}" data-action="toggle-queue" title="${inQueue ? 'Remove from Focus Room queue' : 'Add to Focus Room queue'}">
+                  ${inQueue ? '📌 In Focus Queue' : '+ Focus Queue'}
+                </button>
               </div>
             </div>
           </div>
@@ -197,6 +326,7 @@ export class TaskManager {
             <div class="task-pomo-badge" title="Completed / Estimated Pomodoros">
               <span>🍅</span> <span>${act}/${est}</span>
             </div>
+            <button class="btn-icon-tiny btn-add-pomo" data-action="add-pomo" title="Add +1 Pomodoro to estimate">+1 🍅</button>
             <button class="btn-focus-task btn-icon-small" data-action="select" title="Focus on this task">
               ${isSelected ? '🎯 Active' : 'Focus'}
             </button>
@@ -209,17 +339,27 @@ export class TaskManager {
     // Attach listeners
     containerEl.querySelectorAll('.task-item').forEach(item => {
       const id = item.dataset.id;
-      item.querySelector('[data-action="toggle"]').addEventListener('click', (e) => {
+      item.querySelector('[data-action="toggle"]')?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.toggleTask(id);
       });
 
-      item.querySelector('[data-action="select"]').addEventListener('click', (e) => {
+      item.querySelector('[data-action="toggle-queue"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.toggleFocusQueue(id);
+      });
+
+      item.querySelector('[data-action="add-pomo"]')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.addPomodoroToTask(id);
+      });
+
+      item.querySelector('[data-action="select"]')?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.setActiveTask(id);
       });
 
-      item.querySelector('[data-action="delete"]').addEventListener('click', (e) => {
+      item.querySelector('[data-action="delete"]')?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.deleteTask(id);
       });

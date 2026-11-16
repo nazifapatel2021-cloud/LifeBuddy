@@ -158,14 +158,6 @@ export class DailyLogController {
           💾 Save Daily Check-In
         </button>
       </form>
-
-      <!-- Recent 7-Day History -->
-      <div style="margin-top: 28px; border-top: 1px solid var(--border-color); padding-top: 18px;">
-        <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">Recent Daily Check-Ins</h4>
-        <div id="recent-logs-list">
-          ${this.renderRecentLogs(logs.slice(0, 7))}
-        </div>
-      </div>
     `;
 
     // Bind inner form events

@@ -2990,3 +2990,62 @@ body.zen-mode .focus-room-layout {
 .habit-day-dot.is-today .day-dot-circle {
   outline: 2px solid var(--accent-soft);
 }
+
+/* ==========================================================================
+   Creative Logo, Focus Queue & Profile Enhancements
+   ========================================================================== */
+.brand-logo-mark.creative-logo-mark {
+  width: 32px;
+  height: 32px;
+  background: transparent !important;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand:hover .brand-logo-mark.creative-logo-mark {
+  transform: scale(1.1) rotate(6deg);
+}
+
+.creative-brand-svg {
+  width: 30px;
+  height: 30px;
+  filter: drop-shadow(0 2px 6px rgba(99, 102, 241, 0.35));
+}
+
+.btn-add-pomo {
+  color: var(--accent-primary);
+  font-weight: 600;
+  border-color: var(--accent-primary);
+  background: var(--accent-soft);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-add-pomo:hover {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.btn-queue-active {
+  background: var(--accent-soft) !important;
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary) !important;
+  font-weight: 600;
+}
+
+.dash-recent-checkins-panel {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-top: 16px;
+}
+
+.dash-recent-logs-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

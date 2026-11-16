@@ -143,11 +143,13 @@ def init_db():
 
     # Ensure columns exist in SQLite if table was created in an earlier revision
     if not is_postgres():
-        # Check tasks.completed_at
+        # Check tasks.completed_at and in_focus_queue
         cursor.execute("PRAGMA table_info(tasks)")
         task_cols = [row[1] for row in cursor.fetchall()]
         if "completed_at" not in task_cols:
             cursor.execute("ALTER TABLE tasks ADD COLUMN completed_at TEXT")
+        if "in_focus_queue" not in task_cols:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN in_focus_queue INTEGER DEFAULT 1")
 
         # Check expenses.time
         cursor.execute("PRAGMA table_info(expenses)")

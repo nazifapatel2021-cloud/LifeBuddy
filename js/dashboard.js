@@ -44,18 +44,6 @@ export class DashboardManager {
   async render(container) {
     if (!container) return;
 
-    let summary = null;
-    try {
-      summary = await API.dashboard.getSummary();
-    } catch {
-      summary = {
-        focus: { today_minutes: store.getTodayFocusMinutes() },
-        tasks: { completed: 0, total: store.state.tasks.length, top_pending: store.getPendingTasks() },
-        finances: { today_expense: store.getTodayExpense(), month_expense: store.getMonthExpense(), monthly_budget: store.getBudget(), currency_symbol: '₹' },
-        habits: { done_today: store.getHabitsDoneToday(), total: store.state.habits.length }
-      };
-    }
-
     const userName = store.getDisplayName();
     const quote = this.getRandomQuote();
     const greeting = this.getGreeting();
@@ -79,9 +67,9 @@ export class DashboardManager {
     const habitsDone = store.getHabitsDoneToday();
     const habitsTotal = allHabits.length;
 
-    // Load recent daily logs for the dashboard reflection section
+    // Load today's check-in
     const todayLog = store.getTodayLog();
-    const currentMood = todayLog ? todayLog.mood : null; // null if not yet checked in!
+    const currentMood = todayLog ? todayLog.mood : null;
     const currentSleep = todayLog ? todayLog.sleep_hours : null;
     const currentNotes = todayLog ? (todayLog.notes || '') : '';
 
@@ -130,7 +118,7 @@ export class DashboardManager {
     }
 
     container.innerHTML = `
-      <!-- Hero Briefing Header -->
+      <!-- Hero Briefing Header (Clean, only Start Focus action) -->
       <div class="today-hero-panel">
         <div class="today-hero-left">
           <div class="today-date-badge">
@@ -144,36 +132,10 @@ export class DashboardManager {
           <button id="hero-quick-focus-btn" class="btn-primary btn-hero-cta">
             <span>▶</span> <span>Start Focus</span>
           </button>
-          <button id="hero-quick-expense-btn" class="btn-secondary btn-hero-cta">
-            <span>+</span> <span>Log Expense</span>
-          </button>
         </div>
       </div>
 
       ${nextActionHtml}
-
-      <!-- Raycast-Style AI Natural Language Quick-Add Command Bar -->
-      <div class="command-bar-container">
-        <form id="nl-task-form" class="command-bar-form">
-          <div class="command-input-frame">
-            <span class="command-sparkle-icon">✨</span>
-            <input 
-              type="text" 
-              id="nl-task-input" 
-              class="command-input-field" 
-              placeholder="Quick task or milestone (e.g., 'Finish database schema friday 5pm urgent 3 pomos')" 
-              autocomplete="off"
-            >
-            <div class="command-action-right">
-              <span class="kbd-badge">⏎ Enter</span>
-              <button type="submit" class="btn-primary btn-command-submit">
-                Add Task
-              </button>
-            </div>
-          </div>
-          <div id="nl-preview-pills" class="command-preview-row" style="display: none;"></div>
-        </form>
-      </div>
 
       <!-- Executive Metric KPI Cards Grid -->
       <div class="metrics-kpi-grid">
@@ -236,12 +198,12 @@ export class DashboardManager {
 
       <!-- Main Two-Column Balanced Content Stream -->
       <div class="today-dual-grid">
-        <!-- Column 1: Top Priority Execution -->
+        <!-- Column 1: Priority Focus Targets -->
         <div class="content-panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Priority Tasks</h2>
-              <p class="panel-subtitle">Immediate high-impact focus targets</p>
+              <h2 class="panel-title">Focus Target Queue</h2>
+              <p class="panel-subtitle">Today's active milestones — check off as you complete</p>
             </div>
             <button class="btn-link" data-nav="planner">Open Planner →</button>
           </div>
@@ -290,12 +252,12 @@ export class DashboardManager {
         </div>
       </div>
 
-      <!-- Section 3: Today's Wellness & Daily Reflection Log -->
+      <!-- Section 3: Today's Wellness & Daily Reflection Log (With Recent Check-Ins on Dashboard) -->
       <div class="content-panel" style="margin-top: 20px;">
         <div class="panel-header">
           <div>
             <h2 class="panel-title">Daily Wellness & Reflection</h2>
-            <p class="panel-subtitle">Review your energy, rest, and mindful focus notes</p>
+            <p class="panel-subtitle">Record your energy, sleep, and mindful notes</p>
           </div>
           <button id="dash-open-review-btn" class="btn-primary" style="padding: 5px 12px; font-size: 0.78rem;">
             <span>📖</span> <span>Review Day</span>
@@ -346,10 +308,22 @@ export class DashboardManager {
               </button>
             </div>
 
-            <!-- Recent 7-Day History -->
             <div class="dash-recent-history-row" style="margin-top: 10px;">
               ${this.renderRecentWellnessDots(store.state.wellness_logs || [])}
             </div>
+          </div>
+        </div>
+
+        <!-- Recent Daily Check-Ins Section Directly on Main Dashboard -->
+        <div class="dash-recent-checkins-panel" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div>
+              <span style="font-size: 0.88rem; font-weight: 600; color: var(--text-main);">Recent Daily Check-Ins</span>
+              <p style="font-size: 0.75rem; color: var(--text-muted); margin: 0;">Your historical reflections, energy logs, and sleep</p>
+            </div>
+          </div>
+          <div class="dash-recent-logs-feed">
+            ${this.renderRecentLogs(store.state.wellness_logs || [])}
           </div>
         </div>
       </div>
@@ -379,6 +353,41 @@ export class DashboardManager {
     }).join('');
   }
 
+  renderRecentLogs(logs) {
+    if (!logs || logs.length === 0) {
+      return `
+        <div class="empty-state-sm" style="padding: 16px 0;">
+          <span>🌱</span> <span>No previous check-ins logged yet. Today is day 1!</span>
+        </div>
+      `;
+    }
+
+    const moodMap = {
+      1: { emoji: '😫', label: 'Drained' },
+      2: { emoji: '😕', label: 'Low' },
+      3: { emoji: '😐', label: 'Steady' },
+      4: { emoji: '😊', label: 'Focused' },
+      5: { emoji: '🤩', label: 'Thriving' }
+    };
+
+    return logs.slice(0, 5).map(l => {
+      const dateLabel = new Date(l.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      const moodInfo = moodMap[l.mood] || { emoji: '😐', label: 'Steady' };
+      return `
+        <div class="glass-pill" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; margin-bottom: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 600; font-size: 0.85rem; color: var(--text-main);">${dateLabel}</span>
+              <span class="badge badge-subtle">${moodInfo.emoji} ${moodInfo.label}</span>
+              <span style="font-size: 0.78rem; color: var(--text-muted);">💤 ${l.sleep_hours || 0}h sleep</span>
+            </div>
+            ${l.notes ? `<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-style: italic;">"${this.escapeHtml(l.notes)}"</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   bindEvents(container) {
     container.querySelectorAll('[data-nav]').forEach(el => {
       el.addEventListener('click', () => {
@@ -394,15 +403,6 @@ export class DashboardManager {
       });
     }
 
-    const heroExpBtn = container.querySelector('#hero-quick-expense-btn');
-    if (heroExpBtn) {
-      heroExpBtn.addEventListener('click', () => {
-        this.onNavigate('finances');
-        const modal = document.getElementById('expense-modal');
-        if (modal) modal.classList.add('active');
-      });
-    }
-
     container.querySelectorAll('.btn-task-quick-focus').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -412,6 +412,7 @@ export class DashboardManager {
       });
     });
 
+    // Checkbox toggle right from dashboard
     container.querySelectorAll('.dash-task-toggle').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -436,65 +437,6 @@ export class DashboardManager {
         }
       });
     });
-
-    // Natural Language Input Handlers
-    const nlForm = container.querySelector('#nl-task-form');
-    const nlInput = container.querySelector('#nl-task-input');
-    const previewPills = container.querySelector('#nl-preview-pills');
-
-    let debounceTimer = null;
-
-    if (nlInput && previewPills) {
-      nlInput.addEventListener('input', () => {
-        clearTimeout(debounceTimer);
-        const text = nlInput.value.trim();
-        if (text.length < 5) {
-          previewPills.style.display = 'none';
-          return;
-        }
-
-        debounceTimer = setTimeout(async () => {
-          try {
-            const parsed = await API.ml.parseTask(text);
-            previewPills.style.display = 'flex';
-            previewPills.innerHTML = `
-              <span class="badge badge-subtle">🏷️ ${this.escapeHtml(parsed.title)}</span>
-              <span class="badge ${parsed.priority === 'urgent' ? 'badge-urgent' : 'badge-medium'}">Priority: ${parsed.priority}</span>
-              <span class="badge badge-subtle">Category: ${parsed.category}</span>
-              ${parsed.due_date ? `<span class="badge badge-subtle">📅 Due: ${parsed.due_date}</span>` : ''}
-              <span class="badge badge-subtle">🍅 ${parsed.estimated_pomodoros} pomo</span>
-            `;
-          } catch (e) {
-            previewPills.style.display = 'none';
-          }
-        }, 300);
-      });
-    }
-
-    if (nlForm) {
-      nlForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const text = nlInput.value.trim();
-        if (!text) return;
-
-        try {
-          const parsed = await API.ml.parseTask(text);
-          await store.createTask({
-            title: parsed.title,
-            category: parsed.category,
-            priority: parsed.priority,
-            estimated_pomodoros: parsed.estimated_pomodoros,
-            due_date: parsed.due_date
-          });
-          nlInput.value = '';
-          previewPills.style.display = 'none';
-          this.onTaskCreated();
-          this.render(container);
-        } catch (err) {
-          console.error('Failed to create parsed task', err);
-        }
-      });
-    }
 
     // Wellness & Daily Reflection Log Handlers
     const openReviewBtn = container.querySelector('#dash-open-review-btn');
@@ -545,6 +487,7 @@ export class DashboardManager {
               if (noteStatus) noteStatus.style.display = 'none';
             }, 2500);
           }
+          await this.render(container);
         } catch (err) {
           console.warn('Failed to save quick note', err);
         }
