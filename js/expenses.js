@@ -3,6 +3,25 @@ import { API } from './api.js';
 import { store } from './store.js';
 import { formatCurrency } from './currency.js';
 
+export const EXPENSE_CATEGORIES = [
+  { value: 'Food', label: '🍔 Food', color: '#f59e0b' },
+  { value: 'Study', label: '📚 Study', color: '#6366f1' },
+  { value: 'Transport', label: '🚗 Transport', color: '#0ea5e9' },
+  { value: 'Shopping', label: '🛍️ Shopping', color: '#ec4899' },
+  { value: 'Bills', label: '⚡ Bills', color: '#ef4444' },
+  { value: 'Health', label: '💊 Health', color: '#10b981' },
+  { value: 'Entertainment', label: '🎬 Entertainment', color: '#8b5cf6' },
+  { value: 'Other', label: '📦 Other', color: '#64748b' }
+];
+
+export const INCOME_CATEGORIES = [
+  { value: 'Salary', label: '💼 Salary', color: '#10b981' },
+  { value: 'Freelance', label: '💻 Freelance', color: '#0ea5e9' },
+  { value: 'Investment', label: '📈 Investment', color: '#6366f1' },
+  { value: 'Gift', label: '🎁 Gift', color: '#f59e0b' },
+  { value: 'Other Income', label: '💰 Other Income', color: '#8b5cf6' }
+];
+
 export const CATEGORY_ICONS = {
   'Food': '🍔',
   'Study': '📚',
@@ -13,7 +32,10 @@ export const CATEGORY_ICONS = {
   'Entertainment': '🎬',
   'Income': '💰',
   'Salary': '💼',
+  'Freelance': '💻',
   'Investment': '📈',
+  'Gift': '🎁',
+  'Other Income': '💰',
   'Other': '📦'
 };
 
@@ -25,6 +47,11 @@ const CATEGORY_COLORS = {
   'Bills': '#ef4444',
   'Health': '#10b981',
   'Entertainment': '#8b5cf6',
+  'Salary': '#10b981',
+  'Freelance': '#0ea5e9',
+  'Investment': '#6366f1',
+  'Gift': '#f59e0b',
+  'Other Income': '#8b5cf6',
   'Income': '#10b981',
   'Other': '#64748b'
 };
@@ -55,13 +82,54 @@ export class ExpenseManager {
     const closeBtn = document.getElementById('close-expense-modal');
     const form = document.getElementById('expense-form');
 
+    const btnExp = document.getElementById('btn-select-expense');
+    const btnInc = document.getElementById('btn-select-income');
+    const typeHidden = document.getElementById('exp-type-select');
+    const catSelect = document.getElementById('exp-category-select');
+
+    // Switch between Expense and Income modes in modal
+    const setModalType = (type) => {
+      if (typeHidden) typeHidden.value = type;
+      if (type === 'income') {
+        if (btnInc) {
+          btnInc.style.background = '#10b981';
+          btnInc.style.color = '#fff';
+        }
+        if (btnExp) {
+          btnExp.style.background = 'transparent';
+          btnExp.style.color = 'var(--text-muted)';
+        }
+        if (catSelect) {
+          catSelect.innerHTML = INCOME_CATEGORIES.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+        }
+      } else {
+        if (btnExp) {
+          btnExp.style.background = 'var(--accent-primary)';
+          btnExp.style.color = '#fff';
+        }
+        if (btnInc) {
+          btnInc.style.background = 'transparent';
+          btnInc.style.color = 'var(--text-muted)';
+        }
+        if (catSelect) {
+          catSelect.innerHTML = EXPENSE_CATEGORIES.map(c => `<option value="${c.value}">${c.label}</option>`).join('');
+        }
+      }
+    };
+
+    if (btnExp) btnExp.addEventListener('click', () => setModalType('expense'));
+    if (btnInc) btnInc.addEventListener('click', () => setModalType('income'));
+
     if (addBtn && modal) {
       addBtn.addEventListener('click', () => {
+        setModalType('expense');
         modal.classList.add('active');
         const dateInput = document.getElementById('exp-date-input');
         if (dateInput && !dateInput.value) {
           dateInput.value = new Date().toISOString().split('T')[0];
         }
+        const amtInput = document.getElementById('exp-amount-input');
+        if (amtInput) amtInput.focus();
       });
     }
 
@@ -76,20 +144,19 @@ export class ExpenseManager {
         e.preventDefault();
         const amountInput = document.getElementById('exp-amount-input');
         const noteInput = document.getElementById('exp-note-input');
-        const catSelect = document.getElementById('exp-category-select');
         const dateInput = document.getElementById('exp-date-input');
-        const typeSelect = document.getElementById('exp-type-select');
 
         const amount = parseFloat(amountInput?.value) || 0;
         const note = noteInput?.value.trim() || '';
         const category = catSelect?.value || 'Food';
         const date = dateInput?.value || new Date().toISOString().split('T')[0];
-        const type = typeSelect?.value || 'expense';
+        const type = typeHidden?.value || 'expense';
 
         if (amount > 0) {
           await store.createExpense({ amount, note, category, date, type });
           form.reset();
           if (modal) modal.classList.remove('active');
+          this.render();
         }
       });
     }
@@ -124,21 +191,23 @@ export class ExpenseManager {
   getFinancesSummary() {
     const list = (store.state.expenses || []).filter(e => (e.date || '').startsWith(this.selectedMonth));
     const budget = store.getBudget();
+    const plannedIncome = store.getPlannedIncome();
 
     const totalExpense = list
-      .filter(e => e.type === 'expense')
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
+      .filter(e => e.type !== 'income')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const totalIncome = list
       .filter(e => e.type === 'income')
-      .reduce((sum, e) => sum + (e.amount || 0), 0);
+      .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     // Group expenses by category
     const categoryTotals = {};
     list
-      .filter(e => e.type === 'expense')
+      .filter(e => e.type !== 'income')
       .forEach(e => {
-        categoryTotals[e.category] = (categoryTotals[e.category] || 0) + e.amount;
+        const cat = e.category || 'Other';
+        categoryTotals[cat] = (categoryTotals[cat] || 0) + (Number(e.amount) || 0);
       });
 
     // Days calculation for pacing
@@ -167,7 +236,8 @@ export class ExpenseManager {
     return {
       totalExpense,
       totalIncome,
-      netBalance: totalIncome - totalExpense,
+      plannedIncome,
+      netSavings: totalIncome - totalExpense,
       monthlyBudget: budget,
       budgetPercent,
       remaining,
@@ -200,68 +270,74 @@ export class ExpenseManager {
     else if (summary.budgetPercent > 70) barColor = 'var(--color-warning, #f59e0b)';
 
     container.innerHTML = `
-      <!-- Budget Pacing Overview -->
+      <!-- Distinct Monthly Income & Spending Cap Cards -->
       <div class="finances-kpi-summary-row">
+        <!-- Monthly Income Card -->
         <div class="fin-kpi-card">
-          <span class="fin-kpi-label">Month-to-Date Spend</span>
-          <span class="fin-kpi-value text-expense">${formatCurrency(summary.totalExpense)}</span>
-          <span class="fin-kpi-sub">${summary.budgetPercent}% of monthly limit</span>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="fin-kpi-label">Monthly Income Target</span>
+            <button id="btn-edit-income" class="btn-icon-tiny" title="Edit Planned Income">✏️</button>
+          </div>
+          <div class="fin-kpi-value text-income">${formatCurrency(summary.plannedIncome)}</div>
+          <span class="fin-kpi-sub">Actual Logged: ${formatCurrency(summary.totalIncome)}</span>
+          <!-- Inline Income Edit Box -->
+          <div id="income-edit-box" style="display: none; align-items: center; gap: 4px; margin-top: 6px;">
+            <input type="number" id="input-new-income" class="field-input" style="width: 100px; padding: 3px 6px; font-size: 0.8rem;" value="${summary.plannedIncome}" step="1000">
+            <button id="btn-save-new-income" class="btn-primary" style="padding: 3px 8px; font-size: 0.75rem;">Save</button>
+            <button id="btn-cancel-new-income" class="btn-secondary" style="padding: 3px 6px; font-size: 0.75rem;">✕</button>
+          </div>
         </div>
 
+        <!-- Monthly Spending Cap Card -->
         <div class="fin-kpi-card">
-          <span class="fin-kpi-label">Remaining Safe Budget</span>
-          <span class="fin-kpi-value ${isOver ? 'text-expense' : 'text-income'}">
-            ${isOver ? `-${formatCurrency(summary.totalExpense - summary.monthlyBudget)}` : formatCurrency(summary.remaining)}
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span class="fin-kpi-label">Monthly Spending Cap</span>
+            <button id="btn-edit-budget" class="btn-icon-tiny" title="Edit Spending Cap">✏️</button>
+          </div>
+          <div class="fin-kpi-value text-expense">${formatCurrency(summary.monthlyBudget)}</div>
+          <span class="fin-kpi-sub">Spent: ${formatCurrency(summary.totalExpense)} (${summary.budgetPercent}%)</span>
+          <!-- Inline Budget Edit Box -->
+          <div id="budget-edit-box" style="display: none; align-items: center; gap: 4px; margin-top: 6px;">
+            <input type="number" id="input-new-budget" class="field-input" style="width: 100px; padding: 3px 6px; font-size: 0.8rem;" value="${summary.monthlyBudget}" step="500">
+            <button id="btn-save-new-budget" class="btn-primary" style="padding: 3px 8px; font-size: 0.75rem;">Save</button>
+            <button id="btn-cancel-new-budget" class="btn-secondary" style="padding: 3px 6px; font-size: 0.75rem;">✕</button>
+          </div>
+        </div>
+
+        <!-- Net Cash Flow / Savings -->
+        <div class="fin-kpi-card">
+          <span class="fin-kpi-label">Net Savings / Cash Flow</span>
+          <span class="fin-kpi-value ${summary.netSavings >= 0 ? 'text-income' : 'text-expense'}">
+            ${summary.netSavings >= 0 ? '+' : ''}${formatCurrency(summary.netSavings)}
           </span>
-          <span class="fin-kpi-sub">${isOver ? 'Exceeded Budget' : 'Safe to spend'}</span>
+          <span class="fin-kpi-sub">${summary.netSavings >= 0 ? 'Positive cash flow' : 'Deficit'}</span>
         </div>
 
+        <!-- Safe Remaining / Daily Burn Rate -->
         <div class="fin-kpi-card">
           <span class="fin-kpi-label">Daily Burn Rate</span>
-          <span class="fin-kpi-value">${formatCurrency(summary.dailyAverage)}<span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">/day</span></span>
-          <span class="fin-kpi-sub">Day ${summary.daysPassed} of ${summary.daysInMonth}</span>
-        </div>
-
-        <div class="fin-kpi-card">
-          <span class="fin-kpi-label">Projected Month-End</span>
-          <span class="fin-kpi-value ${summary.projectedMonthEnd > summary.monthlyBudget ? 'text-expense' : ''}">
-            ${formatCurrency(summary.projectedMonthEnd)}
-          </span>
-          <span class="fin-kpi-sub">Top: ${summary.topCategory}</span>
+          <span class="fin-kpi-value">${formatCurrency(summary.dailyAverage)}<span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;">/day</span></span>
+          <span class="fin-kpi-sub">Safe Left: ${formatCurrency(summary.remaining)}</span>
         </div>
       </div>
 
-      <!-- Interactive Budget Card with Inline Edit -->
-      <div class="budget-card" style="margin-top: 16px;">
+      <!-- Spending Pacing Visual Progress Bar -->
+      <div class="budget-card" style="margin-top: 14px;">
         <div class="budget-header">
           <div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="budget-label">Monthly Spending Cap:</span>
-              <strong id="display-monthly-budget" style="font-size: 1.1rem; color: var(--text-main); font-weight: 700;">
-                ${formatCurrency(summary.monthlyBudget)}
-              </strong>
-              <button id="btn-edit-budget" class="btn-icon-tiny" title="Edit Budget Limit">✏️ Edit</button>
-            </div>
-            <!-- Inline Budget Input (Hidden by default) -->
-            <div id="budget-edit-box" style="display: none; align-items: center; gap: 6px; margin-top: 6px;">
-              <span style="font-size: 0.85rem; font-weight: 600;">₹</span>
-              <input type="number" id="input-new-budget" class="field-input" style="width: 120px; padding: 4px 8px; font-size: 0.85rem;" value="${summary.monthlyBudget}" step="500" min="1000">
-              <button id="btn-save-new-budget" class="btn-primary" style="padding: 4px 10px; font-size: 0.78rem;">Save</button>
-              <button id="btn-cancel-new-budget" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem;">✕</button>
+            <span class="budget-label">Spending vs Monthly Cap</span>
+            <div class="budget-values">
+              <span class="budget-current">${formatCurrency(summary.totalExpense)}</span>
+              <span class="budget-target"> / ${formatCurrency(summary.monthlyBudget)}</span>
             </div>
           </div>
           <div class="budget-badge ${isOver ? 'badge-danger' : 'badge-safe'}">
-            ${isOver ? 'Exceeded Budget' : `${summary.budgetPercent}% Paced`}
+            ${isOver ? 'Exceeded Cap' : `${summary.budgetPercent}% Used`}
           </div>
         </div>
 
-        <div class="progress-bar-bg" style="margin-top: 14px;">
+        <div class="progress-bar-bg" style="margin-top: 12px;">
           <div class="progress-bar-fill" style="width: ${summary.budgetPercent}%; background: ${barColor};"></div>
-        </div>
-
-        <div class="budget-footer" style="margin-top: 10px; display: flex; justify-content: space-between; font-size: 0.82rem;">
-          <span>Remaining: <strong>${formatCurrency(summary.remaining)}</strong></span>
-          <span>Income: <strong>${formatCurrency(summary.totalIncome)}</strong></span>
         </div>
       </div>
     `;
@@ -293,8 +369,38 @@ export class ExpenseManager {
         const val = parseFloat(inputNewBudget.value);
         if (val && val > 0) {
           await store.setMonthlyBudget(val);
-          editBox.style.display = 'none';
-          if (editBtn) editBtn.style.display = 'inline-block';
+          this.render();
+        }
+      });
+    }
+
+    // Bind Inline Income Edit handlers
+    const editIncBtn = container.querySelector('#btn-edit-income');
+    const editIncBox = container.querySelector('#income-edit-box');
+    const saveIncBtn = container.querySelector('#btn-save-new-income');
+    const cancelIncBtn = container.querySelector('#btn-cancel-new-income');
+    const inputNewInc = container.querySelector('#input-new-income');
+
+    if (editIncBtn && editIncBox) {
+      editIncBtn.addEventListener('click', () => {
+        editIncBox.style.display = 'flex';
+        editIncBtn.style.display = 'none';
+        if (inputNewInc) inputNewInc.focus();
+      });
+    }
+
+    if (cancelIncBtn && editIncBox) {
+      cancelIncBtn.addEventListener('click', () => {
+        editIncBox.style.display = 'none';
+        if (editIncBtn) editIncBtn.style.display = 'inline-block';
+      });
+    }
+
+    if (saveIncBtn && inputNewInc) {
+      saveIncBtn.addEventListener('click', async () => {
+        const val = parseFloat(inputNewInc.value);
+        if (val !== undefined && val >= 0) {
+          await store.setMonthlyIncome(val);
           this.render();
         }
       });
@@ -304,7 +410,7 @@ export class ExpenseManager {
   renderExpenseList(container) {
     const list = this.getFilteredExpenses();
 
-    // Controls header: Month selector, Category filter, Search input, CSV Export
+    // Controls header: Month selector, Category filter, Search input, Ledger Export
     const filterHeaderHtml = `
       <div class="finances-filter-bar">
         <div class="finances-filter-left">
@@ -323,20 +429,22 @@ export class ExpenseManager {
             <option value="Bills" ${this.selectedCategory === 'Bills' ? 'selected' : ''}>⚡ Bills</option>
             <option value="Health" ${this.selectedCategory === 'Health' ? 'selected' : ''}>💊 Health</option>
             <option value="Entertainment" ${this.selectedCategory === 'Entertainment' ? 'selected' : ''}>🎬 Entertainment</option>
-            <option value="Income" ${this.selectedCategory === 'Income' ? 'selected' : ''}>💰 Income</option>
+            <option value="Salary" ${this.selectedCategory === 'Salary' ? 'selected' : ''}>💼 Salary</option>
+            <option value="Freelance" ${this.selectedCategory === 'Freelance' ? 'selected' : ''}>💻 Freelance</option>
+            <option value="Investment" ${this.selectedCategory === 'Investment' ? 'selected' : ''}>📈 Investment</option>
             <option value="Other" ${this.selectedCategory === 'Other' ? 'selected' : ''}>📦 Other</option>
           </select>
           <input 
             type="text" 
             id="fin-search-input" 
             class="field-input fin-search-input" 
-            placeholder="Search notes..." 
+            placeholder="Search transactions..." 
             value="${this.escapeHtml(this.searchQuery)}"
           >
         </div>
         <div class="finances-filter-right">
-          <button id="btn-export-csv" class="btn-secondary btn-sm" title="Download spreadsheet of current transactions">
-            ⬇ Export CSV
+          <button id="btn-export-csv" class="btn-secondary btn-sm" title="Download ledger for selected month (${this.selectedMonth})">
+            📑 Download Monthly Ledger
           </button>
         </div>
       </div>
@@ -347,7 +455,7 @@ export class ExpenseManager {
         ${filterHeaderHtml}
         <div class="empty-state" style="margin-top: 16px;">
           <div class="empty-icon">🪙</div>
-          <p>No transactions match your current filters. Tap "+ Log Expense" to record spending!</p>
+          <p>No transactions match your current filters. Tap "+ Log Expense" to record spending or income!</p>
         </div>
       `;
       this.bindFilterEvents(container);
@@ -356,7 +464,7 @@ export class ExpenseManager {
 
     const itemsHtml = list.map(exp => {
       const isIncome = exp.type === 'income';
-      const icon = CATEGORY_ICONS[exp.category] || '📦';
+      const icon = CATEGORY_ICONS[exp.category] || (isIncome ? '💰' : '📦');
       const sign = isIncome ? '+' : '-';
       const colorClass = isIncome ? 'text-income' : 'text-expense';
 
@@ -427,11 +535,12 @@ export class ExpenseManager {
     const exportBtn = container.querySelector('#btn-export-csv');
     if (exportBtn) {
       exportBtn.addEventListener('click', () => {
-        this.exportCSV();
+        this.exportMonthlyLedger();
       });
     }
   }
 
+  /* Renders a colorful SVG Donut / Pie Chart for Category Distribution */
   renderCategoryBreakdown(container) {
     const summary = this.getFinancesSummary();
     const categories = Object.entries(summary.categoryTotals)
@@ -440,58 +549,118 @@ export class ExpenseManager {
     if (categories.length === 0 || summary.totalExpense === 0) {
       container.innerHTML = `
         <div class="empty-state-sm">
-          <span>📊</span> <span>No expense data logged for this month yet.</span>
+          <span>📊</span> <span>No expense data logged for ${this.selectedMonth} yet.</span>
         </div>
       `;
       return;
     }
 
-    const rowsHtml = categories.map(([cat, amt]) => {
-      const pct = Math.round((amt / summary.totalExpense) * 100);
+    // Donut Geometry Parameters
+    const size = 200;
+    const center = size / 2;
+    const radius = 68;
+    const strokeWidth = 28;
+    const circumference = 2 * Math.PI * radius; // ~427.25
+
+    let cumulativePct = 0;
+    const slices = categories.map(([cat, amt]) => {
+      const pct = (amt / summary.totalExpense) * 100;
+      const strokeDash = `${(pct * circumference) / 100} ${circumference}`;
+      const strokeOffset = -((cumulativePct * circumference) / 100);
       const color = CATEGORY_COLORS[cat] || '#64748b';
       const icon = CATEGORY_ICONS[cat] || '📦';
+      cumulativePct += pct;
 
-      return `
-        <div class="category-breakdown-row" style="margin-bottom: 12px;">
-          <div style="display: flex; justify-content: space-between; font-size: 0.82rem; margin-bottom: 4px;">
-            <span>${icon} <strong>${cat}</strong> (${pct}%)</span>
-            <span style="font-weight: 600; color: var(--text-main);">${formatCurrency(amt)}</span>
-          </div>
-          <div class="progress-bar-bg" style="height: 6px;">
-            <div class="progress-bar-fill" style="width: ${pct}%; background: ${color};"></div>
-          </div>
+      return {
+        cat,
+        amt,
+        pct: Math.round(pct),
+        strokeDash,
+        strokeOffset,
+        color,
+        icon
+      };
+    });
+
+    const slicesSvg = slices.map(s => `
+      <circle
+        cx="${center}"
+        cy="${center}"
+        r="${radius}"
+        fill="transparent"
+        stroke="${s.color}"
+        stroke-width="${strokeWidth}"
+        stroke-dasharray="${s.strokeDash}"
+        stroke-dashoffset="${s.strokeOffset}"
+        transform="rotate(-90 ${center} ${center})"
+        style="transition: stroke-dashoffset 0.4s ease;"
+      >
+        <title>${s.cat}: ${formatCurrency(s.amt)} (${s.pct}%)</title>
+      </circle>
+    `).join('');
+
+    const legendHtml = slices.map(s => `
+      <div class="pie-legend-item" style="display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; padding: 4px 0;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${s.color};"></span>
+          <span>${s.icon} <strong>${s.cat}</strong></span>
         </div>
-      `;
-    }).join('');
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--text-muted); font-size: 0.75rem;">${s.pct}%</span>
+          <span style="font-weight: 600; color: var(--text-main);">${formatCurrency(s.amt)}</span>
+        </div>
+      </div>
+    `).join('');
 
     container.innerHTML = `
-      <div class="category-breakdown-box">
-        ${rowsHtml}
+      <div class="category-pie-card" style="display: flex; flex-direction: column; align-items: center; gap: 14px;">
+        <!-- Colorful Donut Chart SVG -->
+        <div class="donut-chart-wrap" style="position: relative; width: ${size}px; height: ${size}px;">
+          <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display: block;">
+            <!-- Background base circle -->
+            <circle cx="${center}" cy="${center}" r="${radius}" fill="transparent" stroke="var(--border-subtle)" stroke-width="${strokeWidth}" />
+            ${slicesSvg}
+          </svg>
+          <!-- Center Text Badge -->
+          <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none;">
+            <span style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total Spend</span>
+            <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">${formatCurrency(summary.totalExpense)}</span>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="pie-legend-stream" style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          ${legendHtml}
+        </div>
       </div>
     `;
   }
 
-  exportCSV() {
-    const list = this.getFilteredExpenses();
+  /* Downloads Ledger containing ALL records for the selected month regardless of other filters */
+  exportMonthlyLedger() {
+    const list = (store.state.expenses || [])
+      .filter(e => (e.date || '').startsWith(this.selectedMonth))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
     if (list.length === 0) {
-      alert('No transactions to export.');
+      alert(`No transaction entries found for ${this.selectedMonth}.`);
       return;
     }
 
-    const headers = ['Date', 'Type', 'Category', 'Note', 'Amount (INR)'];
+    const headers = ['Date', 'Type', 'Category', 'Description / Note', 'Amount (INR)'];
     const rows = list.map(e => [
       `"${e.date || ''}"`,
-      `"${e.type || 'expense'}"`,
+      `"${e.type === 'income' ? 'Income' : 'Expense'}"`,
       `"${e.category || ''}"`,
       `"${(e.note || '').replace(/"/g, '""')}"`,
-      e.amount || 0
+      Number(e.amount) || 0
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `lifebuddy_finances_${this.selectedMonth}.csv`);
+    link.setAttribute('download', `LifeBuddy_Ledger_${this.selectedMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

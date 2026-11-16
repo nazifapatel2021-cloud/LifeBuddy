@@ -348,6 +348,29 @@ class Store {
     this.notify('user', user);
   }
 
+  getPlannedIncome() {
+    return Number(this.state.settings?.monthly_income) || 45000.0;
+  }
+
+  async setMonthlyIncome(newIncome) {
+    const val = Math.max(0, Number(newIncome) || 0);
+    this.state.settings.monthly_income = val;
+    this.saveToStorage();
+    this.notify('income', val);
+    this.notify('settings', this.state.settings);
+
+    if (API.isLoggedIn()) {
+      try {
+        await API.auth.updateSettings({
+          ...this.state.settings,
+          monthly_income: val
+        });
+      } catch (e) {
+        console.warn('Failed to sync monthly income to backend:', e);
+      }
+    }
+  }
+
   async setMonthlyBudget(newBudget) {
     const val = Math.max(100, Number(newBudget) || 25000.0);
     this.state.settings.monthly_budget = val;
@@ -404,7 +427,24 @@ class Store {
   }
 
   async addTask(taskData) {
-    const created = await API.tasks.create(taskData);
+    let created = null;
+    try {
+      created = await API.tasks.create(taskData);
+    } catch (e) {
+      console.warn('API task create failed, using local offline object', e);
+      created = {
+        id: 'local_task_' + Date.now(),
+        title: taskData.title,
+        category: taskData.category || 'work',
+        priority: taskData.priority || 'medium',
+        estimated_pomodoros: taskData.estimated_pomodoros || 1,
+        completed_pomodoros: 0,
+        completed: 0,
+        due_date: taskData.due_date || null,
+        in_focus_queue: taskData.in_focus_queue !== false,
+        created_at: new Date().toISOString()
+      };
+    }
     const existingIdx = this.state.tasks.findIndex(t => t.id === created.id);
     if (existingIdx !== -1) {
       this.state.tasks[existingIdx] = created;
@@ -419,8 +459,17 @@ class Store {
     return created;
   }
 
+  async createTask(taskData) {
+    return this.addTask(taskData);
+  }
+
   async updateTask(id, updates) {
-    const updated = await API.tasks.update(id, updates);
+    let updated = null;
+    try {
+      updated = await API.tasks.update(id, updates);
+    } catch (e) {
+      console.warn('API task update failed, updating locally', e);
+    }
     const idx = this.state.tasks.findIndex(t => t.id === id);
     if (idx !== -1) {
       this.state.tasks[idx] = { ...this.state.tasks[idx], ...(updated || updates) };
@@ -431,7 +480,11 @@ class Store {
   }
 
   async deleteTask(id) {
-    await API.tasks.delete(id);
+    try {
+      await API.tasks.delete(id);
+    } catch (e) {
+      console.warn('API task delete failed, deleting locally', e);
+    }
     this.state.tasks = this.state.tasks.filter(t => t.id !== id);
     if (this.state.activeTaskId === id) {
       const nextPending = this.state.tasks.find(t => !t.completed);
@@ -455,15 +508,38 @@ class Store {
   }
 
   async addHabit(habitData) {
-    const created = await API.habits.create(habitData);
+    let created = null;
+    try {
+      created = await API.habits.create(habitData);
+    } catch (e) {
+      console.warn('API habit create failed, using local offline object', e);
+      created = {
+        id: 'local_habit_' + Date.now(),
+        title: habitData.title,
+        icon: habitData.icon || '🌱',
+        frequency: habitData.frequency || 'daily',
+        streak: 0,
+        history: [],
+        created_at: new Date().toISOString()
+      };
+    }
     this.state.habits.push(created);
     this.saveToStorage();
     this.notify('habits', this.state.habits);
     return created;
   }
 
+  async createHabit(habitData) {
+    return this.addHabit(habitData);
+  }
+
   async updateHabit(id, updates) {
-    const updated = await API.habits.update(id, updates);
+    let updated = null;
+    try {
+      updated = await API.habits.update(id, updates);
+    } catch (e) {
+      console.warn('API habit update failed, updating locally', e);
+    }
     const idx = this.state.habits.findIndex(h => h.id === id);
     if (idx !== -1) {
       this.state.habits[idx] = { ...this.state.habits[idx], ...(updated || updates) };
@@ -475,18 +551,45 @@ class Store {
 
   async checkInHabit(id, dateStr = null) {
     const date = dateStr || this.getTodayDateString();
-    const updated = await API.habits.checkIn(id, date);
+    let updated = null;
+    try {
+      updated = await API.habits.checkIn(id, date);
+    } catch (e) {
+      console.warn('API habit check failed, checking locally', e);
+    }
     const idx = this.state.habits.findIndex(h => h.id === id);
     if (idx !== -1) {
-      this.state.habits[idx] = updated;
+      if (updated) {
+        this.state.habits[idx] = updated;
+      } else {
+        const h = this.state.habits[idx];
+        let hist = Array.isArray(h.history) ? [...h.history] : [];
+        if (hist.includes(date)) {
+          hist = hist.filter(d => d !== date);
+          h.streak = Math.max(0, (h.streak || 1) - 1);
+        } else {
+          hist.push(date);
+          h.streak = (h.streak || 0) + 1;
+        }
+        h.history = hist;
+        this.state.habits[idx] = h;
+      }
       this.saveToStorage();
       this.notify('habits', this.state.habits);
     }
-    return updated;
+    return this.state.habits[idx];
+  }
+
+  async checkHabit(id, dateStr = null) {
+    return this.checkInHabit(id, dateStr);
   }
 
   async deleteHabit(id) {
-    await API.habits.delete(id);
+    try {
+      await API.habits.delete(id);
+    } catch (e) {
+      console.warn('API habit delete failed, deleting locally', e);
+    }
     this.state.habits = this.state.habits.filter(h => h.id !== id);
     this.saveToStorage();
     this.notify('habits', this.state.habits);
@@ -505,7 +608,21 @@ class Store {
   }
 
   async addExpense(expenseData) {
-    const created = await API.expenses.create(expenseData);
+    let created = null;
+    try {
+      created = await API.expenses.create(expenseData);
+    } catch (e) {
+      console.warn('API expense create failed, using local offline object', e);
+      created = {
+        id: 'local_exp_' + Date.now(),
+        amount: Number(expenseData.amount) || 0,
+        category: expenseData.category || 'Other',
+        note: expenseData.note || '',
+        date: expenseData.date || this.getTodayDateString(),
+        type: expenseData.type || 'expense',
+        created_at: new Date().toISOString()
+      };
+    }
     this.state.expenses.unshift(created);
     this.saveToStorage();
     this.notify('expenses', this.state.expenses);
@@ -515,6 +632,10 @@ class Store {
       budget: this.getBudget()
     });
     return created;
+  }
+
+  async createExpense(expenseData) {
+    return this.addExpense(expenseData);
   }
 
   async updateExpense(id, updates) {

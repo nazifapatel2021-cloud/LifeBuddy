@@ -52,8 +52,8 @@ class SpendingAnomalyDetector:
                 "anomaly_count": 0,
                 "budget_breach_probability": 0.80 if projected_total > monthly_budget else 0.20,
                 "explanation": (
-                    f"Cold-start run rate: You have spent ${spent_so_far:.2f} across {days_passed} days in {today.strftime('%B')}. "
-                    f"Projected month-end total is ${projected_total:.2f} based on simple daily average."
+                    f"Cold-start run rate: You have spent ₹{spent_so_far:,.2f} across {days_passed} days in {today.strftime('%B')}. "
+                    f"Projected month-end total is ₹{projected_total:,.2f} based on simple daily average."
                 ),
                 "method": "Linear Daily Run-Rate"
             }
@@ -131,11 +131,11 @@ class SpendingAnomalyDetector:
             breach_prob = 0.12
 
         # Plain English explanation
-        diff_str = f"${abs(budget_gap):.2f} " + ("over" if budget_gap < 0 else "under")
+        diff_str = f"₹{abs(budget_gap):,.2f} " + ("over" if budget_gap < 0 else "under")
         explanation = (
-            f"You have spent ${spent_so_far:.2f} of your ${monthly_budget:.2f} monthly budget. "
-            f"Based on {method_used}, we project month-end spend at ${projected_total:.2f} "
-            f"(95% Confidence Interval: ${ci_lower:.2f} – ${ci_upper:.2f}), which is {diff_str} budget."
+            f"You have spent ₹{spent_so_far:,.2f} of your ₹{monthly_budget:,.2f} monthly budget. "
+            f"Based on {method_used}, we project month-end spend at ₹{projected_total:,.2f} "
+            f"(95% Confidence Interval: ₹{ci_lower:,.2f} – ₹{ci_upper:,.2f}), which is {diff_str} budget."
         )
 
         return {

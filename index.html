@@ -373,10 +373,6 @@
                   <h2 class="panel-title">Ambient Soundscapes</h2>
                   <p class="panel-subtitle">Synthesized in Web Audio API • Zero audio lag</p>
                 </div>
-                <div class="mixer-master-bar">
-                  <button id="ambient-master-mute-btn" class="btn-icon-tiny" title="Mute/Unmute Master Sound">🔊</button>
-                  <input type="range" id="ambient-master-slider" class="master-sound-slider" min="0" max="1" step="0.05" value="0.7" title="Master Volume">
-                </div>
               </div>
 
               <div class="sound-mixer-grid">
@@ -488,7 +484,6 @@
             <h1 class="view-heading">Habits & Consistency</h1>
             <p class="view-subheading">Build compounding daily momentum with streak tracking and risk predictions</p>
           </div>
-          <span class="badge-tag">Daily Compounding</span>
         </div>
 
         <div class="habits-layout-grid">
@@ -568,7 +563,6 @@
             <h1 class="view-heading">Intelligent Insights & Predictions</h1>
             <p class="view-subheading">Personalized patterns, habit nudges, and spending forecasts from your data</p>
           </div>
-          <span class="badge-tag">Explainable AI</span>
         </div>
 
         <div id="ml-insights-container"></div>
@@ -658,21 +652,35 @@
     <div class="modal-card modal-compact">
       <div class="modal-header">
         <div class="modal-header-text">
-          <h2 class="modal-title">Log Expense</h2>
-          <p class="modal-subtitle">Auto-categorized by local machine learning</p>
+          <h2 id="expense-modal-title" class="modal-title">Log Transaction</h2>
+          <p class="modal-subtitle">Track everyday spending or recorded income</p>
         </div>
         <button id="close-expense-modal" class="btn-close-modal">✕</button>
       </div>
 
       <form id="expense-form" class="modal-form">
+        <!-- Segmented Type Selector -->
         <div class="form-field-group">
-          <label class="field-label" for="exp-amount-input">Amount</label>
+          <label class="field-label">Transaction Type</label>
+          <div class="segmented-switch" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--bg-surface); padding: 4px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <button type="button" id="btn-select-expense" class="btn-switch active" style="padding: 7px 10px; border: none; border-radius: 6px; background: var(--accent-primary); color: #fff; font-weight: 600; cursor: pointer;">
+              💸 Expense
+            </button>
+            <button type="button" id="btn-select-income" class="btn-switch" style="padding: 7px 10px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer;">
+              💰 Income
+            </button>
+          </div>
+          <input type="hidden" id="exp-type-select" value="expense">
+        </div>
+
+        <div class="form-field-group">
+          <label class="field-label" for="exp-amount-input">Amount (₹)</label>
           <input type="number" id="exp-amount-input" class="field-input" step="1" min="1" placeholder="e.g. 250" required autofocus>
         </div>
 
         <div class="form-field-group">
           <label class="field-label" for="exp-note-input">Description / Note</label>
-          <input type="text" id="exp-note-input" class="field-input" placeholder="e.g. Swiggy dinner or books" required autocomplete="off">
+          <input type="text" id="exp-note-input" class="field-input" placeholder="e.g. Grocery run or Freelance project" required autocomplete="off">
         </div>
 
         <div class="form-field-group">
@@ -694,15 +702,8 @@
           <input type="date" id="exp-date-input" class="field-input">
         </div>
 
-        <div class="form-field-group" style="display: none;">
-          <select id="exp-type-select" class="field-input">
-            <option value="expense" selected>Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </div>
-
-        <button type="submit" class="btn-primary btn-submit-modal">
-          Save Expense
+        <button type="submit" id="btn-submit-expense" class="btn-primary btn-submit-modal">
+          Save Transaction
         </button>
       </form>
     </div>
