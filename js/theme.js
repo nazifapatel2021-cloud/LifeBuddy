@@ -3,13 +3,13 @@ import { Storage } from './storage.js';
 
 export class ThemeManager {
   constructor() {
-    this.currentTheme = Storage.getSettings().theme || 'sage';
+    this.currentTheme = Storage.getSettings().theme || 'midnight';
     this.applyTheme(this.currentTheme);
   }
 
   applyTheme(themeName) {
     const validThemes = ['sage', 'lavender', 'nordic', 'sunset', 'midnight'];
-    if (!validThemes.includes(themeName)) themeName = 'sage';
+    if (!validThemes.includes(themeName)) themeName = 'midnight';
 
     document.documentElement.setAttribute('data-theme', themeName);
     this.currentTheme = themeName;
