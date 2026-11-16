@@ -935,7 +935,7 @@ function initApp() {
     }
 
     try {
-      await store.fetchState();
+      await store.syncAll();
       taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
       habitManager.renderHabitsList(document.getElementById('habits-list-container'));

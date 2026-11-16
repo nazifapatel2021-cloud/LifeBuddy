@@ -64,7 +64,12 @@ export const Storage = {
 
   getTasks() {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.TASKS);
+      const v2 = localStorage.getItem('lifebuddy_store_v2');
+      if (v2) {
+        const parsed = JSON.parse(v2);
+        if (Array.isArray(parsed?.tasks)) return parsed.tasks;
+      }
+      const data = localStorage.getItem(STORAGE_KEYS.TASKS) || localStorage.getItem('lifebuddy_offline_tasks');
       return data ? JSON.parse(data) : [];
     } catch (e) {
       return [];
@@ -74,6 +79,7 @@ export const Storage = {
   saveTasks(tasks) {
     try {
       localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+      localStorage.setItem('lifebuddy_offline_tasks', JSON.stringify(tasks));
     } catch (e) {
       console.error('Failed to save tasks to localStorage:', e);
     }

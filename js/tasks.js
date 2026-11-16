@@ -1,6 +1,7 @@
 /* LifeBuddy Task & Planner Management System */
 import { API } from './api.js';
 import { store } from './store.js';
+import { getLocalDateString, normalizeDate } from './date_utils.js';
 
 export const PRIORITY_CONFIG = {
   'urgent': { label: 'Urgent', class: 'badge-urgent' },
@@ -43,24 +44,14 @@ export class TaskManager {
   }
 
   cleanupDailyTasks() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const lastCleanup = localStorage.getItem('lifebuddy_last_daily_cleanup');
     if (lastCleanup && lastCleanup !== todayStr) {
-      // It's a new day: erase completed tasks and lower-priority old pomodoro tasks from the active queue
+      // It's a new day: clean up completed tasks from previous days
       const tasks = store.state.tasks || [];
-      const updatedTasks = tasks.filter(t => {
-        // Erase completed pomodoro tasks
-        if (t.completed) return false;
-        // Keep high and urgent priority tasks in active queue
-        if (t.priority === 'urgent' || t.priority === 'high' || t.due_date === todayStr) {
-          return true;
-        }
-        // Remove low/medium from focus queue, retain in planner
-        t.in_focus_queue = false;
-        return true;
-      });
+      const updatedTasks = tasks.filter(t => !t.completed);
       store.state.tasks = updatedTasks;
-      store.persist();
+      store.saveToStorage();
       localStorage.setItem('lifebuddy_last_daily_cleanup', todayStr);
     } else if (!lastCleanup) {
       localStorage.setItem('lifebuddy_last_daily_cleanup', todayStr);
@@ -70,7 +61,7 @@ export class TaskManager {
   syncActiveTask() {
     const tasks = store.state.tasks || [];
     if (!this.getActiveTask() && tasks.length > 0) {
-      const firstPending = tasks.find(t => !t.completed && (t.in_focus_queue !== false));
+      const firstPending = tasks.find(t => !t.completed && (t.in_focus_queue !== false && t.in_focus_queue !== 0));
       if (firstPending) this.setActiveTask(firstPending.id);
     }
   }
@@ -118,7 +109,8 @@ export class TaskManager {
   async toggleFocusQueue(id) {
     const task = (store.state.tasks || []).find(t => t.id === id);
     if (task) {
-      const nextQueue = !(task.in_focus_queue ?? true);
+      const currentQueue = task.in_focus_queue !== false && task.in_focus_queue !== 0;
+      const nextQueue = !currentQueue;
       await store.updateTask(id, { in_focus_queue: nextQueue });
     }
   }
@@ -163,8 +155,8 @@ export class TaskManager {
   renderFocusQueueList(containerEl) {
     if (!containerEl) return;
     const allTasks = store.state.tasks || [];
-    // Only pending tasks designated for focus queue
-    const queueTasks = allTasks.filter(t => !t.completed && (t.in_focus_queue !== false));
+    // Only pending tasks designated for focus queue (default to true if unset or 1)
+    const queueTasks = allTasks.filter(t => !t.completed && (t.in_focus_queue !== false && t.in_focus_queue !== 0));
 
     if (queueTasks.length === 0) {
       containerEl.innerHTML = `
@@ -238,8 +230,11 @@ export class TaskManager {
   /* Render Full Planner Tasks List */
   renderTaskList(containerEl, filterOverride = null) {
     if (!containerEl) return;
-    const activeFilter = filterOverride || this.filter;
-    const todayStr = new Date().toISOString().split('T')[0];
+    if (filterOverride) {
+      this.filter = filterOverride;
+    }
+    const activeFilter = this.filter;
+    const todayStr = getLocalDateString();
 
     let filtered = [...(store.state.tasks || [])];
 
@@ -263,13 +258,22 @@ export class TaskManager {
     if (activeFilter === 'pending') {
       filtered = filtered.filter(t => !t.completed);
     } else if (activeFilter === 'completed') {
-      filtered = filtered.filter(t => t.completed);
+      filtered = filtered.filter(t => Boolean(t.completed));
     } else if (activeFilter === 'today') {
-      filtered = filtered.filter(t => t.due_date === todayStr || (!t.due_date && !t.completed));
+      filtered = filtered.filter(t => {
+        const norm = normalizeDate(t.due_date);
+        return norm === todayStr || (!norm && !t.completed);
+      });
     } else if (activeFilter === 'overdue') {
-      filtered = filtered.filter(t => t.due_date && t.due_date < todayStr && !t.completed);
+      filtered = filtered.filter(t => {
+        const norm = normalizeDate(t.due_date);
+        return norm && norm < todayStr && !t.completed;
+      });
     } else if (activeFilter === 'upcoming') {
-      filtered = filtered.filter(t => t.due_date && t.due_date > todayStr && !t.completed);
+      filtered = filtered.filter(t => {
+        const norm = normalizeDate(t.due_date);
+        return norm && norm > todayStr && !t.completed;
+      });
     }
 
     if (filtered.length === 0) {
@@ -288,19 +292,20 @@ export class TaskManager {
       const priorityInfo = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG['medium'];
       const act = task.completed_pomodoros ?? 0;
       const est = task.estimated_pomodoros ?? 1;
-      const inQueue = task.in_focus_queue !== false;
+      const inQueue = task.in_focus_queue !== false && task.in_focus_queue !== 0;
 
-      const isOverdue = task.due_date && task.due_date < todayStr && !isCompleted;
-      const isDueToday = task.due_date === todayStr && !isCompleted;
+      const normDue = normalizeDate(task.due_date);
+      const isOverdue = normDue && normDue < todayStr && !isCompleted;
+      const isDueToday = normDue === todayStr && !isCompleted;
 
       let dueBadge = '';
       if (task.due_date) {
         if (isOverdue) {
-          dueBadge = `<span class="badge badge-urgent" title="Overdue!">⚠️ Overdue: ${task.due_date}</span>`;
+          dueBadge = `<span class="badge badge-urgent" title="Overdue!">⚠️ Overdue: ${normDue}</span>`;
         } else if (isDueToday) {
           dueBadge = `<span class="badge badge-high" title="Due today">📅 Today</span>`;
         } else {
-          dueBadge = `<span class="badge badge-subtle">📅 ${task.due_date}</span>`;
+          dueBadge = `<span class="badge badge-subtle">📅 ${normDue || task.due_date}</span>`;
         }
       }
 
@@ -326,6 +331,15 @@ export class TaskManager {
             <div class="task-pomo-badge" title="Completed / Estimated Pomodoros">
               <span>🍅</span> <span>${act}/${est}</span>
             </div>
+            <button class="btn-icon-tiny btn-add-pomo" data-action="add-pomo" title="Add +1 Pomodoro to estimate">+1 🍅</button>
+            <button class="btn-focus-task btn-icon-small" data-action="select" title="Focus on this task">
+              ${isSelected ? '🎯 Active' : 'Focus'}
+            </button>
+            <button class="btn-delete-task btn-icon-small" data-action="delete" title="Delete task">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
             <button class="btn-icon-tiny btn-add-pomo" data-action="add-pomo" title="Add +1 Pomodoro to estimate">+1 🍅</button>
             <button class="btn-focus-task btn-icon-small" data-action="select" title="Focus on this task">
               ${isSelected ? '🎯 Active' : 'Focus'}

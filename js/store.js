@@ -126,14 +126,24 @@ class Store {
         } catch {}
       }
 
-      // 2. Tasks
-      const legacyTasks = localStorage.getItem('lifebuddy_offline_tasks') || localStorage.getItem('zen_pomodoro_tasks');
-      if (legacyTasks) {
+      // 2. Tasks (Safe Merge: never wipe existing saved tasks)
+      const currentTasks = Array.isArray(this.state.tasks) ? this.state.tasks : [];
+      const legacyRaw = localStorage.getItem('lifebuddy_offline_tasks') || localStorage.getItem('zen_pomodoro_tasks');
+      if (legacyRaw) {
         try {
-          const t = JSON.parse(legacyTasks);
-          if (Array.isArray(t) && t.length > 0) this.state.tasks = t;
+          const legacy = JSON.parse(legacyRaw);
+          if (Array.isArray(legacy) && legacy.length > 0) {
+            const existingIds = new Set(currentTasks.map(t => t.id));
+            legacy.forEach(t => {
+              if (t && t.id && !existingIds.has(t.id)) {
+                currentTasks.push(t);
+                existingIds.add(t.id);
+              }
+            });
+          }
         } catch {}
       }
+      this.state.tasks = currentTasks;
 
       // 3. Habits
       const legacyHabits = localStorage.getItem('lifebuddy_offline_habits');
@@ -191,9 +201,28 @@ class Store {
         dailyLogs: this.state.dailyLogs,
         activeTaskId: this.state.activeTaskId
       }));
+
+      // Synchronize legacy storage keys so no legacy selector diverges
+      localStorage.setItem('lifebuddy_offline_tasks', JSON.stringify(this.state.tasks));
+      localStorage.setItem('zen_pomodoro_tasks', JSON.stringify(this.state.tasks));
+      if (this.state.activeTaskId) {
+        localStorage.setItem('lifebuddy_active_task_id', this.state.activeTaskId);
+        localStorage.setItem('zen_pomodoro_active_task', this.state.activeTaskId);
+      } else {
+        localStorage.removeItem('lifebuddy_active_task_id');
+        localStorage.removeItem('zen_pomodoro_active_task');
+      }
     } catch (e) {
       console.error('Failed to persist store state to localStorage:', e);
     }
+  }
+
+  persist() {
+    return this.saveToStorage();
+  }
+
+  async fetchState() {
+    return this.syncAll();
   }
 
   // -------------------------------------------------------------

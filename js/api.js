@@ -180,6 +180,13 @@ export const API = {
           console.warn('Backend unavailable, reading local tasks', e);
         }
       }
+      try {
+        const v2 = localStorage.getItem('lifebuddy_store_v2');
+        if (v2) {
+          const parsed = JSON.parse(v2);
+          if (Array.isArray(parsed?.tasks)) return parsed.tasks;
+        }
+      } catch {}
       return JSON.parse(localStorage.getItem(OFFLINE_TASKS_KEY) || '[]');
     },
 
@@ -194,6 +201,7 @@ export const API = {
         completed: 0,
         due_date: task.due_date || null,
         completed_at: null,
+        in_focus_queue: task.in_focus_queue !== false,
         created_at: new Date().toISOString()
       };
 
