@@ -704,10 +704,10 @@ a:hover {
 .metrics-kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: 18px;
   background: transparent;
   border: none;
-  margin-bottom: var(--space-5);
+  margin-bottom: 24px;
   box-shadow: none;
   overflow: visible;
 }
@@ -715,11 +715,12 @@ a:hover {
 @media (max-width: 900px) {
   .metrics-kpi-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 14px;
   }
 }
 
 .kpi-card {
-  padding: 16px 18px;
+  padding: 20px 22px;
   cursor: pointer;
   transition: all 0.25s ease;
   display: flex;
@@ -729,6 +730,7 @@ a:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
+  min-height: 142px;
 }
 
 .kpi-card:hover {
@@ -740,44 +742,51 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 14px;
 }
 
 .kpi-icon {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
 }
 
 .kpi-badge {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: var(--radius-xs);
+  letter-spacing: 0.01em;
 }
 
 .kpi-number {
-  font-size: 1.55rem;
+  font-size: 1.7rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .kpi-unit {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  margin-left: 3px;
+  margin-left: 2px;
   opacity: 0.85;
 }
 
 .kpi-title {
-  font-size: 0.78rem;
-  margin-top: 3px;
+  font-size: 0.82rem;
+  margin-top: 6px;
   font-weight: 600;
 }
 
 .kpi-progress-bar {
-  height: 5px;
+  height: 6px;
   width: 100%;
   border-radius: var(--radius-full);
+  margin-top: 14px;
+  overflow: hidden;
+}
   margin-top: 12px;
   overflow: hidden;
 }

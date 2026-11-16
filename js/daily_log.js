@@ -43,10 +43,10 @@ export class DailyLogController {
     const todayStr = new Date().toISOString().split('T')[0];
     const prettyDate = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
-    let logs = store.state.wellness_logs || [];
+    let logs = store.getDailyLogs() || [];
     try {
       logs = await API.wellness.getLogs();
-      store.state.wellness_logs = logs;
+      store.setDailyLogs(logs);
     } catch (e) {
       console.warn('Could not load wellness logs from API, using store', e);
     }
@@ -245,6 +245,8 @@ export class DailyLogController {
       if (this.modal) {
         this.modal.classList.remove('active');
       }
+
+      window.dispatchEvent(new CustomEvent('lifebuddy:daily-log-updated', { detail: { date: todayStr } }));
 
       // Show toast confirmation
       const toast = document.createElement('div');

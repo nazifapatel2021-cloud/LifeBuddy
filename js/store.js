@@ -46,7 +46,15 @@ class Store {
   // -------------------------------------------------------------
   // Event Subscription
   // -------------------------------------------------------------
-  subscribe(event, callback) {
+  subscribe(eventOrCallback, maybeCallback) {
+    let event = '*';
+    let callback = eventOrCallback;
+    if (typeof maybeCallback === 'function') {
+      event = eventOrCallback;
+      callback = maybeCallback;
+    }
+    if (typeof callback !== 'function') return () => {};
+
     if (!this.subscribers.has(event)) {
       this.subscribers.set(event, new Set());
     }
@@ -61,13 +69,13 @@ class Store {
     // Notify specific subscribers
     if (this.subscribers.has(event)) {
       this.subscribers.get(event).forEach(cb => {
-        try { cb(payload, this.state); } catch (e) { console.warn('Store subscriber error', e); }
+        try { cb(payload, this.state, event); } catch (e) { console.warn('Store subscriber error', e); }
       });
     }
-    // Notify wildcard subscribers
+    // Notify wildcard subscribers for all state mutations
     if (this.subscribers.has('*')) {
       this.subscribers.get('*').forEach(cb => {
-        try { cb(event, payload, this.state); } catch (e) { console.warn('Wildcard store subscriber error', e); }
+        try { cb(payload, this.state, event); } catch (e) { console.warn('Wildcard store subscriber error', e); }
       });
     }
   }

@@ -27,6 +27,14 @@ export class DashboardManager {
         this.render(container);
       }
     });
+
+    // Also listen for explicit daily log updates
+    window.addEventListener('lifebuddy:daily-log-updated', () => {
+      const container = document.getElementById('view-dashboard');
+      if (container && container.classList.contains('active')) {
+        this.render(container);
+      }
+    });
   }
 
   getGreeting() {
@@ -145,7 +153,7 @@ export class DashboardManager {
             <span class="kpi-badge">${focusPct}% of Goal</span>
           </div>
           <div class="kpi-body">
-            <div class="kpi-number">${focusMins}<span class="kpi-unit">mins</span></div>
+            <div class="kpi-number">${focusMins} <span class="kpi-unit">mins</span></div>
             <div class="kpi-title">Deep Focus (Target: ${focusTarget}m)</div>
           </div>
           <div class="kpi-progress-bar">
@@ -156,10 +164,10 @@ export class DashboardManager {
         <div class="kpi-card" data-nav="planner">
           <div class="kpi-top">
             <span class="kpi-icon">📋</span>
-            <span class="kpi-badge">${tasksDone}/${tasksTotal} done</span>
+            <span class="kpi-badge">${tasksDone} / ${tasksTotal} done</span>
           </div>
           <div class="kpi-body">
-            <div class="kpi-number">${pendingTasks.length}<span class="kpi-unit">tasks</span></div>
+            <div class="kpi-number">${pendingTasks.length} <span class="kpi-unit">tasks</span></div>
             <div class="kpi-title">Pending Milestones</div>
           </div>
           <div class="kpi-progress-bar">
@@ -184,10 +192,10 @@ export class DashboardManager {
         <div class="kpi-card" data-nav="habits">
           <div class="kpi-top">
             <span class="kpi-icon">🌱</span>
-            <span class="kpi-badge">${habitsDone}/${habitsTotal} checked</span>
+            <span class="kpi-badge">${habitsDone} / ${habitsTotal} checked</span>
           </div>
           <div class="kpi-body">
-            <div class="kpi-number">${habitsDone}<span class="kpi-unit">done</span></div>
+            <div class="kpi-number">${habitsDone} <span class="kpi-unit">done</span></div>
             <div class="kpi-title">Habits Maintained</div>
           </div>
           <div class="kpi-progress-bar">
@@ -309,7 +317,7 @@ export class DashboardManager {
             </div>
 
             <div class="dash-recent-history-row" style="margin-top: 10px;">
-              ${this.renderRecentWellnessDots(store.state.wellness_logs || [])}
+              ${this.renderRecentWellnessDots(store.getDailyLogs() || [])}
             </div>
           </div>
         </div>
@@ -323,7 +331,7 @@ export class DashboardManager {
             </div>
           </div>
           <div class="dash-recent-logs-feed">
-            ${this.renderRecentLogs(store.state.wellness_logs || [])}
+            ${this.renderRecentLogs(store.getDailyLogs() || [])}
           </div>
         </div>
       </div>
