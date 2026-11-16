@@ -346,33 +346,10 @@ export class AuthController {
       });
     }
 
-    // 6. Header Auth Modal (Sign Out / Manage Profile)
-    const authModalBtn = document.getElementById('auth-modal-btn');
+    // 6. Header Auth Modal (Sign Out / Close)
     const authModal = document.getElementById('auth-modal');
     const closeAuthBtn = document.getElementById('close-auth-btn');
     const authLogoutBtn = document.getElementById('auth-logout-btn');
-
-    if (authModalBtn && authModal) {
-      authModalBtn.addEventListener('click', () => {
-        const user = store.getUser() || API.getUser();
-        if (user && API.isLoggedIn()) {
-          const loggedInView = document.getElementById('auth-logged-in-view');
-          const loggedOutView = document.getElementById('auth-logged-out-view');
-          if (loggedInView) loggedInView.style.display = 'block';
-          if (loggedOutView) loggedOutView.style.display = 'none';
-
-          const profUsername = document.getElementById('profile-username');
-          const profEmail = document.getElementById('profile-email');
-          const profName = document.getElementById('profile-fullname');
-
-          if (profUsername) profUsername.textContent = user.username || '';
-          if (profEmail) profEmail.textContent = user.email || '';
-          if (profName) profName.textContent = user.full_name || store.getDisplayName();
-
-          authModal.classList.add('active');
-        }
-      });
-    }
 
     if (closeAuthBtn && authModal) {
       closeAuthBtn.addEventListener('click', () => {

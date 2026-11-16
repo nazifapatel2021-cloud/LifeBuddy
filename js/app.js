@@ -546,37 +546,175 @@ function initApp() {
   const authModalBtn = document.getElementById('auth-modal-btn');
   const authModal = document.getElementById('auth-modal');
   const closeAuthBtn = document.getElementById('close-auth-btn');
+  const btnEditProfileTrigger = document.getElementById('btn-edit-profile-trigger');
+  const profileViewSection = document.getElementById('profile-view-section');
+  const profileEditSection = document.getElementById('profile-edit-section');
+  const btnCancelEditProfile = document.getElementById('btn-cancel-edit-profile');
+
+  const populateAccountModal = () => {
+    const user = API.getUser() || store.state.user || {};
+    const settings = store.state.settings || {};
+    const loggedInView = document.getElementById('auth-logged-in-view');
+    const loggedOutView = document.getElementById('auth-logged-out-view');
+
+    if (API.isLoggedIn()) {
+      if (loggedInView) loggedInView.style.display = 'block';
+      if (loggedOutView) loggedOutView.style.display = 'none';
+
+      // Always show view section initially
+      if (profileViewSection) profileViewSection.style.display = 'block';
+      if (profileEditSection) profileEditSection.style.display = 'none';
+
+      const fullNameEl = document.getElementById('profile-fullname');
+      const usernameEl = document.getElementById('profile-username');
+      const emailEl = document.getElementById('profile-email');
+      const profValEl = document.getElementById('profile-profession-val');
+      const ageValEl = document.getElementById('profile-age-group-val');
+      const goalValEl = document.getElementById('profile-focus-goal-val');
+
+      // Display name shown once, not duplicated
+      const rawFullName = (settings.full_name || user.full_name || '').trim();
+      const rawUsername = (user.username || '').trim();
+      const displayName = rawFullName ? rawFullName : (rawUsername || 'Friend');
+
+      if (fullNameEl) fullNameEl.textContent = displayName;
+
+      // Don't repeat display name twice. If separate handle exists, show @handle in muted text.
+      if (usernameEl) {
+        if (rawUsername && rawFullName && rawUsername.toLowerCase() !== rawFullName.toLowerCase()) {
+          usernameEl.textContent = `@${rawUsername}`;
+          usernameEl.style.display = 'block';
+        } else {
+          usernameEl.style.display = 'none';
+        }
+      }
+
+      if (emailEl) {
+        emailEl.textContent = user.email || 'local@workspace';
+      }
+
+      // Show Profession, Age Group and Primary Focus only if user actually set them
+      const isCustomValue = (val) => {
+        if (!val || typeof val !== 'string') return false;
+        const trimmed = val.trim();
+        if (!trimmed || trimmed === '-' || trimmed === 'Not set' || trimmed === 'Professional' || trimmed === 'General') {
+          return false;
+        }
+        return true;
+      };
+
+      const userProf = settings.profession || user.profession;
+      const userAge = settings.age_group || user.age_group;
+      const userGoal = settings.focus_goal || user.focus_goal;
+
+      if (profValEl) {
+        if (isCustomValue(userProf)) {
+          profValEl.innerHTML = `<span>${userProf}</span>`;
+        } else {
+          profValEl.innerHTML = `<span style="color: var(--text-muted); font-style: italic; font-weight: normal;">Not set</span> <button type="button" class="btn-link btn-inline-edit" style="font-size: 0.74rem; margin-left: 6px; text-decoration: underline; cursor: pointer;">Set</button>`;
+        }
+      }
+
+      if (ageValEl) {
+        if (isCustomValue(userAge)) {
+          ageValEl.innerHTML = `<span>${userAge}</span>`;
+        } else {
+          ageValEl.innerHTML = `<span style="color: var(--text-muted); font-style: italic; font-weight: normal;">Not set</span> <button type="button" class="btn-link btn-inline-edit" style="font-size: 0.74rem; margin-left: 6px; text-decoration: underline; cursor: pointer;">Set</button>`;
+        }
+      }
+
+      if (goalValEl) {
+        if (isCustomValue(userGoal)) {
+          goalValEl.innerHTML = `<span>${userGoal}</span>`;
+        } else {
+          goalValEl.innerHTML = `<span style="color: var(--text-muted); font-style: italic; font-weight: normal;">Not set</span> <button type="button" class="btn-link btn-inline-edit" style="font-size: 0.74rem; margin-left: 6px; text-decoration: underline; cursor: pointer;">Set</button>`;
+        }
+      }
+
+      // Inline edit triggers
+      document.querySelectorAll('.btn-inline-edit').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          switchToEditMode();
+        });
+      });
+    } else {
+      if (loggedInView) loggedInView.style.display = 'none';
+      if (loggedOutView) loggedOutView.style.display = 'block';
+    }
+  };
+
+  const switchToEditMode = () => {
+    const user = API.getUser() || store.state.user || {};
+    const settings = store.state.settings || {};
+    if (profileViewSection) profileViewSection.style.display = 'none';
+    if (profileEditSection) profileEditSection.style.display = 'block';
+
+    const editName = document.getElementById('edit-fullname-input');
+    const editProf = document.getElementById('edit-profession-select');
+    const editAge = document.getElementById('edit-age-select');
+    const editFocus = document.getElementById('edit-focus-select');
+
+    if (editName) editName.value = settings.full_name || user.full_name || '';
+    if (editProf) editProf.value = settings.profession || user.profession || '';
+    if (editAge) editAge.value = settings.age_group || user.age_group || '';
+    if (editFocus) editFocus.value = settings.focus_goal || user.focus_goal || '';
+  };
+
+  if (btnEditProfileTrigger) {
+    btnEditProfileTrigger.addEventListener('click', () => {
+      switchToEditMode();
+    });
+  }
+
+  if (btnCancelEditProfile) {
+    btnCancelEditProfile.addEventListener('click', () => {
+      if (profileViewSection) profileViewSection.style.display = 'block';
+      if (profileEditSection) profileEditSection.style.display = 'none';
+    });
+  }
+
+  if (profileEditSection) {
+    profileEditSection.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const newFullName = document.getElementById('edit-fullname-input')?.value.trim() || '';
+      const newProf = document.getElementById('edit-profession-select')?.value || '';
+      const newAge = document.getElementById('edit-age-select')?.value || '';
+      const newFocus = document.getElementById('edit-focus-select')?.value || '';
+
+      const updatedSettings = {
+        ...(store.state.settings || {}),
+        full_name: newFullName,
+        profession: newProf,
+        age_group: newAge,
+        focus_goal: newFocus
+      };
+
+      try {
+        await API.auth.updateSettings(updatedSettings);
+      } catch (err) {
+        console.warn('Backend updateSettings warning:', err);
+      }
+
+      store.state.settings = updatedSettings;
+      if (store.state.user) {
+        store.state.user.full_name = newFullName;
+        store.state.user.profession = newProf;
+        store.state.user.age_group = newAge;
+        store.state.user.focus_goal = newFocus;
+      }
+      store.saveToStorage();
+      store.notify('user', store.state.user);
+      store.notify('settings', store.state.settings);
+
+      populateAccountModal();
+      showToast('✨ Profile updated successfully');
+    });
+  }
 
   if (authModalBtn && authModal) {
     authModalBtn.addEventListener('click', () => {
-      const user = API.getUser() || store.state.user;
-      const settings = store.state.settings || {};
-      const loggedInView = document.getElementById('auth-logged-in-view');
-      const loggedOutView = document.getElementById('auth-logged-out-view');
-
-      if (API.isLoggedIn()) {
-        if (loggedInView) loggedInView.style.display = 'block';
-        if (loggedOutView) loggedOutView.style.display = 'none';
-
-        const fullNameEl = document.getElementById('profile-fullname');
-        const usernameEl = document.getElementById('profile-username');
-        const emailEl = document.getElementById('profile-email');
-        const profEl = document.getElementById('profile-profession');
-        const ageEl = document.getElementById('profile-age-group');
-        const goalEl = document.getElementById('profile-focus-goal');
-
-        const displayName = settings.full_name || (user ? user.full_name : '') || (user ? user.username : 'Friend');
-        if (fullNameEl) fullNameEl.textContent = displayName;
-        if (usernameEl) usernameEl.textContent = `@${user ? user.username : 'user'}`;
-        if (emailEl) emailEl.textContent = user ? user.email : 'local@workspace';
-        if (profEl) profEl.textContent = settings.profession || (user ? user.profession : '') || 'Professional';
-        if (ageEl) ageEl.textContent = settings.age_group || (user ? user.age_group : '') || 'General';
-        if (goalEl) goalEl.textContent = settings.focus_goal || (user ? user.focus_goal : '') || 'Deep Work & Consistency';
-      } else {
-        if (loggedInView) loggedInView.style.display = 'none';
-        if (loggedOutView) loggedOutView.style.display = 'block';
-      }
-
+      populateAccountModal();
       authModal.classList.add('active');
     });
   }
@@ -587,29 +725,173 @@ function initApp() {
     });
   }
 
-  // Backup Export & Cache Clear
-  const btnExportBackup = document.getElementById('btn-export-backup');
-  if (btnExportBackup) {
-    btnExportBackup.addEventListener('click', () => {
-      const backupData = JSON.stringify(store.state, null, 2);
-      const blob = new Blob([backupData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `lifebuddy_backup_${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('📦 Data export downloaded');
+  // ==========================================
+  // Data & Privacy Controls in Preferences
+  // ==========================================
+  // 1. Export My Data
+  const btnPrefExport = document.getElementById('pref-btn-export');
+  if (btnPrefExport) {
+    btnPrefExport.addEventListener('click', async () => {
+      try {
+        let exportData = null;
+        if (API.isLoggedIn()) {
+          try {
+            exportData = await API.request('/api/user/export-my-data');
+          } catch (e) {
+            console.warn('Backend export failed, falling back to local state', e);
+          }
+        }
+        if (!exportData) {
+          exportData = {
+            export_timestamp: new Date().toISOString(),
+            ...store.state
+          };
+        }
+        const jsonStr = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lifebuddy_data_export_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('📦 Data export downloaded');
+      } catch (err) {
+        alert('Could not export data: ' + err.message);
+      }
     });
   }
 
-  const btnClearCache = document.getElementById('btn-clear-cache');
-  if (btnClearCache) {
-    btnClearCache.addEventListener('click', () => {
-      if (confirm('Clear local cache and refresh from database?')) {
-        localStorage.removeItem('lifebuddy_store_v2');
-        window.location.reload();
+  // 2. Import Data
+  const btnPrefImport = document.getElementById('pref-btn-import');
+  const importFileInput = document.getElementById('pref-import-file-input');
+  if (btnPrefImport && importFileInput) {
+    btnPrefImport.addEventListener('click', () => {
+      importFileInput.click();
+    });
+
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          if (!parsed || typeof parsed !== 'object') {
+            throw new Error('Invalid JSON structure');
+          }
+
+          if (parsed.tasks && Array.isArray(parsed.tasks)) store.state.tasks = parsed.tasks;
+          if (parsed.habits && Array.isArray(parsed.habits)) store.state.habits = parsed.habits;
+          if (parsed.expenses && Array.isArray(parsed.expenses)) store.state.expenses = parsed.expenses;
+          if (parsed.sessions && Array.isArray(parsed.sessions)) store.state.sessions = parsed.sessions;
+          if (parsed.focus_sessions && Array.isArray(parsed.focus_sessions)) store.state.sessions = parsed.focus_sessions;
+          if (parsed.dailyLogs && Array.isArray(parsed.dailyLogs)) store.state.dailyLogs = parsed.dailyLogs;
+          if (parsed.daily_logs && Array.isArray(parsed.daily_logs)) store.state.dailyLogs = parsed.daily_logs;
+          if (parsed.settings && typeof parsed.settings === 'object') store.state.settings = { ...store.state.settings, ...parsed.settings };
+          if (parsed.user_settings && typeof parsed.user_settings === 'object') store.state.settings = { ...store.state.settings, ...parsed.user_settings };
+
+          store.saveToStorage();
+
+          if (API.isLoggedIn()) {
+            try {
+              await API.sync.batch({
+                tasks: store.state.tasks,
+                habits: store.state.habits,
+                expenses: store.state.expenses,
+                sessions: store.state.sessions,
+                wellness_logs: store.state.dailyLogs,
+                settings: store.state.settings
+              });
+            } catch (syncErr) {
+              console.warn('Server batch sync warning during import:', syncErr);
+            }
+          }
+
+          store.notify('*', 'import-completed');
+          showToast('📥 Workspace data successfully imported');
+          setTimeout(() => window.location.reload(), 1200);
+        } catch (err) {
+          alert('Failed to import data: ' + err.message);
+        } finally {
+          importFileInput.value = '';
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  // 3. Delete All My Data Confirmation Modal
+  const btnDeleteAllTrigger = document.getElementById('pref-btn-delete-all');
+  const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+  const closeDeleteModalBtn = document.getElementById('close-delete-modal-btn');
+  const btnCancelDelete = document.getElementById('btn-cancel-delete');
+  const btnConfirmDelete = document.getElementById('btn-confirm-delete');
+  const deleteConfirmInput = document.getElementById('delete-confirm-input');
+
+  const openDeleteModal = () => {
+    if (!deleteConfirmModal) return;
+    if (deleteConfirmInput) deleteConfirmInput.value = '';
+    if (btnConfirmDelete) {
+      btnConfirmDelete.disabled = true;
+      btnConfirmDelete.style.opacity = '0.5';
+      btnConfirmDelete.style.cursor = 'not-allowed';
+    }
+    deleteConfirmModal.classList.add('active');
+  };
+
+  const closeDeleteModal = () => {
+    if (!deleteConfirmModal) return;
+    deleteConfirmModal.classList.remove('active');
+  };
+
+  if (btnDeleteAllTrigger) {
+    btnDeleteAllTrigger.addEventListener('click', openDeleteModal);
+  }
+
+  if (closeDeleteModalBtn) {
+    closeDeleteModalBtn.addEventListener('click', closeDeleteModal);
+  }
+
+  if (btnCancelDelete) {
+    btnCancelDelete.addEventListener('click', closeDeleteModal);
+  }
+
+  if (deleteConfirmInput && btnConfirmDelete) {
+    deleteConfirmInput.addEventListener('input', () => {
+      const isConfirmed = deleteConfirmInput.value.trim() === 'DELETE';
+      btnConfirmDelete.disabled = !isConfirmed;
+      btnConfirmDelete.style.opacity = isConfirmed ? '1' : '0.5';
+      btnConfirmDelete.style.cursor = isConfirmed ? 'pointer' : 'not-allowed';
+    });
+  }
+
+  if (btnConfirmDelete) {
+    btnConfirmDelete.addEventListener('click', async () => {
+      if (deleteConfirmInput.value.trim() !== 'DELETE') return;
+
+      btnConfirmDelete.disabled = true;
+      btnConfirmDelete.textContent = 'Erasing...';
+
+      try {
+        if (API.isLoggedIn()) {
+          try {
+            await API.request('/api/user/delete-my-data', { method: 'DELETE' });
+          } catch (e) {
+            console.warn('Server delete call error:', e);
+          }
+        }
+      } catch (err) {
+        console.warn('Delete error', err);
       }
+
+      API.auth.logout();
+      localStorage.clear();
+      sessionStorage.clear();
+
+      alert('All workspace data has been permanently erased.');
+      window.location.reload();
     });
   }
 

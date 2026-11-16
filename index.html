@@ -606,42 +606,89 @@
       <div id="auth-logged-in-view" style="display: none;">
         <div class="user-profile-center">
           <div class="profile-avatar-circle">👤</div>
-          <h3 id="profile-fullname" class="profile-username-text" style="font-weight: 700; font-size: 1.15rem;">Display Name</h3>
-          <p id="profile-username" class="profile-email-text" style="color: var(--accent-primary); font-weight: 500;">@username</p>
-          <p id="profile-email" class="profile-email-text" style="font-size: 0.78rem;">email@example.com</p>
+          <h3 id="profile-fullname" class="profile-username-text" style="font-weight: 700; font-size: 1.15rem; margin-bottom: 2px;">Display Name</h3>
+          <p id="profile-username" class="profile-handle-text" style="color: var(--text-muted); font-size: 0.82rem; margin: 0 0 4px 0; display: none;">@username</p>
+          <p id="profile-email" class="profile-email-text" style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">email@example.com</p>
         </div>
 
-        <div class="profile-details-grid" style="margin: 16px 0; padding: 12px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Profession:</span>
-            <strong id="profile-profession" style="color: var(--text-main);">-</strong>
+        <!-- Read-Only Profile View -->
+        <div id="profile-view-section">
+          <div class="profile-details-grid" style="margin: 16px 0; padding: 14px; background: var(--bg-surface); border-radius: var(--radius-sm); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; font-size: 0.82rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Profession:</span>
+              <span id="profile-profession-val" style="color: var(--text-main); font-weight: 600;">Not set</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Age Group:</span>
+              <span id="profile-age-group-val" style="color: var(--text-main); font-weight: 600;">Not set</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--text-muted);">Primary Focus:</span>
+              <span id="profile-focus-goal-val" style="color: var(--text-main); font-weight: 600;">Not set</span>
+            </div>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Age Group:</span>
-            <strong id="profile-age-group" style="color: var(--text-main);">-</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="color: var(--text-muted);">Primary Focus:</span>
-            <strong id="profile-focus-goal" style="color: var(--text-main);">-</strong>
-          </div>
-        </div>
 
-        <!-- Data Portability in Account -->
-        <div class="form-field-group" style="margin-top: 14px; margin-bottom: 14px;">
-          <label class="field-label" style="font-size: 0.75rem;">Local Data Management (100% Private)</label>
-          <div style="display: flex; gap: 8px; margin-top: 4px;">
-            <button type="button" id="btn-export-backup" class="btn-secondary" style="flex: 1; font-size: 0.78rem; padding: 6px 8px;">
-              📦 Export JSON
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="button" id="btn-edit-profile-trigger" class="btn-secondary" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
+              ✏️ Edit Profile
             </button>
-            <button type="button" id="btn-clear-cache" class="btn-danger-outline" style="font-size: 0.78rem; padding: 6px 8px;">
-              Reset Cache
+            <button id="auth-logout-btn" class="btn-danger-outline" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
+              Sign Out
             </button>
           </div>
         </div>
 
-        <button id="auth-logout-btn" class="btn-danger-outline" style="width: 100%;">
-          Sign Out of LifeBuddy
-        </button>
+        <!-- Inline Edit Profile Form (Hidden by default) -->
+        <form id="profile-edit-section" style="display: none; margin-top: 14px;">
+          <div class="form-field-group">
+            <label class="field-label" for="edit-fullname-input">Display Name</label>
+            <input type="text" id="edit-fullname-input" class="field-input" placeholder="Your display name">
+          </div>
+          <div class="form-field-group">
+            <label class="field-label" for="edit-profession-select">Profession / Role</label>
+            <select id="edit-profession-select" class="field-select">
+              <option value="">Not set</option>
+              <option value="Student">Student / Academic</option>
+              <option value="Software Engineer">Software Engineer / Tech</option>
+              <option value="Designer">Designer / Creative</option>
+              <option value="Freelancer">Freelancer / Consultant</option>
+              <option value="Founder">Founder / Entrepreneur</option>
+              <option value="Writer">Writer / Content Creator</option>
+              <option value="Researcher">Researcher / Scientist</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-field-group">
+            <label class="field-label" for="edit-age-select">Age Group</label>
+            <select id="edit-age-select" class="field-select">
+              <option value="">Not set</option>
+              <option value="Under 18">Under 18</option>
+              <option value="18-24">18–24</option>
+              <option value="25-34">25–34</option>
+              <option value="35-44">35–44</option>
+              <option value="45-54">45–54</option>
+              <option value="55+">55+</option>
+            </select>
+          </div>
+          <div class="form-field-group">
+            <label class="field-label" for="edit-focus-select">Primary Focus</label>
+            <select id="edit-focus-select" class="field-select">
+              <option value="">Not set</option>
+              <option value="Deep Work & Study">Deep Work & Study</option>
+              <option value="Habit Compounding">Habit Compounding</option>
+              <option value="Mindful Spending">Mindful Spending</option>
+              <option value="Work-Life Balance">Work-Life Balance</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 14px;">
+            <button type="submit" id="btn-save-profile" class="btn-primary" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
+              Save Profile
+            </button>
+            <button type="button" id="btn-cancel-edit-profile" class="btn-secondary" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
 
       <div id="auth-logged-out-view" style="display: block;">
@@ -793,29 +840,93 @@
           </div>
         </div>
 
-        <!-- Privacy & Activity Tracking Guide Card -->
-        <div class="tracking-guide-card">
-          <h3 class="guide-title">
-            <span>🔒</span> <span>How LifeBuddy Understands Your Routine</span>
+        <!-- Data & Privacy Section -->
+        <div class="settings-section" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
+          <h3 class="settings-section-title" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
+            Data & Privacy
           </h3>
-          <p class="guide-intro">
-            LifeBuddy is 100% private. All predictions and insights are computed locally for your account. Here is how your activity is used:
+          <p class="privacy-statement-text" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
+            100% Private. Local execution. Zero telemetry.
           </p>
-          <ul class="guide-list">
-            <li><strong>Focus Sessions:</strong> Identifies your peak energy hours with Bayesian smoothing.</li>
-            <li><strong>Tasks:</strong> Learns actual duration history to predict future task estimates.</li>
-            <li><strong>Habits:</strong> Tracks streak compounding to alert you before you break a rhythm.</li>
-            <li><strong>Finances:</strong> Computes daily spending burn rate to project month-end budgets.</li>
-            <li><strong>Daily Reflections:</strong> Discovers correlations between rest and focus energy.</li>
-          </ul>
-          <div class="guide-privacy-pill">
-            🛡️ Zero third-party trackers, zero ad cookies, and zero external telemetry.
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+            <button type="button" id="pref-btn-export" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;">
+              <span>📦</span> <span>Export my data (JSON)</span>
+            </button>
+            <button type="button" id="pref-btn-import" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;">
+              <span>📥</span> <span>Import data</span>
+            </button>
+            <input type="file" id="pref-import-file-input" accept=".json" style="display: none;">
+          </div>
+
+          <!-- Danger Zone: Delete All My Data -->
+          <div class="settings-danger-card" style="padding: 14px 16px; border-radius: var(--radius-sm); border: 1.5px solid #fecaca; background: #fff5f5; margin-top: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+              <div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: #b91c1c;">Delete All Workspace Data</div>
+                <p style="font-size: 0.78rem; color: #7f1d1d; margin: 4px 0 0 0;">Permanently erase all personal tasks, habits, focus logs, and financial records.</p>
+              </div>
+              <button type="button" id="pref-btn-delete-all" class="btn-danger" style="background: #dc2626; color: #ffffff; border: none; padding: 8px 14px; font-weight: 600; font-size: 0.8rem; border-radius: 6px; cursor: pointer;">
+                🗑️ Delete all my data
+              </button>
+            </div>
           </div>
         </div>
 
-        <button id="save-settings-btn" class="btn-primary btn-save-settings">
+        <button id="save-settings-btn" class="btn-primary btn-save-settings" style="margin-top: 20px;">
           Save Preferences
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Delete Data Confirmation Modal -->
+  <div id="delete-confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
+    <div class="modal-card modal-compact" style="border: 2px solid #ef4444; max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h2 id="delete-confirm-title" class="modal-title" style="color: #b91c1c;">⚠️ Delete All Workspace Data</h2>
+          <p class="modal-subtitle">This action is permanent and cannot be undone.</p>
+        </div>
+        <button id="close-delete-modal-btn" class="btn-close-modal">✕</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 20px;">
+        <div style="background: #fee2e2; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; color: #991b1b; line-height: 1.5;">
+          <strong>The following data will be permanently wiped:</strong>
+          <ul style="margin: 6px 0 0 16px; padding: 0;">
+            <li>All task milestones & planner history</li>
+            <li>All Pomodoro focus sessions and peak-hour statistics</li>
+            <li>All habit streaks and completion records</li>
+            <li>All financial transaction ledgers and category budgets</li>
+            <li>All daily wellness reflections, sleep logs, and mood history</li>
+            <li>All local settings and machine learning models</li>
+          </ul>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 8px;">
+          To confirm, type <strong style="color: #b91c1c; font-family: monospace; font-size: 0.95rem;">DELETE</strong> in the box below:
+        </p>
+        <input 
+          type="text" 
+          id="delete-confirm-input" 
+          class="field-input" 
+          placeholder="Type DELETE" 
+          autocomplete="off"
+          style="border-color: #ef4444; font-weight: 700; text-align: center; letter-spacing: 0.05em;"
+        >
+
+        <div style="display: flex; gap: 10px; margin-top: 18px;">
+          <button type="button" id="btn-cancel-delete" class="btn-secondary" style="flex: 1;">
+            Cancel
+          </button>
+          <button type="button" id="btn-confirm-delete" class="btn-danger" style="flex: 1.2; background: #dc2626; color: #fff; border: none; font-weight: 700; opacity: 0.5; cursor: not-allowed;" disabled>
+            Permanently Erase
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
       </div>
     </div>
   </div>
