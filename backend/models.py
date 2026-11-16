@@ -5,6 +5,10 @@ class UserRegister(BaseModel):
     username: str
     email: str
     password: str
+    full_name: Optional[str] = None
+    profession: Optional[str] = None
+    age_group: Optional[str] = None
+    focus_goal: Optional[str] = None
 
 class UserLogin(BaseModel):
     username_or_email: str
@@ -14,14 +18,22 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: str
+    full_name: Optional[str] = None
+    profession: Optional[str] = None
+    age_group: Optional[str] = None
+    focus_goal: Optional[str] = None
 
 class UserSettings(BaseModel):
-    monthly_budget: float = 1000.0
-    currency_symbol: str = "$"
+    monthly_budget: float = 25000.0
+    currency_symbol: str = "₹"
     focus_duration: int = 25
     short_break: int = 5
     long_break: int = 15
-    theme: str = "sage"
+    theme: str = "nordic"
+    full_name: Optional[str] = None
+    profession: Optional[str] = None
+    age_group: Optional[str] = None
+    focus_goal: Optional[str] = None
 
 class TaskCreate(BaseModel):
     id: Optional[str] = None

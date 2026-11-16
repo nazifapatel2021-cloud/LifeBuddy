@@ -165,6 +165,18 @@ def init_db():
         if "interruptions" not in fs_cols:
             cursor.execute("ALTER TABLE focus_sessions ADD COLUMN interruptions INTEGER DEFAULT 0")
 
+        # Check user_settings profile columns
+        cursor.execute("PRAGMA table_info(user_settings)")
+        us_cols = [row[1] for row in cursor.fetchall()]
+        if "full_name" not in us_cols:
+            cursor.execute("ALTER TABLE user_settings ADD COLUMN full_name TEXT")
+        if "profession" not in us_cols:
+            cursor.execute("ALTER TABLE user_settings ADD COLUMN profession TEXT")
+        if "age_group" not in us_cols:
+            cursor.execute("ALTER TABLE user_settings ADD COLUMN age_group TEXT")
+        if "focus_goal" not in us_cols:
+            cursor.execute("ALTER TABLE user_settings ADD COLUMN focus_goal TEXT")
+
     conn.commit()
     conn.close()
 

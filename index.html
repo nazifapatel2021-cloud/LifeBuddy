@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LifeBuddy — Your Life. Smarter, Every Day.</title>
-  <meta name="description" content="A premium, AI-powered personal life-management platform uniting deep focus, intelligent task planning, habit consistency, and personal finances in ₹ INR.">
+  <meta name="description" content="A premium personal life-management platform uniting deep focus, intelligent task planning, habit consistency, and mindful personal finances.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%236366f1%22/><path d=%22M16 6 C10 6 7 11 7 17 C7 23 11 26 16 26 C21 26 25 23 25 17 C25 11 22 6 16 6 Z%22 fill=%22none%22 stroke=%22%23ffffff%22 stroke-width=%222.5%22/><circle cx=%2216%22 cy=%2216%22 r=%223.5%22 fill=%22%23ffffff%22/></svg>">
   <link rel="manifest" href="static/manifest.json">
-  <link rel="stylesheet" href="css/variables.css?v=3.2">
-  <link rel="stylesheet" href="css/styles.css?v=3.2">
-  <link rel="stylesheet" href="css/responsive.css?v=3.2">
+  <link rel="stylesheet" href="css/variables.css?v=3.3">
+  <link rel="stylesheet" href="css/styles.css?v=3.3">
+  <link rel="stylesheet" href="css/responsive.css?v=3.3">
 </head>
 <body>
 
@@ -29,14 +29,11 @@
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
           </div>
-          <div class="brand-text">
-            <span class="brand-title">LifeBuddy</span>
-            <span class="brand-tagline">Your Life. Smarter, Every Day.</span>
-          </div>
+          <span class="brand-title">LifeBuddy</span>
         </div>
 
         <!-- Center Workspace Segmented Navigation -->
-        <nav id="main-nav-bar" class="main-nav-bar" aria-label="LifeBuddy Views">
+        <nav id="main-nav-bar" class="main-nav-bar" style="display: none;" aria-label="LifeBuddy Views">
           <button class="nav-tab active" data-view="dashboard">
             <span class="nav-icon">☀️</span>
             <span class="nav-label">Today</span>
@@ -107,27 +104,22 @@
       <div class="welcome-container-inner">
         <!-- Hero Pitch Banner -->
         <div class="welcome-hero-panel">
-          <div class="welcome-pill-badge">
-            <span class="badge-dot"></span>
-            <span>MINDFUL LIFE MANAGEMENT PLATFORM</span>
-          </div>
-
           <h1 class="welcome-headline">
             Your Life.<br>
             <span class="gradient-text">Smarter, Every Day.</span>
           </h1>
 
           <p class="welcome-description">
-            A unified, privacy-first personal operating system uniting deep work focus, daily habits, task milestones, and personal finances in ₹ INR.
+            A unified workspace designed for deep focus, daily momentum, task execution, and mindful personal finances.
           </p>
 
-          <!-- Core Value Proposition Cards (Clean & Minimalist, No Demo Buttons) -->
+          <!-- Core Value Proposition Cards (Clean & Minimalist) -->
           <div class="welcome-features-list">
             <div class="welcome-feature-card">
               <span class="feature-icon">⏱️</span>
               <div class="feature-text">
                 <span class="feature-title">Deep Work & Focus</span>
-                <span class="feature-desc">Pomodoro flow with synthesized ambient soundscapes</span>
+                <span class="feature-desc">Pomodoro flow paired with ambient soundscapes</span>
               </div>
             </div>
 
@@ -135,15 +127,15 @@
               <span class="feature-icon">🌱</span>
               <div class="feature-text">
                 <span class="feature-title">Habits & Consistency</span>
-                <span class="feature-desc">Compounding streaks, daily reflections, and gentle nudges</span>
+                <span class="feature-desc">Streak momentum, daily reflections, and gentle nudges</span>
               </div>
             </div>
 
             <div class="welcome-feature-card">
               <span class="feature-icon">💰</span>
               <div class="feature-text">
-                <span class="feature-title">Personal Finances (₹)</span>
-                <span class="feature-desc">Mindful expense tracking with monthly budget pacing</span>
+                <span class="feature-title">Personal Finances</span>
+                <span class="feature-desc">Frictionless expense tracking with monthly budget pacing</span>
               </div>
             </div>
           </div>
@@ -160,14 +152,53 @@
             <form id="gate-auth-form" class="auth-form-body">
               <div id="gate-error-msg" class="auth-error-banner" style="display: none;"></div>
 
+              <div class="form-field-group">
+                <label class="field-label" for="gate-username-input">Username</label>
+                <input type="text" id="gate-username-input" class="field-input" placeholder="Choose a username" required autocomplete="username">
+              </div>
+
               <div class="form-field-group" id="gate-email-group" style="display: none;">
                 <label class="field-label" for="gate-email-input">Email Address</label>
                 <input type="email" id="gate-email-input" class="field-input" placeholder="name@example.com" autocomplete="email">
               </div>
 
-              <div class="form-field-group">
-                <label class="field-label" for="gate-username-input">Username</label>
-                <input type="text" id="gate-username-input" class="field-input" placeholder="Enter username" required autocomplete="username">
+              <div class="form-field-group" id="gate-fullname-group" style="display: none;">
+                <label class="field-label" for="gate-fullname-input">Full Name</label>
+                <input type="text" id="gate-fullname-input" class="field-input" placeholder="e.g. Alex Sharma" autocomplete="name">
+              </div>
+
+              <div class="form-field-row" id="gate-profile-row" style="display: none; display: flex; gap: 10px;">
+                <div class="form-field-group" style="flex: 1.2;">
+                  <label class="field-label" for="gate-profession-select">Profession / Role</label>
+                  <select id="gate-profession-select" class="field-select">
+                    <option value="Student">Student / Academic</option>
+                    <option value="Software Engineer">Software Engineer / Tech</option>
+                    <option value="Designer">Designer / Creative</option>
+                    <option value="Freelancer">Freelancer / Consultant</option>
+                    <option value="Founder">Founder / Entrepreneur</option>
+                    <option value="Working Professional" selected>Working Professional</option>
+                  </select>
+                </div>
+
+                <div class="form-field-group" style="flex: 0.8;">
+                  <label class="field-label" for="gate-age-select">Age Group</label>
+                  <select id="gate-age-select" class="field-select">
+                    <option value="18-24">18–24</option>
+                    <option value="25-34" selected>25–34</option>
+                    <option value="35-44">35–44</option>
+                    <option value="45+">45+</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-field-group" id="gate-goal-group" style="display: none;">
+                <label class="field-label" for="gate-goal-select">Primary Focus Goal</label>
+                <select id="gate-goal-select" class="field-select">
+                  <option value="Deep Work & Productivity" selected>🎯 Deep Work & Daily Productivity</option>
+                  <option value="Habit Building">🌱 Habit Consistency & Mindful Routine</option>
+                  <option value="Financial Budgeting">💰 Financial Awareness & Budget Discipline</option>
+                  <option value="Balanced Work-Life">⚖️ Balanced Work-Life Rhythm</option>
+                </select>
               </div>
 
               <div class="form-field-group">
@@ -181,7 +212,7 @@
               </button>
 
               <div class="auth-privacy-foot">
-                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
+                <span>🔒</span> <span>100% Private & local-first. Your personal data stays yours.</span>
               </div>
             </form>
           </div>
@@ -402,15 +433,15 @@
         </div>
       </section>
 
-      <!-- ================= VIEW 5: FINANCES (IN ₹ INR) ================= -->
+      <!-- ================= VIEW 5: FINANCES ================= -->
       <section id="view-finances" class="app-view">
         <div class="view-header-strip">
           <div>
-            <h1 class="view-heading">Mindful Personal Finances</h1>
-            <p class="view-subheading">Track everyday spending in ₹ INR with budget pacing and smart categorization</p>
+            <h1 class="view-heading">Personal Finances</h1>
+            <p class="view-subheading">Track everyday spending with monthly budget pacing and smart categorization</p>
           </div>
           <button id="btn-add-expense-modal" class="btn-primary">
-            <span>+</span> <span>Log Expense (₹)</span>
+            <span>+</span> <span>Log Expense</span>
           </button>
         </div>
 
@@ -435,7 +466,7 @@
             <div class="panel-header">
               <div>
                 <h2 class="panel-title">Category Distribution</h2>
-                <p class="panel-subtitle">Month-to-date spending breakdown in ₹</p>
+                <p class="panel-subtitle">Month-to-date spending breakdown</p>
               </div>
             </div>
             <div id="finance-category-chart" class="category-chart-container"></div>
@@ -506,12 +537,12 @@
     </div>
   </div>
 
-  <!-- 3. Add Expense Modal (in ₹ INR) -->
+  <!-- 3. Add Expense Modal -->
   <div id="expense-modal" class="modal-overlay" role="dialog" aria-modal="true">
     <div class="modal-card modal-compact">
       <div class="modal-header">
         <div class="modal-header-text">
-          <h2 class="modal-title">Log Expense (₹ INR)</h2>
+          <h2 class="modal-title">Log Expense</h2>
           <p class="modal-subtitle">Auto-categorized by local machine learning</p>
         </div>
         <button id="close-expense-modal" class="btn-close-modal">✕</button>
@@ -519,7 +550,7 @@
 
       <form id="expense-form" class="modal-form">
         <div class="form-field-group">
-          <label class="field-label" for="exp-amount-input">Amount (₹ INR)</label>
+          <label class="field-label" for="exp-amount-input">Amount</label>
           <input type="number" id="exp-amount-input" class="field-input" step="1" min="1" placeholder="e.g. 250" required autofocus>
         </div>
 
@@ -641,7 +672,7 @@
             <li><strong>Focus Sessions:</strong> Identifies your peak energy hours with Bayesian smoothing.</li>
             <li><strong>Tasks:</strong> Learns actual duration history to predict future task estimates.</li>
             <li><strong>Habits:</strong> Tracks streak compounding to alert you before you break a rhythm.</li>
-            <li><strong>Finances (₹):</strong> Computes daily spending burn rate to project month-end budgets.</li>
+            <li><strong>Finances:</strong> Computes daily spending burn rate to project month-end budgets.</li>
             <li><strong>Daily Reflections:</strong> Discovers correlations between rest and focus energy.</li>
           </ul>
           <div class="guide-privacy-pill">
@@ -660,6 +691,6 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Application Bootstrap -->
-  <script type="module" src="js/app.js?v=3.2"></script>
+  <script type="module" src="js/app.js?v=3.3"></script>
 </body>
 </html>

@@ -59,26 +59,32 @@ export class AuthController {
     const gateTabLogin = document.getElementById('gate-tab-login');
     const gateTabRegister = document.getElementById('gate-tab-register');
     const gateEmailGroup = document.getElementById('gate-email-group');
+    const gateFullnameGroup = document.getElementById('gate-fullname-group');
+    const gateProfileRow = document.getElementById('gate-profile-row');
+    const gateGoalGroup = document.getElementById('gate-goal-group');
     const gateSubmitBtn = document.getElementById('gate-submit-btn');
     const gateErrorMsg = document.getElementById('gate-error-msg');
     let gateMode = 'login';
 
-    if (gateTabLogin && gateTabRegister) {
-      gateTabLogin.addEventListener('click', () => {
-        gateMode = 'login';
-        gateTabLogin.classList.add('active');
-        gateTabRegister.classList.remove('active');
-        if (gateEmailGroup) gateEmailGroup.style.display = 'none';
-        if (gateSubmitBtn) gateSubmitBtn.textContent = 'Sign In to LifeBuddy →';
-      });
+    const setAuthMode = (mode) => {
+      gateMode = mode;
+      const isRegister = mode === 'register';
+      if (gateTabLogin) gateTabLogin.classList.toggle('active', !isRegister);
+      if (gateTabRegister) gateTabRegister.classList.toggle('active', isRegister);
+      if (gateEmailGroup) gateEmailGroup.style.display = isRegister ? 'block' : 'none';
+      if (gateFullnameGroup) gateFullnameGroup.style.display = isRegister ? 'block' : 'none';
+      if (gateProfileRow) gateProfileRow.style.display = isRegister ? 'flex' : 'none';
+      if (gateGoalGroup) gateGoalGroup.style.display = isRegister ? 'block' : 'none';
+      if (gateSubmitBtn) {
+        gateSubmitBtn.innerHTML = isRegister
+          ? '<span>Create Your Account</span> <span>→</span>'
+          : '<span>Sign In to LifeBuddy</span> <span>→</span>';
+      }
+    };
 
-      gateTabRegister.addEventListener('click', () => {
-        gateMode = 'register';
-        gateTabRegister.classList.add('active');
-        gateTabLogin.classList.remove('active');
-        if (gateEmailGroup) gateEmailGroup.style.display = 'block';
-        if (gateSubmitBtn) gateSubmitBtn.textContent = 'Create Free Account →';
-      });
+    if (gateTabLogin && gateTabRegister) {
+      gateTabLogin.addEventListener('click', () => setAuthMode('login'));
+      gateTabRegister.addEventListener('click', () => setAuthMode('register'));
     }
 
     if (gateForm) {
@@ -87,6 +93,10 @@ export class AuthController {
         const username = document.getElementById('gate-username-input')?.value.trim();
         const password = document.getElementById('gate-password-input')?.value;
         const email = document.getElementById('gate-email-input')?.value.trim();
+        const fullName = document.getElementById('gate-fullname-input')?.value.trim();
+        const profession = document.getElementById('gate-profession-select')?.value;
+        const ageGroup = document.getElementById('gate-age-select')?.value;
+        const focusGoal = document.getElementById('gate-goal-select')?.value;
 
         if (gateErrorMsg) gateErrorMsg.style.display = 'none';
         if (gateSubmitBtn) gateSubmitBtn.disabled = true;
@@ -95,8 +105,13 @@ export class AuthController {
           if (gateMode === 'login') {
             await API.auth.login(username, password);
           } else {
-            if (!email) throw new Error('Please enter an email address');
-            await API.auth.register(username, email, password);
+            if (!email) throw new Error('Please enter a valid email address');
+            await API.auth.register(username, email, password, {
+              fullName,
+              profession,
+              ageGroup,
+              focusGoal
+            });
           }
           window.location.reload();
         } catch (err) {

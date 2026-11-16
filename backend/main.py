@@ -118,8 +118,8 @@ def register(user: UserRegister):
         )
         user_id = cursor.lastrowid
         cursor.execute(
-            "INSERT INTO user_settings (user_id) VALUES (?)",
-            (user_id,)
+            "INSERT INTO user_settings (user_id, full_name, profession, age_group, focus_goal, theme) VALUES (?, ?, ?, ?, ?, 'nordic')",
+            (user_id, user.full_name, user.profession, user.age_group, user.focus_goal)
         )
         conn.commit()
         access_token = create_access_token(user_id, user.username)
@@ -129,7 +129,15 @@ def register(user: UserRegister):
             "access_token": access_token,
             "refresh_token": refresh_token,
             "token_type": "bearer",
-            "user": {"id": user_id, "username": user.username, "email": user.email}
+            "user": {
+                "id": user_id,
+                "username": user.username,
+                "email": user.email,
+                "full_name": user.full_name,
+                "profession": user.profession,
+                "age_group": user.age_group,
+                "focus_goal": user.focus_goal
+            }
         }
     except Exception as e:
         conn.rollback()
@@ -199,16 +207,20 @@ def update_settings(settings: UserSettings, user: dict = Depends(get_current_use
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO user_settings (user_id, monthly_budget, currency_symbol, focus_duration, short_break, long_break, theme)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO user_settings (user_id, monthly_budget, currency_symbol, focus_duration, short_break, long_break, theme, full_name, profession, age_group, focus_goal)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE SET
             monthly_budget = excluded.monthly_budget,
             currency_symbol = excluded.currency_symbol,
             focus_duration = excluded.focus_duration,
             short_break = excluded.short_break,
             long_break = excluded.long_break,
-            theme = excluded.theme
-    """, (user["id"], settings.monthly_budget, settings.currency_symbol, settings.focus_duration, settings.short_break, settings.long_break, settings.theme))
+            theme = excluded.theme,
+            full_name = excluded.full_name,
+            profession = excluded.profession,
+            age_group = excluded.age_group,
+            focus_goal = excluded.focus_goal
+    """, (user["id"], settings.monthly_budget, settings.currency_symbol, settings.focus_duration, settings.short_break, settings.long_break, settings.theme, settings.full_name, settings.profession, settings.age_group, settings.focus_goal))
     conn.commit()
     conn.close()
     return {"status": "success", "settings": settings.dict()}

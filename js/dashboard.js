@@ -86,7 +86,7 @@ export class DashboardManager {
             <span>▶</span> <span>Start Focus</span>
           </button>
           <button id="hero-quick-expense-btn" class="btn-secondary btn-hero-cta">
-            <span>+</span> <span>Log Expense (₹)</span>
+            <span>+</span> <span>Log Expense</span>
           </button>
         </div>
       </div>
@@ -193,7 +193,7 @@ export class DashboardManager {
         <div class="content-panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Monthly Budget Meter (₹)</h2>
+              <h2 class="panel-title">Monthly Budget Meter</h2>
               <p class="panel-subtitle">Spending pacing vs ${currency}${budget.toFixed(0)} cap</p>
             </div>
             <button class="btn-link" data-nav="finances">Open Finances →</button>

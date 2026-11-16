@@ -114,9 +114,12 @@ export class TimerEngine {
   }
 
   updateDocumentTitle() {
+    if (!this.isRunning) {
+      document.title = 'LifeBuddy — Your Life. Smarter, Every Day.';
+      return;
+    }
     const timeStr = this.getFormattedTime();
     const modeLabel = this.currentMode === 'focus' ? 'Focus' : 'Break';
-    const statusStr = this.isRunning ? '▶' : '❚❚';
-    document.title = `${statusStr} ${timeStr} - ${modeLabel} | Zen Pomodoro`;
+    document.title = `▶ ${timeStr} (${modeLabel}) · LifeBuddy`;
   }
 }

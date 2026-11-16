@@ -85,10 +85,19 @@ export const API = {
 
   // Auth & Security
   auth: {
-    async register(username, email, password) {
+    async register(username, email, password, profile = {}) {
+      const payload = {
+        username,
+        email,
+        password,
+        full_name: profile.fullName || null,
+        profession: profile.profession || null,
+        age_group: profile.ageGroup || null,
+        focus_goal: profile.focusGoal || null
+      };
       const data = await API.request('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify(payload)
       });
       API.setAuth(data.token, data.user, data.refresh_token);
       return data;
