@@ -144,29 +144,57 @@
         <!-- Auth Form Card -->
         <div class="welcome-auth-panel">
           <div class="auth-card-frame">
-            <div class="auth-tabs-row">
+            <div id="gate-tabs-header" class="auth-tabs-row">
               <button id="gate-tab-login" class="auth-tab-pill active" type="button">Sign In</button>
               <button id="gate-tab-register" class="auth-tab-pill" type="button">Create Account</button>
             </div>
 
+            <!-- Success Card on Registration (Does NOT auto-login) -->
+            <div id="gate-success-panel" class="auth-success-card" style="display: none;">
+              <div class="success-icon-wrap">
+                <svg class="checkmark-svg" viewBox="0 0 52 52">
+                  <circle class="checkmark-circle" cx="26" cy="26" r="24" fill="none" stroke="var(--color-success)" stroke-width="3"/>
+                  <path class="checkmark-check" fill="none" stroke="var(--color-success)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+              </div>
+              <h2 class="success-title">Workspace Ready</h2>
+              <p id="gate-success-message" class="success-message">
+                Welcome aboard, <strong id="gate-success-name">Friend</strong>. Your private workspace is ready. Let's dive in together and build a more intentional life, one focused day at a time.
+              </p>
+              <button id="gate-continue-signin-btn" class="btn-primary btn-submit-auth" type="button">
+                <span>Continue to Sign In</span>
+                <span>→</span>
+              </button>
+              <div class="auth-privacy-foot" style="margin-top: 18px;">
+                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
+              </div>
+            </div>
+
+            <!-- Active Form Body -->
             <form id="gate-auth-form" class="auth-form-body">
               <div id="gate-error-msg" class="auth-error-banner" style="display: none;"></div>
 
-              <div class="form-field-group">
-                <label class="field-label" for="gate-username-input">Username</label>
-                <input type="text" id="gate-username-input" class="field-input" placeholder="Choose a username" required autocomplete="username">
+              <!-- Display Name (Visible on Register) -->
+              <div class="form-field-group" id="gate-fullname-group" style="display: none;">
+                <label class="field-label" for="gate-fullname-input">Display Name (First Name)</label>
+                <input type="text" id="gate-fullname-input" class="field-input" placeholder="e.g. Arjun" autocomplete="name">
+                <span class="field-hint" id="fullname-hint" style="display: none;"></span>
               </div>
 
+              <div class="form-field-group">
+                <label class="field-label" for="gate-username-input">Username</label>
+                <input type="text" id="gate-username-input" class="field-input" placeholder="Enter your username" required autocomplete="username">
+                <span class="field-hint" id="username-hint" style="display: none;"></span>
+              </div>
+
+              <!-- Email Address (Visible on Register) -->
               <div class="form-field-group" id="gate-email-group" style="display: none;">
                 <label class="field-label" for="gate-email-input">Email Address</label>
                 <input type="email" id="gate-email-input" class="field-input" placeholder="name@example.com" autocomplete="email">
+                <span class="field-hint" id="email-hint" style="display: none;"></span>
               </div>
 
-              <div class="form-field-group" id="gate-fullname-group" style="display: none;">
-                <label class="field-label" for="gate-fullname-input">Full Name</label>
-                <input type="text" id="gate-fullname-input" class="field-input" placeholder="e.g. Alex Sharma" autocomplete="name">
-              </div>
-
+              <!-- Profile Details (Visible on Register) -->
               <div class="form-field-row" id="gate-profile-row" style="display: none; display: flex; gap: 10px;">
                 <div class="form-field-group" style="flex: 1.2;">
                   <label class="field-label" for="gate-profession-select">Profession / Role</label>
@@ -191,6 +219,7 @@
                 </div>
               </div>
 
+              <!-- Focus Goal (Visible on Register) -->
               <div class="form-field-group" id="gate-goal-group" style="display: none;">
                 <label class="field-label" for="gate-goal-select">Primary Focus Goal</label>
                 <select id="gate-goal-select" class="field-select">
@@ -201,9 +230,42 @@
                 </select>
               </div>
 
+              <!-- Password Input with Show/Hide Toggle -->
               <div class="form-field-group">
-                <label class="field-label" for="gate-password-input">Password</label>
-                <input type="password" id="gate-password-input" class="field-input" placeholder="••••••••" required autocomplete="current-password">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                  <label class="field-label" for="gate-password-input" style="margin-bottom: 0;">Password</label>
+                </div>
+                <div class="password-input-wrap">
+                  <input type="password" id="gate-password-input" class="field-input" placeholder="Enter your password" required autocomplete="current-password">
+                  <button type="button" class="btn-toggle-pwd" id="toggle-pwd-btn" title="Toggle password visibility" aria-label="Show password">
+                    <svg class="eye-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+                <!-- Password Strength Indicator (Register Mode) -->
+                <div id="pwd-strength-container" class="pwd-strength-wrap" style="display: none;">
+                  <div class="pwd-strength-meter">
+                    <div id="pwd-strength-bar" class="pwd-strength-bar"></div>
+                  </div>
+                  <span id="pwd-strength-text" class="pwd-strength-label">Minimum 8 characters</span>
+                </div>
+              </div>
+
+              <!-- Confirm Password (Visible on Register) -->
+              <div class="form-field-group" id="gate-confirm-group" style="display: none;">
+                <label class="field-label" for="gate-confirm-password-input">Confirm Password</label>
+                <div class="password-input-wrap">
+                  <input type="password" id="gate-confirm-password-input" class="field-input" placeholder="Repeat password" autocomplete="new-password">
+                  <button type="button" class="btn-toggle-pwd" id="toggle-confirm-pwd-btn" title="Toggle password visibility" aria-label="Show confirm password">
+                    <svg class="eye-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                  </button>
+                </div>
+                <span class="field-hint" id="confirm-pwd-hint" style="display: none;"></span>
               </div>
 
               <button type="submit" id="gate-submit-btn" class="btn-primary btn-submit-auth">
@@ -212,7 +274,7 @@
               </button>
 
               <div class="auth-privacy-foot">
-                <span>🔒</span> <span>100% Private & local-first. Your personal data stays yours.</span>
+                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
               </div>
             </form>
           </div>
@@ -248,6 +310,7 @@
               </svg>
 
               <div class="timer-center-content">
+                <div id="pomodoro-session-counter" class="pomodoro-session-counter">Pomodoro 1 of 4</div>
                 <div id="timer-digits" class="timer-digits">25:00</div>
                 <div id="timer-label" class="timer-label">Focus Session</div>
                 <div id="active-task-badge" class="active-task-badge" style="display: none;"></div>
@@ -299,7 +362,10 @@
                   <h2 class="panel-title">Ambient Soundscapes</h2>
                   <p class="panel-subtitle">Synthesized in Web Audio API • Zero audio lag</p>
                 </div>
-                <span class="badge-tag">Mixer</span>
+                <div class="mixer-master-bar">
+                  <button id="ambient-master-mute-btn" class="btn-icon-tiny" title="Mute/Unmute Master Sound">🔊</button>
+                  <input type="range" id="ambient-master-slider" class="master-sound-slider" min="0" max="1" step="0.05" value="0.7" title="Master Volume">
+                </div>
               </div>
 
               <div class="sound-mixer-grid">
@@ -340,9 +406,12 @@
             <p class="view-subheading">Organize milestones, categories, priorities, and pomodoro estimates</p>
           </div>
           <div class="task-filter-pills">
-            <button class="task-filter-btn active" data-filter="all">All Tasks</button>
+            <button class="task-filter-btn active" data-filter="all">All</button>
+            <button class="task-filter-btn" data-filter="today">Today</button>
+            <button class="task-filter-btn" data-filter="upcoming">Upcoming</button>
+            <button class="task-filter-btn" data-filter="overdue">Overdue</button>
             <button class="task-filter-btn" data-filter="pending">Pending</button>
-            <button class="task-filter-btn" data-filter="completed">Completed</button>
+            <button class="task-filter-btn" data-filter="completed">Done</button>
           </div>
         </div>
 
@@ -605,6 +674,16 @@
 
       <div class="modal-body-scroll">
         <div class="form-field-group">
+          <label class="field-label" for="pref-monthly-budget">Monthly Spending Budget (₹)</label>
+          <input type="number" id="pref-monthly-budget" class="field-input" min="1000" step="500" value="25000">
+        </div>
+
+        <div class="form-field-group">
+          <label class="field-label" for="pref-daily-focus-goal">Daily Focus Target (Minutes)</label>
+          <input type="number" id="pref-daily-focus-goal" class="field-input" min="15" max="600" step="15" value="100">
+        </div>
+
+        <div class="form-field-group">
           <label class="field-label" for="input-focus-time">Focus Duration (Minutes)</label>
           <input type="number" id="input-focus-time" class="field-input" min="1" max="120" value="25">
         </div>
@@ -677,6 +756,18 @@
           </ul>
           <div class="guide-privacy-pill">
             🛡️ Zero third-party trackers, zero ad cookies, and zero external telemetry.
+          </div>
+        </div>
+
+        <div class="form-field-group" style="margin-top: 18px;">
+          <label class="field-label">Data Portability & Local Storage</label>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="btn-export-backup" class="btn-secondary" style="flex: 1; font-size: 0.8rem; padding: 7px 10px;">
+              📦 Export All Data (JSON)
+            </button>
+            <button type="button" id="btn-clear-cache" class="btn-danger-outline" style="font-size: 0.8rem; padding: 7px 10px;">
+              Reset Local Cache
+            </button>
           </div>
         </div>
 

@@ -3,17 +3,18 @@
    and mindful reflection notes, plus review their 7-day history.
 */
 import { API } from './api.js';
+import { store } from './store.js';
+import { formatCurrency } from './currency.js';
 
 export class DailyLogController {
   constructor() {
     this.modal = document.getElementById('daily-log-modal');
-    this.selectedMood = 4;
+    this.selectedMood = null;
   }
 
   init() {
     const triggerBtn = document.getElementById('daily-log-btn');
     const closeBtn = document.getElementById('close-daily-log-modal');
-    const form = document.getElementById('daily-log-form');
 
     if (triggerBtn) {
       triggerBtn.addEventListener('click', () => {
@@ -24,13 +25,6 @@ export class DailyLogController {
     if (closeBtn && this.modal) {
       closeBtn.addEventListener('click', () => {
         this.modal.classList.remove('active');
-      });
-    }
-
-    if (form) {
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await this.handleSave();
       });
     }
   }
@@ -49,27 +43,21 @@ export class DailyLogController {
     const todayStr = new Date().toISOString().split('T')[0];
     const prettyDate = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 
-    let logs = [];
+    let logs = store.state.wellness_logs || [];
     try {
       logs = await API.wellness.getLogs();
+      store.state.wellness_logs = logs;
     } catch (e) {
-      console.warn('Could not load wellness logs', e);
+      console.warn('Could not load wellness logs from API, using store', e);
     }
 
     const todayLog = logs.find(l => l.date === todayStr);
-    if (todayLog) {
-      this.selectedMood = todayLog.mood || 4;
-    }
+    this.selectedMood = todayLog ? todayLog.mood : null; // None preselected if not logged today!
 
-    let summary = null;
-    try {
-      summary = await API.dashboard.getSummary();
-    } catch {}
-
-    const focusMins = summary?.focus?.today_minutes || 0;
-    const tasksDone = summary?.tasks?.completed || 0;
-    const spentToday = summary?.finances?.today_expense || 0;
-    const habitsDone = summary?.habits?.done_today || 0;
+    const focusMins = store.getTodayFocusMinutes();
+    const tasksDone = (store.state.tasks || []).filter(t => t.completed).length;
+    const spentToday = store.getTodayExpense();
+    const habitsDone = store.getHabitsDoneToday();
 
     const moodEmojis = [
       { level: 1, emoji: '😫', label: 'Drained' },
@@ -103,7 +91,7 @@ export class DailyLogController {
         </div>
         <div class="glass-pill" style="text-align: center; padding: 10px 8px;">
           <div style="font-size: 0.75rem; color: var(--text-muted);">Spent Today</div>
-          <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">₹${spentToday.toFixed(0)}</div>
+          <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">${formatCurrency(spentToday)}</div>
         </div>
         <div class="glass-pill" style="text-align: center; padding: 10px 8px;">
           <div style="font-size: 0.75rem; color: var(--text-muted);">Habits Done</div>
@@ -114,28 +102,33 @@ export class DailyLogController {
       <form id="daily-log-inner-form">
         <!-- Mood Selector -->
         <div class="form-group" style="margin-bottom: 18px;">
-          <label class="form-label" style="font-weight: 600; margin-bottom: 8px;">How was your energy & mood today?</label>
+          <label class="form-label" style="font-weight: 600; margin-bottom: 8px;">
+            How was your energy & mood today? ${this.selectedMood === null ? '<span style="color: var(--text-muted); font-weight: 400;">(Choose one)</span>' : ''}
+          </label>
           <div class="mood-selector-group" style="display: flex; gap: 8px; justify-content: space-between;">
-            ${moodEmojis.map(m => `
-              <button 
-                type="button" 
-                class="mood-btn ${this.selectedMood === m.level ? 'active' : ''}" 
-                data-level="${m.level}"
-                style="flex: 1; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--border-color); background: ${this.selectedMood === m.level ? 'var(--accent-soft)' : 'var(--bg-card)'}; cursor: pointer; text-align: center; transition: all 0.2s;"
-              >
-                <div style="font-size: 1.5rem;">${m.emoji}</div>
-                <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-main); margin-top: 4px;">${m.label}</div>
-              </button>
-            `).join('')}
+            ${moodEmojis.map(m => {
+              const isSelected = this.selectedMood === m.level;
+              return `
+                <button 
+                  type="button" 
+                  class="mood-btn ${isSelected ? 'active' : ''}" 
+                  data-level="${m.level}"
+                  style="flex: 1; padding: 10px 6px; border-radius: 12px; border: 1px solid var(--border-color); background: ${isSelected ? 'var(--accent-soft)' : 'var(--bg-card)'}; cursor: pointer; text-align: center; transition: all 0.2s;"
+                >
+                  <div style="font-size: 1.5rem;">${m.emoji}</div>
+                  <div style="font-size: 0.72rem; font-weight: 600; color: var(--text-main); margin-top: 4px;">${m.label}</div>
+                </button>
+              `;
+            }).join('')}
           </div>
         </div>
 
         <!-- Sleep Hours Slider -->
         <div class="form-group" style="margin-bottom: 18px;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label class="form-label" style="font-weight: 600;">Sleep Duration</label>
+            <label class="form-label" style="font-weight: 600;">Sleep Duration Last Night</label>
             <span id="sleep-val-display" style="font-weight: 700; color: var(--accent-primary); font-size: 0.95rem;">
-              ${todayLog ? todayLog.sleep_hours : 7.5} hours
+              ${todayLog && todayLog.sleep_hours !== undefined ? todayLog.sleep_hours : 7.5} hours
             </span>
           </div>
           <input 
@@ -144,7 +137,7 @@ export class DailyLogController {
             min="3.0" 
             max="12.0" 
             step="0.5" 
-            value="${todayLog ? todayLog.sleep_hours : 7.5}" 
+            value="${todayLog && todayLog.sleep_hours !== undefined ? todayLog.sleep_hours : 7.5}" 
             style="width: 100%; accent-color: var(--accent-primary);"
           >
         </div>
@@ -179,7 +172,7 @@ export class DailyLogController {
     const moodBtns = container.querySelectorAll('.mood-btn');
     moodBtns.forEach(btn => {
       btn.addEventListener('click', () => {
-        this.selectedMood = parseInt(btn.dataset.level);
+        this.selectedMood = parseInt(btn.dataset.level, 10);
         moodBtns.forEach(b => {
           b.classList.remove('active');
           b.style.background = 'var(--bg-card)';
@@ -241,6 +234,8 @@ export class DailyLogController {
     const notesVal = document.getElementById('log-notes-input')?.value.trim() || '';
     const todayStr = new Date().toISOString().split('T')[0];
 
+    const moodVal = this.selectedMood !== null ? this.selectedMood : 3;
+
     const saveBtn = document.getElementById('save-daily-log-btn');
     if (saveBtn) {
       saveBtn.disabled = true;
@@ -248,9 +243,9 @@ export class DailyLogController {
     }
 
     try {
-      await API.wellness.saveLog({
+      await store.saveDailyLog({
         date: todayStr,
-        mood: this.selectedMood,
+        mood: moodVal,
         sleep_hours: sleepVal,
         notes: notesVal
       });
@@ -263,9 +258,9 @@ export class DailyLogController {
       const toast = document.createElement('div');
       toast.className = 'toast';
       toast.innerHTML = `<span>✨</span> <span>Daily check-in saved! Keep compounding consistency.</span>`;
-      const container = document.getElementById('toast-container');
-      if (container) {
-        container.appendChild(toast);
+      const toastContainer = document.getElementById('toast-container');
+      if (toastContainer) {
+        toastContainer.appendChild(toast);
         setTimeout(() => toast.remove(), 3000);
       }
     } catch (err) {

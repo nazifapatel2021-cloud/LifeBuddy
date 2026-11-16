@@ -1,5 +1,6 @@
 /* LifeBuddy Central Application Coordinator */
 import { Storage } from './storage.js';
+import { store } from './store.js';
 import { audioSynth } from './audio.js';
 import { TimerEngine } from './timer.js';
 import { TaskManager } from './tasks.js';
@@ -16,7 +17,7 @@ import { syncEngine } from './sync.js';
 import { dailyLogController } from './daily_log.js';
 
 function initApp() {
-  const CIRCUMFERENCE = 2 * Math.PI * 140; // 879.64
+  const CIRCUMFERENCE = 2 * Math.PI * 136; // 854.513 (matches SVG circle r="136")
   const settings = Storage.getSettings();
 
   // 1. Initialize Controllers
@@ -68,16 +69,17 @@ function initApp() {
       taskManager.setActiveTask(taskId);
     },
     onTaskCreated: () => {
-      taskManager.loadTasks();
+      taskManager.loadTasks ? taskManager.loadTasks() : null;
     }
   });
 
   const authController = new AuthController({
     onUserChanged: async () => {
       try {
-        await taskManager.loadTasks();
-        await habitManager.loadHabits();
-        await expenseManager.loadExpenses();
+        await store.fetchState();
+        taskManager.renderTaskList(document.getElementById('planner-task-list'));
+        habitManager.renderHabitsList(document.getElementById('habits-list-container'));
+        expenseManager.render();
         await dashboardManager.render(document.getElementById('view-dashboard'));
         statsVisualizer.updateStatsUI();
         insightsCoordinator.render();
@@ -112,6 +114,7 @@ function initApp() {
         else if (mode === 'shortBreak') timerLabel.textContent = 'Short Break';
         else if (mode === 'longBreak') timerLabel.textContent = 'Long Break';
       }
+      updateSessionCounterUI();
     },
 
     onComplete: async ({ mode, durationMinutes }) => {
@@ -121,7 +124,7 @@ function initApp() {
         try {
           await taskManager.incrementActiveTaskPomodoro();
           Storage.recordCompletedSession(durationMinutes);
-          await API.focus.recordSession({
+          await store.recordFocusSession({
             task_id: taskManager.activeTaskId,
             mode: 'focus',
             duration_minutes: durationMinutes
@@ -137,6 +140,7 @@ function initApp() {
       }
 
       updateStartPauseBtn(false);
+      updateSessionCounterUI();
 
       const currentSettings = Storage.getSettings();
       if (mode === 'focus' && currentSettings.autoStartBreaks) {
@@ -147,9 +151,15 @@ function initApp() {
     }
   });
 
+  function updateSessionCounterUI() {
+    const counterEl = document.getElementById('pomodoro-session-counter');
+    if (!counterEl) return;
+    const current = (timerEngine.completedFocusSessions % 4) + 1;
+    counterEl.textContent = `Pomodoro ${current} of 4`;
+  }
+
   // ==========================================
   // 2. Synchronous UI DOM Event Bindings
-  // (Bound immediately so buttons never freeze)
   // ==========================================
 
   // View / Tab Navigation Switcher
@@ -157,7 +167,6 @@ function initApp() {
   const appViews = document.querySelectorAll('.app-view');
 
   function switchView(viewName) {
-
     navTabs.forEach(t => {
       if (t.dataset.view === viewName) t.classList.add('active');
       else t.classList.remove('active');
@@ -187,6 +196,8 @@ function initApp() {
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
     } else if (viewName === 'focus') {
       taskManager.renderTaskList(document.getElementById('task-list-container'));
+    } else if (viewName === 'finances') {
+      expenseManager.render();
     }
   }
 
@@ -201,31 +212,52 @@ function initApp() {
   const resetBtn = document.getElementById('reset-btn');
   const modeBtns = document.querySelectorAll('.mode-btn');
 
+  function toggleStartPause() {
+    if (timerEngine.isRunning) {
+      timerEngine.pause();
+      updateStartPauseBtn(false);
+    } else {
+      timerEngine.start();
+      updateStartPauseBtn(true);
+    }
+  }
+
   if (startPauseBtn) {
-    startPauseBtn.addEventListener('click', () => {
-        if (timerEngine.isRunning) {
-        timerEngine.pause();
-        updateStartPauseBtn(false);
-      } else {
-        timerEngine.start();
-        updateStartPauseBtn(true);
-      }
-    });
+    startPauseBtn.addEventListener('click', toggleStartPause);
   }
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-        timerEngine.reset();
+      timerEngine.reset();
       updateStartPauseBtn(false);
+      updateSessionCounterUI();
     });
   }
 
   modeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
-        const mode = e.currentTarget.dataset.mode;
+      const mode = e.currentTarget.dataset.mode;
       timerEngine.switchMode(mode);
       updateStartPauseBtn(false);
+      updateSessionCounterUI();
     });
+  });
+
+  // Global Spacebar shortcut for Start/Pause timer
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      const activeEl = document.activeElement;
+      const isInput = activeEl && (
+        activeEl.tagName === 'INPUT' || 
+        activeEl.tagName === 'TEXTAREA' || 
+        activeEl.tagName === 'SELECT' || 
+        activeEl.isContentEditable
+      );
+      if (!isInput && !document.querySelector('.modal-overlay.active')) {
+        e.preventDefault();
+        toggleStartPause();
+      }
+    }
   });
 
   function updateStartPauseBtn(isRunning) {
@@ -271,7 +303,7 @@ function initApp() {
         await taskManager.addTask(title, estPomo);
         if (taskTitleInput) taskTitleInput.value = '';
         if (taskPomoInput) taskPomoInput.value = '1';
-        showToast('Task added');
+        showToast('Task added to queue');
       }
     });
   }
@@ -289,7 +321,7 @@ function initApp() {
       if (title.trim()) {
         await taskManager.addTask(title, estPomo, category, priority, dueDate || null);
         plannerTaskForm.reset();
-        showToast('Planner task saved');
+        showToast('Task created');
       }
     });
   }
@@ -319,57 +351,34 @@ function initApp() {
     });
   }
 
-  // Expense Form with ML Auto-Categorization
-  const expenseForm = document.getElementById('expense-form');
-  const expNoteInput = document.getElementById('exp-note-input');
-  const expCategorySelect = document.getElementById('exp-category-select');
-
-  if (expNoteInput && expCategorySelect) {
-    let expDebounce = null;
-    expNoteInput.addEventListener('input', () => {
-      clearTimeout(expDebounce);
-      const text = expNoteInput.value.trim();
-      if (text.length >= 3) {
-        expDebounce = setTimeout(async () => {
-          try {
-            const pred = await API.ml.categorizeExpense(text);
-            if (pred && pred.category) {
-              const options = Array.from(expCategorySelect.options);
-              const match = options.find(o => o.value.toLowerCase() === pred.category.toLowerCase());
-              if (match) {
-                expCategorySelect.value = match.value;
-                showToast(`✨ Auto-categorized as ${match.value}`);
-              }
-            }
-          } catch {}
-        }, 350);
-      }
-    });
-  }
-
-  if (expenseForm) {
-    expenseForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const amount = document.getElementById('exp-amount-input')?.value;
-      const category = expCategorySelect?.value || 'Other';
-      const note = expNoteInput?.value || '';
-      const date = document.getElementById('exp-date-input')?.value;
-      const type = document.getElementById('exp-type-select')?.value || 'expense';
-
-      if (amount && category) {
-        await expenseManager.addExpense({ amount, category, note, date, type });
-        expenseForm.reset();
-        const dateInput = document.getElementById('exp-date-input');
-        if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-        const modal = document.getElementById('expense-modal');
-        if (modal) modal.classList.remove('active');
-        showToast('Expense recorded');
-      }
-    });
-  }
-
-  // Ambient Sound Synthesis & Instant Global Stop
+  // Ambient Sound Synthesis & Master Volume / Mute
   const globalSoundBtn = document.getElementById('global-sound-stop-btn');
+  const masterSlider = document.getElementById('ambient-master-slider');
+  const masterMuteBtn = document.getElementById('ambient-master-mute-btn');
+
+  if (masterSlider) {
+    masterSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      audioSynth.setMasterVolume(val);
+    });
+  }
+
+  if (masterMuteBtn) {
+    masterMuteBtn.addEventListener('click', () => {
+      audioSynth.isMuted = !audioSynth.isMuted;
+      if (audioSynth.isMuted) {
+        audioSynth.setMasterVolume(0);
+        masterMuteBtn.textContent = '🔇';
+        showToast('Muted ambient sounds');
+      } else {
+        const val = masterSlider ? parseFloat(masterSlider.value) : 0.7;
+        audioSynth.setMasterVolume(val);
+        masterMuteBtn.textContent = '🔊';
+        showToast('Unmuted ambient sounds');
+      }
+    });
+  }
+
   if (globalSoundBtn) {
     globalSoundBtn.addEventListener('click', () => {
       audioSynth.stopAllAmbientSounds();
@@ -404,33 +413,16 @@ function initApp() {
     }
   });
 
-  // Expense Modal Triggers
-  const addExpenseModalBtn = document.getElementById('btn-add-expense-modal');
-  const expenseModal = document.getElementById('expense-modal');
-  const closeExpenseModal = document.getElementById('close-expense-modal');
-
-  if (addExpenseModalBtn && expenseModal) {
-    addExpenseModalBtn.addEventListener('click', () => {
-      expenseModal.classList.add('active');
-    });
-  }
-
-  if (closeExpenseModal && expenseModal) {
-    closeExpenseModal.addEventListener('click', () => {
-      expenseModal.classList.remove('active');
-    });
-  }
-
   // Theme Swatches
   document.querySelectorAll('.theme-swatch').forEach(swatch => {
     swatch.addEventListener('click', () => {
-        const theme = swatch.dataset.theme;
+      const theme = swatch.dataset.theme;
       themeManager.applyTheme(theme);
       showToast(`Applied ${theme.charAt(0).toUpperCase() + theme.slice(1)} theme`);
     });
   });
 
-  // Settings & Zen Mode
+  // Settings & Preferences Modal
   const settingsBtn = document.getElementById('settings-btn');
   const settingsModal = document.getElementById('settings-modal');
   const closeSettingsBtn = document.getElementById('close-settings-btn');
@@ -438,29 +430,25 @@ function initApp() {
   const zenToggleBtn = document.getElementById('zen-toggle-btn');
   const exitZenBtn = document.getElementById('exit-zen-btn');
 
-  const openTransLink = document.getElementById('open-transparency-link');
-  if (openTransLink) {
-    openTransLink.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (settingsModal) settingsModal.classList.remove('active');
-      transparencyController.open();
-    });
-  }
-
   if (settingsBtn && settingsModal) {
     settingsBtn.addEventListener('click', () => {
-        const curr = Storage.getSettings();
+      const curr = Storage.getSettings();
       const fInput = document.getElementById('input-focus-time');
       const sbInput = document.getElementById('input-short-break-time');
       const lbInput = document.getElementById('input-long-break-time');
       const abCheck = document.getElementById('input-auto-breaks');
       const apCheck = document.getElementById('input-auto-pomo');
+      const budgetInp = document.getElementById('pref-monthly-budget');
+      const focusGoalInp = document.getElementById('pref-daily-focus-goal');
 
       if (fInput) fInput.value = curr.focusDuration;
       if (sbInput) sbInput.value = curr.shortBreakDuration;
       if (lbInput) lbInput.value = curr.longBreakDuration;
       if (abCheck) abCheck.checked = curr.autoStartBreaks;
       if (apCheck) apCheck.checked = curr.autoStartPomodoros;
+      if (budgetInp) budgetInp.value = store.getBudget();
+      if (focusGoalInp) focusGoalInp.value = store.state.settings?.daily_focus_goal || 100;
+
       const sndCheck = document.getElementById('input-sound-enabled');
       if (sndCheck) sndCheck.checked = curr.soundEnabled !== false;
 
@@ -475,13 +463,15 @@ function initApp() {
   }
 
   if (saveSettingsBtn && settingsModal) {
-    saveSettingsBtn.addEventListener('click', () => {
-        const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
+    saveSettingsBtn.addEventListener('click', async () => {
+      const focusMin = parseInt(document.getElementById('input-focus-time')?.value) || 25;
       const shortMin = parseInt(document.getElementById('input-short-break-time')?.value) || 5;
       const longMin = parseInt(document.getElementById('input-long-break-time')?.value) || 15;
       const autoBreaks = !!document.getElementById('input-auto-breaks')?.checked;
       const autoPomo = !!document.getElementById('input-auto-pomo')?.checked;
       const soundEnabled = document.getElementById('input-sound-enabled') ? document.getElementById('input-sound-enabled').checked : true;
+      const monthlyBudget = parseFloat(document.getElementById('pref-monthly-budget')?.value) || 25000;
+      const dailyFocusGoal = parseInt(document.getElementById('pref-daily-focus-goal')?.value) || 100;
 
       const curr = Storage.getSettings();
       curr.focusDuration = focusMin;
@@ -496,14 +486,46 @@ function initApp() {
 
       Storage.saveSettings(curr);
       timerEngine.setDurations(focusMin, shortMin, longMin);
+
+      // Save budget and focus goal to store
+      await store.setMonthlyBudget(monthlyBudget);
+      store.state.settings.daily_focus_goal = dailyFocusGoal;
+      store.persist();
+
       settingsModal.classList.remove('active');
       showToast('Preferences saved');
     });
   }
 
+  // Backup Export & Cache Clear
+  const btnExportBackup = document.getElementById('btn-export-backup');
+  if (btnExportBackup) {
+    btnExportBackup.addEventListener('click', () => {
+      const backupData = JSON.stringify(store.state, null, 2);
+      const blob = new Blob([backupData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lifebuddy_backup_${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📦 Data export downloaded');
+    });
+  }
+
+  const btnClearCache = document.getElementById('btn-clear-cache');
+  if (btnClearCache) {
+    btnClearCache.addEventListener('click', () => {
+      if (confirm('Clear local cache and refresh from database?')) {
+        localStorage.removeItem('lifebuddy_store_v2');
+        window.location.reload();
+      }
+    });
+  }
+
   if (zenToggleBtn) {
     zenToggleBtn.addEventListener('click', () => {
-        document.body.classList.add('zen-mode');
+      document.body.classList.add('zen-mode');
       showToast('Entered Zen Mode (Esc to exit)');
     });
   }
@@ -522,10 +544,10 @@ function initApp() {
 
   // Initial timer visual reset
   timerEngine.reset();
+  updateSessionCounterUI();
 
   // ==========================================
   // 3. Asynchronous Data Initializations
-  // (Safe non-blocking execution)
   // ==========================================
   (async () => {
     try {
@@ -541,11 +563,10 @@ function initApp() {
     }
 
     try {
-      await Promise.allSettled([
-        taskManager.init(),
-        habitManager.init(),
-        expenseManager.init()
-      ]);
+      await store.fetchState();
+      taskManager.renderTaskList(document.getElementById('planner-task-list'));
+      habitManager.renderHabitsList(document.getElementById('habits-list-container'));
+      expenseManager.render();
     } catch (e) {
       console.warn('Data collections load error:', e);
     }

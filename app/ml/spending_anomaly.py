@@ -16,7 +16,7 @@ class SpendingAnomalyDetector:
         self.contamination = contamination
         self.z_threshold = z_threshold
 
-    def analyze(self, expenses: List[Dict[str, Any]], monthly_budget: float = 1000.0) -> Dict[str, Any]:
+    def analyze(self, expenses: List[Dict[str, Any]], monthly_budget: float = 25000.0) -> Dict[str, Any]:
         """
         Analyze expense stream:
         1. Identify transaction and daily spending anomalies.

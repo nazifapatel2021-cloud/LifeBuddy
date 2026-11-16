@@ -99,7 +99,6 @@ export const API = {
         method: 'POST',
         body: JSON.stringify(payload)
       });
-      API.setAuth(data.token, data.user, data.refresh_token);
       return data;
     },
 

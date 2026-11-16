@@ -21,7 +21,13 @@ def test_concurrent_read_write_50_users():
         "password": "Password123!"
     })
     assert reg_res.status_code == 200
-    token = reg_res.json()["token"]
+
+    login_res = client.post("/api/auth/login", json={
+        "username_or_email": uid,
+        "password": "Password123!"
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     def make_concurrent_request(i):

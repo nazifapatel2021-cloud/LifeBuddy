@@ -122,26 +122,19 @@ def register(user: UserRegister):
             (user_id, user.full_name, user.profession, user.age_group, user.focus_goal)
         )
         conn.commit()
-        access_token = create_access_token(user_id, user.username)
-        refresh_token = create_refresh_token(user_id, user.username)
         return {
-            "token": access_token,
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-            "token_type": "bearer",
+            "status": "success",
+            "message": "Account created successfully.",
             "user": {
                 "id": user_id,
                 "username": user.username,
                 "email": user.email,
-                "full_name": user.full_name,
-                "profession": user.profession,
-                "age_group": user.age_group,
-                "focus_goal": user.focus_goal
+                "full_name": user.full_name or user.username
             }
         }
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail="Username or email already in use.")
+        raise HTTPException(status_code=400, detail="This account already exists, try signing in.")
     finally:
         conn.close()
 
@@ -157,7 +150,7 @@ def login(creds: UserLogin):
     conn.close()
 
     if not row or not verify_password(creds.password, row["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid username or password.")
+        raise HTTPException(status_code=401, detail="Invalid username or password. Please check your credentials and try again.")
 
     access_token = create_access_token(row["id"], row["username"])
     refresh_token = create_refresh_token(row["id"], row["username"])

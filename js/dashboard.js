@@ -1,5 +1,7 @@
 /* LifeBuddy Today's Command Center & Overview */
 import { API } from './api.js';
+import { store } from './store.js';
+import { formatCurrency } from './currency.js';
 import { dailyLogController } from './daily_log.js';
 
 const MINDFUL_QUOTES = [
@@ -17,6 +19,14 @@ export class DashboardManager {
     this.onStartFocus = options.onStartFocus || (() => {});
     this.onTaskFocus = options.onTaskFocus || (() => {});
     this.onTaskCreated = options.onTaskCreated || (() => {});
+
+    // Subscribe to central store updates
+    store.subscribe(() => {
+      const container = document.getElementById('view-dashboard');
+      if (container && container.classList.contains('active')) {
+        this.render(container);
+      }
+    });
   }
 
   getGreeting() {
@@ -33,33 +43,46 @@ export class DashboardManager {
 
   async render(container) {
     if (!container) return;
-    const summary = await API.dashboard.getSummary();
-    const user = API.getUser();
-    const userName = user ? user.username : 'Friend';
+
+    let summary = null;
+    try {
+      summary = await API.dashboard.getSummary();
+    } catch {
+      summary = {
+        focus: { today_minutes: store.getTodayFocusMinutes() },
+        tasks: { completed: 0, total: store.state.tasks.length, top_pending: store.getPendingTasks() },
+        finances: { today_expense: store.getTodayExpense(), month_expense: store.getMonthExpense(), monthly_budget: store.getBudget(), currency_symbol: '₹' },
+        habits: { done_today: store.getHabitsDoneToday(), total: store.state.habits.length }
+      };
+    }
+
+    const userName = store.getDisplayName();
     const quote = this.getRandomQuote();
     const greeting = this.getGreeting();
 
-    const focusMins = summary.focus.today_minutes || 0;
-    const focusTarget = 100;
+    const focusMins = store.getTodayFocusMinutes();
+    const focusTarget = store.state.settings?.daily_focus_goal || 100;
     const focusPct = Math.min(100, Math.round((focusMins / focusTarget) * 100));
 
-    const todayExpense = summary.finances.today_expense || 0;
-    const monthExpense = summary.finances.month_expense || 0;
-    const budget = summary?.finances?.monthly_budget || 25000;
-    const currency = summary?.finances?.currency_symbol || '₹';
+    const todayExpense = store.getTodayExpense();
+    const monthExpense = store.getMonthExpense();
+    const budget = store.getBudget();
+    const dailyAllowance = store.getDailyBudgetAllowance();
 
-    const habitsDone = summary.habits.done_today || 0;
-    const habitsTotal = summary.habits.total || 0;
+    const allTasks = store.state.tasks || [];
+    const pendingTasks = store.getPendingTasks();
+    const completedTasks = allTasks.filter(t => t.completed);
+    const tasksDone = completedTasks.length;
+    const tasksTotal = allTasks.length;
+
+    const allHabits = store.state.habits || [];
+    const habitsDone = store.getHabitsDoneToday();
+    const habitsTotal = allHabits.length;
 
     // Load recent daily logs for the dashboard reflection section
-    let wellnessLogs = [];
-    try {
-      wellnessLogs = await API.wellness.getLogs();
-    } catch {}
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todayLog = Array.isArray(wellnessLogs) ? wellnessLogs.find(l => l.date === todayStr) : null;
-    const currentMood = todayLog ? todayLog.mood : 3;
-    const currentSleep = todayLog ? todayLog.sleep_hours : 7.5;
+    const todayLog = store.getTodayLog();
+    const currentMood = todayLog ? todayLog.mood : null; // null if not yet checked in!
+    const currentSleep = todayLog ? todayLog.sleep_hours : null;
     const currentNotes = todayLog ? (todayLog.notes || '') : '';
 
     const moodList = [
@@ -70,6 +93,42 @@ export class DashboardManager {
       { level: 5, emoji: '🤩', label: 'Thriving' }
     ];
 
+    // Compute Next Best Action
+    let nextActionHtml = '';
+    if (pendingTasks.length > 0) {
+      const topTask = pendingTasks[0];
+      nextActionHtml = `
+        <div class="next-action-card">
+          <div class="next-action-badge">🎯 NEXT BEST ACTION</div>
+          <div class="next-action-content">
+            <div class="next-action-info">
+              <span class="next-action-title">${this.escapeHtml(topTask.title)}</span>
+              <span class="next-action-sub">Estimated: ${topTask.estimated_pomodoros || 1} Pomodoro • ${topTask.category || 'work'}</span>
+            </div>
+            <button class="btn-primary btn-sm btn-task-quick-focus" data-id="${topTask.id}">
+              ▶ Start Focus
+            </button>
+          </div>
+        </div>
+      `;
+    } else if (allHabits.some(h => !this.isHabitDoneToday(h))) {
+      const pendingHabit = allHabits.find(h => !this.isHabitDoneToday(h));
+      nextActionHtml = `
+        <div class="next-action-card">
+          <div class="next-action-badge">🌱 HABIT MOMENTUM</div>
+          <div class="next-action-content">
+            <div class="next-action-info">
+              <span class="next-action-title">${pendingHabit.icon || '🌱'} ${this.escapeHtml(pendingHabit.title)}</span>
+              <span class="next-action-sub">Current Streak: ${pendingHabit.streak || 0} days</span>
+            </div>
+            <button class="btn-secondary btn-sm btn-quick-habit-check" data-id="${pendingHabit.id}">
+              ✓ Check In
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     container.innerHTML = `
       <!-- Hero Briefing Header -->
       <div class="today-hero-panel">
@@ -78,7 +137,7 @@ export class DashboardManager {
             <span class="pulse-dot"></span>
             <span>${new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</span>
           </div>
-          <h1 class="today-greeting">${greeting}, <span class="highlight-name">${userName}</span></h1>
+          <h1 class="today-greeting">${greeting}, <span class="highlight-name">${this.escapeHtml(userName)}</span></h1>
           <p class="today-quote">"${quote}"</p>
         </div>
         <div class="today-hero-actions">
@@ -91,6 +150,8 @@ export class DashboardManager {
         </div>
       </div>
 
+      ${nextActionHtml}
+
       <!-- Raycast-Style AI Natural Language Quick-Add Command Bar -->
       <div class="command-bar-container">
         <form id="nl-task-form" class="command-bar-form">
@@ -100,7 +161,7 @@ export class DashboardManager {
               type="text" 
               id="nl-task-input" 
               class="command-input-field" 
-              placeholder="Natural-language task add (e.g., 'Finish DBMS report friday 5pm urgent study 3 pomos')" 
+              placeholder="Quick task or milestone (e.g., 'Finish database schema friday 5pm urgent 3 pomos')" 
               autocomplete="off"
             >
             <div class="command-action-right">
@@ -123,7 +184,7 @@ export class DashboardManager {
           </div>
           <div class="kpi-body">
             <div class="kpi-number">${focusMins}<span class="kpi-unit">mins</span></div>
-            <div class="kpi-title">Deep Focus Today</div>
+            <div class="kpi-title">Deep Focus (Target: ${focusTarget}m)</div>
           </div>
           <div class="kpi-progress-bar">
             <div class="kpi-progress-fill" style="width: ${focusPct}%;"></div>
@@ -133,25 +194,25 @@ export class DashboardManager {
         <div class="kpi-card" data-nav="planner">
           <div class="kpi-top">
             <span class="kpi-icon">📋</span>
-            <span class="kpi-badge">${summary.tasks.completed}/${summary.tasks.total} done</span>
+            <span class="kpi-badge">${tasksDone}/${tasksTotal} done</span>
           </div>
           <div class="kpi-body">
-            <div class="kpi-number">${summary.tasks.total - summary.tasks.completed}<span class="kpi-unit">tasks</span></div>
+            <div class="kpi-number">${pendingTasks.length}<span class="kpi-unit">tasks</span></div>
             <div class="kpi-title">Pending Milestones</div>
           </div>
           <div class="kpi-progress-bar">
-            <div class="kpi-progress-fill" style="width: ${summary.tasks.total > 0 ? (summary.tasks.completed / summary.tasks.total) * 100 : 0}%;"></div>
+            <div class="kpi-progress-fill" style="width: ${tasksTotal > 0 ? (tasksDone / tasksTotal) * 100 : 0}%;"></div>
           </div>
         </div>
 
         <div class="kpi-card" data-nav="finances">
           <div class="kpi-top">
             <span class="kpi-icon">💰</span>
-            <span class="kpi-badge">${currency}${todayExpense.toFixed(0)} today</span>
+            <span class="kpi-badge">${formatCurrency(todayExpense)} today</span>
           </div>
           <div class="kpi-body">
-            <div class="kpi-number">${currency}${monthExpense.toFixed(0)}</div>
-            <div class="kpi-title">Month-to-Date Spending</div>
+            <div class="kpi-number">${formatCurrency(monthExpense)}</div>
+            <div class="kpi-title">Month-to-Date Spend</div>
           </div>
           <div class="kpi-progress-bar">
             <div class="kpi-progress-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
@@ -165,7 +226,7 @@ export class DashboardManager {
           </div>
           <div class="kpi-body">
             <div class="kpi-number">${habitsDone}<span class="kpi-unit">done</span></div>
-            <div class="kpi-title">Habits Compounded</div>
+            <div class="kpi-title">Habits Maintained</div>
           </div>
           <div class="kpi-progress-bar">
             <div class="kpi-progress-fill" style="width: ${habitsTotal > 0 ? (habitsDone / habitsTotal) * 100 : 0}%;"></div>
@@ -179,13 +240,13 @@ export class DashboardManager {
         <div class="content-panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Top Priority Execution</h2>
+              <h2 class="panel-title">Priority Tasks</h2>
               <p class="panel-subtitle">Immediate high-impact focus targets</p>
             </div>
             <button class="btn-link" data-nav="planner">Open Planner →</button>
           </div>
           <div id="dash-priority-tasks-container" class="priority-tasks-stream">
-            ${this.renderTopTasks(summary.tasks.top_pending)}
+            ${this.renderTopTasks(pendingTasks.slice(0, 5))}
           </div>
         </div>
 
@@ -194,39 +255,50 @@ export class DashboardManager {
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Monthly Budget Meter</h2>
-              <p class="panel-subtitle">Spending pacing vs ${currency}${budget.toFixed(0)} cap</p>
+              <p class="panel-subtitle">Daily allowance: ${formatCurrency(dailyAllowance)}</p>
             </div>
             <button class="btn-link" data-nav="finances">Open Finances →</button>
           </div>
           <div class="budget-snapshot-box">
             <div class="budget-stat-item">
               <span class="stat-label">Monthly Budget</span>
-              <span class="stat-num">${currency}${budget.toFixed(2)}</span>
+              <span class="stat-num">${formatCurrency(budget)}</span>
             </div>
             <div class="budget-stat-item">
               <span class="stat-label">Spent This Month</span>
-              <span class="stat-num text-expense">${currency}${monthExpense.toFixed(2)}</span>
+              <span class="stat-num text-expense">${formatCurrency(monthExpense)}</span>
             </div>
             <div class="budget-stat-item">
               <span class="stat-label">Available Balance</span>
-              <span class="stat-num text-income">${currency}${Math.max(0, budget - monthExpense).toFixed(2)}</span>
+              <span class="stat-num text-income">${formatCurrency(Math.max(0, budget - monthExpense))}</span>
             </div>
             <div class="progress-bar-bg" style="margin-top: 16px;">
               <div class="progress-bar-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
             </div>
           </div>
+
+          <!-- Quick Habit Check-Ins Strip -->
+          <div class="dash-habits-quick-section" style="margin-top: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="sub-label">Today's Habits</span>
+              <button class="btn-link" data-nav="habits">View All →</button>
+            </div>
+            <div class="dash-habits-pills-row">
+              ${this.renderHabitPills(allHabits.slice(0, 4))}
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Section 3: Today's Wellness & Daily Reflection Log (Grounded Dashboard Footer) -->
+      <!-- Section 3: Today's Wellness & Daily Reflection Log -->
       <div class="content-panel" style="margin-top: 20px;">
         <div class="panel-header">
           <div>
-            <h2 class="panel-title">Daily Wellness & Activity Reflection</h2>
-            <p class="panel-subtitle">Review your energy, sleep, and record today's mindful thoughts</p>
+            <h2 class="panel-title">Daily Wellness & Reflection</h2>
+            <p class="panel-subtitle">Review your energy, rest, and mindful focus notes</p>
           </div>
           <button id="dash-open-review-btn" class="btn-primary" style="padding: 5px 12px; font-size: 0.78rem;">
-            <span>📖</span> <span>Open Full Review</span>
+            <span>📖</span> <span>Review Day</span>
           </button>
         </div>
 
@@ -249,8 +321,8 @@ export class DashboardManager {
             </div>
 
             <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 0.8rem; color: var(--text-muted);">
-              <span>🛌 Sleep Last Night: <strong style="color: var(--text-main);">${currentSleep} hrs</strong></span>
-              <span>⚡ Status: <strong style="color: var(--accent-primary);">${todayLog ? 'Checked In' : 'Pending Today'}</strong></span>
+              <span>🛌 Sleep: <strong style="color: var(--text-main);">${currentSleep !== null ? `${currentSleep} hrs` : 'Not recorded'}</strong></span>
+              <span>⚡ Status: <strong style="color: ${todayLog ? 'var(--color-success)' : 'var(--text-muted)'};">${todayLog ? 'Checked In ✓' : 'Pending Today'}</strong></span>
             </div>
           </div>
 
@@ -270,13 +342,13 @@ export class DashboardManager {
                 autocomplete="off"
               >
               <button id="dash-save-note-btn" class="btn-secondary" style="padding: 6px 14px; font-size: 0.78rem; flex-shrink: 0;">
-                Save Note
+                Save
               </button>
             </div>
 
-            <!-- Recent 7-Day Reflection Consistency Recap -->
+            <!-- Recent 7-Day History -->
             <div class="dash-recent-history-row" style="margin-top: 10px;">
-              ${this.renderRecentWellnessDots(wellnessLogs)}
+              ${this.renderRecentWellnessDots(store.state.wellness_logs || [])}
             </div>
           </div>
         </div>
@@ -284,6 +356,27 @@ export class DashboardManager {
     `;
 
     this.bindEvents(container);
+  }
+
+  isHabitDoneToday(habit) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return Array.isArray(habit.history) && habit.history.includes(todayStr);
+  }
+
+  renderHabitPills(habits) {
+    if (!habits || habits.length === 0) {
+      return `<span style="font-size: 0.8rem; color: var(--text-muted);">No habits configured yet.</span>`;
+    }
+    return habits.map(h => {
+      const isDone = this.isHabitDoneToday(h);
+      return `
+        <button class="btn-quick-habit-pill ${isDone ? 'done' : ''}" data-id="${h.id}">
+          <span>${isDone ? '✓' : h.icon || '🌱'}</span>
+          <span>${this.escapeHtml(h.title)}</span>
+          <span class="habit-pill-streak">🔥${h.streak || 0}</span>
+        </button>
+      `;
+    }).join('');
   }
 
   bindEvents(container) {
@@ -319,6 +412,31 @@ export class DashboardManager {
       });
     });
 
+    container.querySelectorAll('.dash-task-toggle').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const taskId = btn.dataset.id;
+        const task = (store.state.tasks || []).find(t => t.id === taskId);
+        if (task) {
+          const nextCompleted = !task.completed;
+          await store.updateTask(taskId, { completed: nextCompleted });
+          this.render(container);
+        }
+      });
+    });
+
+    container.querySelectorAll('.btn-quick-habit-pill, .btn-quick-habit-check').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const habitId = btn.dataset.id;
+        if (habitId) {
+          const today = new Date().toISOString().split('T')[0];
+          await store.checkHabit(habitId, today);
+          this.render(container);
+        }
+      });
+    });
+
     // Natural Language Input Handlers
     const nlForm = container.querySelector('#nl-task-form');
     const nlInput = container.querySelector('#nl-task-input');
@@ -340,7 +458,7 @@ export class DashboardManager {
             const parsed = await API.ml.parseTask(text);
             previewPills.style.display = 'flex';
             previewPills.innerHTML = `
-              <span class="badge badge-subtle">🏷️ ${parsed.title}</span>
+              <span class="badge badge-subtle">🏷️ ${this.escapeHtml(parsed.title)}</span>
               <span class="badge ${parsed.priority === 'urgent' ? 'badge-urgent' : 'badge-medium'}">Priority: ${parsed.priority}</span>
               <span class="badge badge-subtle">Category: ${parsed.category}</span>
               ${parsed.due_date ? `<span class="badge badge-subtle">📅 Due: ${parsed.due_date}</span>` : ''}
@@ -361,7 +479,7 @@ export class DashboardManager {
 
         try {
           const parsed = await API.ml.parseTask(text);
-          await API.tasks.create({
+          await store.createTask({
             title: parsed.title,
             category: parsed.category,
             priority: parsed.priority,
@@ -392,9 +510,8 @@ export class DashboardManager {
       btn.addEventListener('click', async () => {
         const selectedMood = parseInt(btn.dataset.mood, 10);
         try {
-          const currentLogs = await API.wellness.getLogs();
-          const todayEntry = (currentLogs || []).find(l => l.date === todayStr);
-          await API.wellness.saveLog({
+          const todayEntry = store.getTodayLog();
+          await store.saveDailyLog({
             date: todayStr,
             mood: selectedMood,
             sleep_hours: todayEntry && todayEntry.sleep_hours !== undefined ? todayEntry.sleep_hours : 7.5,
@@ -415,11 +532,10 @@ export class DashboardManager {
       const handleSaveNote = async () => {
         const text = noteInput.value.trim();
         try {
-          const currentLogs = await API.wellness.getLogs();
-          const todayEntry = (currentLogs || []).find(l => l.date === todayStr);
-          await API.wellness.saveLog({
+          const todayEntry = store.getTodayLog();
+          await store.saveDailyLog({
             date: todayStr,
-            mood: todayEntry && todayEntry.mood !== undefined ? todayEntry.mood : 3,
+            mood: todayEntry && todayEntry.mood !== undefined ? todayEntry.mood : 4,
             sleep_hours: todayEntry && todayEntry.sleep_hours !== undefined ? todayEntry.sleep_hours : 7.5,
             notes: text
           });
@@ -451,7 +567,7 @@ export class DashboardManager {
       if (l.date) logMap.set(l.date, l);
     });
 
-    const moodIcons = { 1: '😞', 2: '😐', 3: '🙂', 4: '😊', 5: '⚡' };
+    const moodIcons = { 1: '😫', 2: '😕', 3: '😐', 4: '😊', 5: '🤩' };
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     for (let i = 6; i >= 0; i--) {
@@ -509,17 +625,23 @@ export class DashboardManager {
       `;
     }
 
-    return tasks.map(t => `
-      <div class="task-stream-item">
-        <div class="task-stream-left">
-          <div class="task-stream-priority-dot dot-${t.priority || 'medium'}"></div>
-          <span class="task-stream-title">${t.title}</span>
-          <span class="badge badge-${t.priority === 'urgent' ? 'urgent' : 'subtle'}">${t.priority}</span>
+    return tasks.map(t => {
+      const isCompleted = !!t.completed;
+      return `
+        <div class="task-stream-item">
+          <div class="task-stream-left">
+            <button class="dash-task-toggle ${isCompleted ? 'checked' : ''}" data-id="${t.id}" title="${isCompleted ? 'Mark pending' : 'Mark completed'}">
+              ${isCompleted ? '✓' : ''}
+            </button>
+            <span class="task-stream-title ${isCompleted ? 'completed-text' : ''}">${this.escapeHtml(t.title)}</span>
+            <span class="badge badge-${t.priority === 'urgent' ? 'urgent' : 'subtle'}">${t.priority || 'medium'}</span>
+            ${t.due_date ? `<span class="badge badge-subtle">📅 ${t.due_date}</span>` : ''}
+          </div>
+          <button class="btn-task-quick-focus btn-focus-action" data-id="${t.id}" title="Focus on this task">
+            <span>🎯</span> <span>Focus</span>
+          </button>
         </div>
-        <button class="btn-task-quick-focus btn-focus-action" data-id="${t.id}" title="Set as active focus target">
-          <span>🎯</span> <span>Focus</span>
-        </button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 }

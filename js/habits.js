@@ -1,40 +1,48 @@
 /* LifeBuddy Habits & Daily Routines Manager */
 import { API } from './api.js';
+import { store } from './store.js';
 
 export class HabitManager {
   constructor(options = {}) {
-    this.habits = [];
     this.onChanged = options.onChanged || (() => {});
+
+    // Subscribe to store updates
+    store.subscribe(() => {
+      this.onChanged(store.state.habits || []);
+      const container = document.getElementById('habits-list-container');
+      if (container) this.renderHabitsList(container);
+    });
   }
 
   async init() {
-    await this.loadHabits();
+    await store.fetchState();
+    this.onChanged(store.state.habits || []);
   }
 
-  async loadHabits() {
-    try {
-      this.habits = await API.habits.getAll();
-      this.onChanged(this.habits);
-    } catch (e) {
-      console.error('Failed to load habits', e);
-    }
+  getHabits() {
+    return store.state.habits || [];
   }
 
-  async addHabit({ title, icon, frequency = 'daily' }) {
-    const created = await API.habits.create({ title, icon, frequency });
-    await this.loadHabits();
+  async addHabit({ title, icon = '🌱', frequency = 'daily', target = 1 }) {
+    if (!title || !title.trim()) return;
+    const created = await store.createHabit({
+      title: title.trim(),
+      icon: icon || '🌱',
+      frequency: frequency || 'daily',
+      target: parseInt(target, 10) || 1
+    });
     return created;
   }
 
   async toggleCheck(id) {
     const today = new Date().toISOString().split('T')[0];
-    await API.habits.check(id, today);
-    await this.loadHabits();
+    await store.checkHabit(id, today);
   }
 
   async deleteHabit(id) {
-    await API.habits.delete(id);
-    await this.loadHabits();
+    if (confirm('Delete this habit routine and its streak history?')) {
+      await store.deleteHabit(id);
+    }
   }
 
   isDoneToday(habit) {
@@ -46,7 +54,9 @@ export class HabitManager {
     if (!container) return;
     container.innerHTML = '';
 
-    if (this.habits.length === 0) {
+    const habits = store.state.habits || [];
+
+    if (habits.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon">🌱</div>
@@ -56,25 +66,64 @@ export class HabitManager {
       return;
     }
 
-    this.habits.forEach(habit => {
+    habits.forEach(habit => {
       const doneToday = this.isDoneToday(habit);
       const streak = habit.streak || 0;
+      const bestStreak = habit.best_streak || streak;
+      const history = habit.history || [];
+
+      // Render 7-day mini consistency dots
+      const last7Days = [];
+      const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const isDone = history.includes(dateStr);
+        last7Days.push({
+          date: dateStr,
+          dayLetter: dayNames[d.getDay()],
+          isDone,
+          isToday: i === 0
+        });
+      }
+
+      const stripHtml = last7Days.map(day => `
+        <div class="habit-day-dot ${day.isDone ? 'done' : 'missed'} ${day.isToday ? 'is-today' : ''}" title="${day.date}: ${day.isDone ? 'Completed' : 'Not completed'}">
+          <span class="day-dot-label">${day.dayLetter}</span>
+          <span class="day-dot-circle">${day.isDone ? '✓' : ''}</span>
+        </div>
+      `).join('');
 
       const el = document.createElement('div');
-      el.className = `habit-item glass-pill ${doneToday ? 'habit-completed' : ''}`;
+      el.className = `habit-card-expanded glass-pill ${doneToday ? 'habit-completed' : ''}`;
       el.innerHTML = `
-        <div class="habit-left">
-          <button class="habit-check-btn ${doneToday ? 'checked' : ''}" data-id="${habit.id}" title="${doneToday ? 'Completed today! Click to undo' : 'Mark done for today'}">
-            ${doneToday ? '✓' : ''}
-          </button>
-          <span class="habit-icon">${habit.icon || '🌱'}</span>
-          <div class="habit-info">
-            <span class="habit-title">${habit.title}</span>
-            <span class="habit-streak">🔥 ${streak} day streak</span>
+        <div class="habit-main-row">
+          <div class="habit-left">
+            <button class="habit-check-btn ${doneToday ? 'checked' : ''}" data-id="${habit.id}" title="${doneToday ? 'Completed today! Click to undo' : 'Mark done for today'}">
+              ${doneToday ? '✓' : ''}
+            </button>
+            <span class="habit-icon">${habit.icon || '🌱'}</span>
+            <div class="habit-info">
+              <span class="habit-title">${this.escapeHtml(habit.title)}</span>
+              <div class="habit-stats-row">
+                <span class="habit-streak-badge">🔥 <strong>${streak}</strong> day streak</span>
+                <span class="habit-best-badge">🏆 Best: ${bestStreak}d</span>
+                <span class="badge badge-subtle">${habit.frequency || 'daily'}</span>
+              </div>
+            </div>
+          </div>
+          <div class="habit-actions">
+            <button class="btn-delete-habit btn-icon-small" title="Delete habit" data-id="${habit.id}">✕</button>
           </div>
         </div>
-        <div class="habit-actions">
-          <button class="btn-delete-habit btn-icon-small" title="Delete habit" data-id="${habit.id}">✕</button>
+
+        <!-- 7-Day Consistency Micro-Strip -->
+        <div class="habit-strip-row">
+          <span class="habit-strip-label">7-Day Consistency:</span>
+          <div class="habit-strip-dots">
+            ${stripHtml}
+          </div>
         </div>
       `;
 
@@ -90,5 +139,15 @@ export class HabitManager {
 
       container.appendChild(el);
     });
+  }
+
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 }

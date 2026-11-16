@@ -21,7 +21,7 @@ class ReflectionGenerator:
         expenses: List[Dict[str, Any]],
         habits: List[Dict[str, Any]],
         daily_logs: List[Dict[str, Any]],
-        monthly_budget: float = 1000.0
+        monthly_budget: float = 25000.0
     ) -> Dict[str, Any]:
         """
         Generate a weekly mindful review summarizing achievements, habits, and focus.
@@ -45,14 +45,23 @@ class ReflectionGenerator:
         ]
         completed_count = len(week_tasks)
 
-        # 3. Weekly Expenses
+        # 3. Weekly Expenses (Honest formatting in INR ₹ with unambiguous pacing)
         week_expenses = [
             float(e.get("amount") or 0) for e in expenses
             if e.get("type", "expense") == "expense" and str(e.get("date", "")) >= start_of_week_str
         ]
         week_spent = round(sum(week_expenses), 2)
         weekly_budget_target = monthly_budget / 4.0
-        budget_status = "within budget" if week_spent <= weekly_budget_target else "above weekly pace"
+        diff = abs(week_spent - weekly_budget_target)
+        if week_spent <= weekly_budget_target:
+            budget_clarity = f"₹{diff:,.0f} under your weekly target"
+        else:
+            budget_clarity = f"₹{diff:,.0f} over your planned weekly target"
+
+        finance_summary = (
+            f"In finances, you spent ₹{week_spent:,.0f} this week ({budget_clarity}, target: ₹{weekly_budget_target:,.0f})."
+            if week_expenses else f"In finances, no expenses logged this week (weekly budget target: ₹{weekly_budget_target:,.0f})."
+        )
 
         # 4. Habits Consistency
         total_checks = 0
@@ -67,48 +76,35 @@ class ReflectionGenerator:
             total_checks += checks_this_week
 
         possible_checks = max(1, habit_count * 7)
-        habit_adherence_pct = round((total_checks / possible_checks) * 100)
+        habit_adherence_pct = round((total_checks / possible_checks) * 100) if habit_count > 0 else 0
 
-        # 5. Average Mood & Sleep
-        week_logs = [log for log in daily_logs if str(log.get("date", "")) >= start_of_week_str]
-        avg_mood = (
-            round(sum(float(l.get("mood", 3)) for l in week_logs) / len(week_logs), 1)
-            if week_logs else 3.5
-        )
-        avg_sleep = (
-            round(sum(float(l.get("sleep_hours", 7.5)) for l in week_logs) / len(week_logs), 1)
-            if week_logs else 7.5
-        )
+        # 5. Honest Average Mood & Sleep (Never fabricate default averages when 0 logs exist)
+        week_logs = [log for log in daily_logs if str(log.get("date", "")) >= start_of_week_str and log.get("mood") is not None]
+        if week_logs:
+            avg_mood = round(sum(float(l["mood"]) for l in week_logs) / len(week_logs), 1)
+            sleep_entries = [float(l["sleep_hours"]) for l in week_logs if l.get("sleep_hours") is not None]
+            avg_sleep = round(sum(sleep_entries) / len(sleep_entries), 1) if sleep_entries else None
+            wellness_text = f"Supported by an average of {avg_sleep} hrs sleep (average energy {avg_mood}/5 across {len(week_logs)} check-in{'s' if len(week_logs)>1 else ''})." if avg_sleep else f"Average energy {avg_mood}/5 across {len(week_logs)} check-in{'s' if len(week_logs)>1 else ''}."
+        else:
+            avg_mood = None
+            avg_sleep = None
+            wellness_text = "No daily check-ins recorded yet for this week. Use the Daily Review to begin tracking your energy and rest."
 
-        # Optional LLM Generation check
-        if self.enable_llm:
-            llm_text = self._try_llm_generation(username, week_focus_hours, completed_count, week_spent, habit_adherence_pct, avg_sleep)
-            if llm_text:
-                return {
-                    "source": "LLM (Generated with Privacy Filter)",
-                    "reflection": llm_text,
-                    "metrics": {
-                        "focus_hours": week_focus_hours,
-                        "tasks_completed": completed_count,
-                        "spending": week_spent,
-                        "habit_adherence": habit_adherence_pct,
-                        "avg_sleep": avg_sleep
-                    }
-                }
+        # Friendly display name derivation (First name only, never raw email)
+        display = username.split('@')[0].replace('.', ' ').replace('_', ' ').split()[0].capitalize() if username else "Friend"
+        greeting = f"Weekly Reflection for {display}"
 
-        # Deterministic Mindful Template Synthesis
-        greeting = f"Weekly Reflection for {username.capitalize()}"
-        
         if week_focus_hours >= 10.0:
             focus_summary = f"You demonstrated exceptional concentration, dedicating {week_focus_hours} hours to deep, uninterrupted work across {len(week_sessions)} sessions."
         elif week_focus_hours >= 4.0:
             focus_summary = f"You built solid momentum with {week_focus_hours} hours of focused work across {len(week_sessions)} sessions."
+        elif week_focus_hours > 0:
+            focus_summary = f"You recorded {week_focus_hours} hours of deep focus across {len(week_sessions)} session{'s' if len(week_sessions)>1 else ''}."
         else:
-            focus_summary = f"You recorded {week_focus_hours} hours of deep focus. Take time this coming week to protect larger uninterrupted blocks."
+            focus_summary = "No focus sessions logged this week. Start a 25-minute Pomodoro in the Focus Room to build momentum."
 
-        task_summary = f"You completed {completed_count} key priorities." if completed_count > 0 else "Focus this upcoming week on breaking large goals into small 1-pomodoro tasks."
-        finance_summary = f"In finances, you spent ${week_spent:.2f}, keeping you {budget_status}."
-        habit_summary = f"Your daily habit adherence was {habit_adherence_pct}%, supported by an average of {avg_sleep} hours of sleep."
+        task_summary = f"You completed {completed_count} key priorit{'ies' if completed_count != 1 else 'y'}." if completed_count > 0 else "Focus this upcoming week on breaking large goals into small 1-pomodoro tasks."
+        habit_summary = f"Your daily habit adherence was {habit_adherence_pct}%." if habit_count > 0 else "No active habits added yet. Create a daily habit to begin compounding streaks."
 
         closing_thought = (
             "Remember: Consistency compounds quietly. Celebrate your focus, rest without guilt, and begin the next cycle refreshed."
@@ -118,7 +114,7 @@ class ReflectionGenerator:
             f"🌿 **{greeting}**\n\n"
             f"{focus_summary} {task_summary}\n\n"
             f"💰 {finance_summary}\n\n"
-            f"🌱 {habit_summary} (Average mood: {avg_mood}/5).\n\n"
+            f"🌱 {habit_summary} {wellness_text}\n\n"
             f"✨ {closing_thought}"
         )
 

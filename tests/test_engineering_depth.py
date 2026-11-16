@@ -50,7 +50,13 @@ def test_auth_refresh_endpoint():
         "password": "Password123!"
     })
     assert reg_res.status_code == 200
-    data = reg_res.json()
+
+    login_res = client.post("/api/auth/login", json={
+        "username_or_email": username,
+        "password": "Password123!"
+    })
+    assert login_res.status_code == 200
+    data = login_res.json()
     assert "access_token" in data
     assert "refresh_token" in data
 
@@ -73,7 +79,14 @@ def test_gdpr_export_and_delete_endpoints():
         "email": f"{username}@example.com",
         "password": "Password123!"
     })
-    token = reg_res.json()["access_token"]
+    assert reg_res.status_code == 200
+
+    login_res = client.post("/api/auth/login", json={
+        "username_or_email": username,
+        "password": "Password123!"
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     # Add a task
@@ -110,7 +123,14 @@ def test_idempotent_batch_sync_and_lww():
         "email": f"{username}@example.com",
         "password": "Password123!"
     })
-    token = reg_res.json()["access_token"]
+    assert reg_res.status_code == 200
+
+    login_res = client.post("/api/auth/login", json={
+        "username_or_email": username,
+        "password": "Password123!"
+    })
+    assert login_res.status_code == 200
+    token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     task_id = f"task_{int(time.time()*1000)}"

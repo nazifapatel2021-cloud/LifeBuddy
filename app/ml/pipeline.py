@@ -127,7 +127,7 @@ class MLPipelineRegistry:
         expenses: List[Dict[str, Any]],
         habits: List[Dict[str, Any]],
         daily_logs: List[Dict[str, Any]],
-        monthly_budget: float = 1000.0
+        monthly_budget: float = 25000.0
     ) -> Dict[str, Any]:
         return self.reflection_gen.generate_weekly_reflection(
             username=username,

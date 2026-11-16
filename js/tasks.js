@@ -1,5 +1,6 @@
 /* LifeBuddy Task & Planner Management System */
 import { API } from './api.js';
+import { store } from './store.js';
 
 export const PRIORITY_CONFIG = {
   'urgent': { label: 'Urgent', class: 'badge-urgent' },
@@ -17,72 +18,78 @@ export const CATEGORY_ICONS = {
 
 export class TaskManager {
   constructor(options = {}) {
-    this.tasks = [];
     this.activeTaskId = localStorage.getItem('lifebuddy_active_task_id') || null;
-    this.filter = 'all'; // all, today, pending, completed
+    this.filter = 'all'; // all, today, upcoming, overdue, completed
+    this.priorityFilter = 'all';
+    this.categoryFilter = 'all';
+    this.searchQuery = '';
     this.onTasksChanged = options.onTasksChanged || (() => {});
     this.onActiveTaskChanged = options.onActiveTaskChanged || (() => {});
+
+    // Subscribe to central store updates
+    store.subscribe(() => {
+      this.syncActiveTask();
+      this.onTasksChanged(store.state.tasks || []);
+      this.onActiveTaskChanged(this.getActiveTask());
+    });
   }
 
   async init() {
-    await this.loadTasks();
+    await store.fetchState();
+    this.syncActiveTask();
+    this.onTasksChanged(store.state.tasks || []);
+    this.onActiveTaskChanged(this.getActiveTask());
   }
 
-  async loadTasks() {
-    try {
-      this.tasks = await API.tasks.getAll();
-      if (!this.getActiveTask() && this.tasks.length > 0) {
-        const firstPending = this.tasks.find(t => !t.completed);
-        if (firstPending) this.setActiveTask(firstPending.id);
-      }
-      this.onTasksChanged(this.tasks);
-      this.onActiveTaskChanged(this.getActiveTask());
-    } catch (e) {
-      console.error('Failed to load tasks', e);
+  syncActiveTask() {
+    const tasks = store.state.tasks || [];
+    if (!this.getActiveTask() && tasks.length > 0) {
+      const firstPending = tasks.find(t => !t.completed);
+      if (firstPending) this.setActiveTask(firstPending.id);
     }
   }
 
   getTasks() {
-    return this.tasks;
+    return store.state.tasks || [];
   }
 
   getActiveTask() {
-    return this.tasks.find(t => t.id === this.activeTaskId) || null;
+    const tasks = store.state.tasks || [];
+    return tasks.find(t => t.id === this.activeTaskId) || null;
   }
 
   async addTask(title, estPomodoros = 1, category = 'work', priority = 'medium', dueDate = null) {
-    if (!title.trim()) return;
+    if (!title || !title.trim()) return;
 
-    const task = await API.tasks.create({
+    const task = await store.createTask({
       title: title.trim(),
-      estimated_pomodoros: Math.max(1, parseInt(estPomodoros) || 1),
-      category,
-      priority,
-      due_date: dueDate
+      estimated_pomodoros: Math.max(1, parseInt(estPomodoros, 10) || 1),
+      category: category || 'work',
+      priority: priority || 'medium',
+      due_date: dueDate || null
     });
 
-    await this.loadTasks();
-    if (!this.activeTaskId) {
+    if (!this.activeTaskId && task) {
       this.setActiveTask(task.id);
     }
     return task;
   }
 
   async toggleTask(id) {
-    const task = this.tasks.find(t => t.id === id);
+    const task = (store.state.tasks || []).find(t => t.id === id);
     if (task) {
       const nextCompleted = !task.completed;
-      await API.tasks.update(id, { completed: nextCompleted });
-      await this.loadTasks();
+      await store.updateTask(id, { completed: nextCompleted });
     }
   }
 
   async deleteTask(id) {
-    await API.tasks.delete(id);
-    if (this.activeTaskId === id) {
-      this.setActiveTask(null);
+    if (confirm('Delete this task?')) {
+      await store.deleteTask(id);
+      if (this.activeTaskId === id) {
+        this.setActiveTask(null);
+      }
     }
-    await this.loadTasks();
   }
 
   setActiveTask(id) {
@@ -93,30 +100,51 @@ export class TaskManager {
       localStorage.removeItem('lifebuddy_active_task_id');
     }
     this.onActiveTaskChanged(this.getActiveTask());
-    this.onTasksChanged(this.tasks);
+    this.onTasksChanged(store.state.tasks || []);
   }
 
   async incrementActiveTaskPomodoro() {
     const activeTask = this.getActiveTask();
     if (activeTask) {
-      const current = activeTask.completed_pomodoros || activeTask.actPomodoros || 0;
-      await API.tasks.update(activeTask.id, { completed_pomodoros: current + 1 });
-      await this.loadTasks();
+      const current = activeTask.completed_pomodoros || 0;
+      await store.updateTask(activeTask.id, { completed_pomodoros: current + 1 });
     }
   }
 
   renderTaskList(containerEl, filterOverride = null) {
     if (!containerEl) return;
     const activeFilter = filterOverride || this.filter;
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    let filtered = [...this.tasks];
+    let filtered = [...(store.state.tasks || [])];
+
+    // Priority filter
+    if (this.priorityFilter !== 'all') {
+      filtered = filtered.filter(t => t.priority === this.priorityFilter);
+    }
+
+    // Category filter
+    if (this.categoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === this.categoryFilter);
+    }
+
+    // Search query
+    if (this.searchQuery) {
+      const q = this.searchQuery.toLowerCase();
+      filtered = filtered.filter(t => (t.title || '').toLowerCase().includes(q));
+    }
+
+    // Tab filter
     if (activeFilter === 'pending') {
       filtered = filtered.filter(t => !t.completed);
     } else if (activeFilter === 'completed') {
       filtered = filtered.filter(t => t.completed);
     } else if (activeFilter === 'today') {
-      const today = new Date().toISOString().split('T')[0];
-      filtered = filtered.filter(t => t.due_date === today || (!t.due_date && !t.completed));
+      filtered = filtered.filter(t => t.due_date === todayStr || (!t.due_date && !t.completed));
+    } else if (activeFilter === 'overdue') {
+      filtered = filtered.filter(t => t.due_date && t.due_date < todayStr && !t.completed);
+    } else if (activeFilter === 'upcoming') {
+      filtered = filtered.filter(t => t.due_date && t.due_date > todayStr && !t.completed);
     }
 
     if (filtered.length === 0) {
@@ -133,21 +161,35 @@ export class TaskManager {
       const isSelected = task.id === this.activeTaskId;
       const isCompleted = !!task.completed;
       const priorityInfo = PRIORITY_CONFIG[task.priority] || PRIORITY_CONFIG['medium'];
-      const act = task.completed_pomodoros ?? task.actPomodoros ?? 0;
-      const est = task.estimated_pomodoros ?? task.estPomodoros ?? 1;
+      const act = task.completed_pomodoros ?? 0;
+      const est = task.estimated_pomodoros ?? 1;
+
+      const isOverdue = task.due_date && task.due_date < todayStr && !isCompleted;
+      const isDueToday = task.due_date === todayStr && !isCompleted;
+
+      let dueBadge = '';
+      if (task.due_date) {
+        if (isOverdue) {
+          dueBadge = `<span class="badge badge-urgent" title="Overdue!">⚠️ Overdue: ${task.due_date}</span>`;
+        } else if (isDueToday) {
+          dueBadge = `<span class="badge badge-high" title="Due today">📅 Today</span>`;
+        } else {
+          dueBadge = `<span class="badge badge-subtle">📅 ${task.due_date}</span>`;
+        }
+      }
 
       return `
-        <div class="task-item glass-pill ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''}" data-id="${task.id}">
+        <div class="task-item glass-pill ${isSelected ? 'selected' : ''} ${isCompleted ? 'completed' : ''} ${isOverdue ? 'task-overdue-border' : ''}" data-id="${task.id}">
           <div class="task-left">
             <button class="task-checkbox ${isCompleted ? 'checked' : ''}" data-action="toggle" title="${isCompleted ? 'Mark uncompleted' : 'Mark completed'}">
               ${isCompleted ? '✓' : ''}
             </button>
             <div class="task-details">
-              <span class="task-text">${this.escapeHtml(task.title)}</span>
+              <span class="task-text ${isCompleted ? 'completed-text' : ''}">${this.escapeHtml(task.title)}</span>
               <div class="task-tags">
                 <span class="badge ${priorityInfo.class}">${priorityInfo.label}</span>
                 <span class="badge badge-subtle">${CATEGORY_ICONS[task.category] || task.category || 'work'}</span>
-                ${task.due_date ? `<span class="badge badge-subtle">📅 ${task.due_date}</span>` : ''}
+                ${dueBadge}
               </div>
             </div>
           </div>
@@ -156,7 +198,7 @@ export class TaskManager {
               <span>🍅</span> <span>${act}/${est}</span>
             </div>
             <button class="btn-focus-task btn-icon-small" data-action="select" title="Focus on this task">
-              ${isSelected ? '🎯 Active' : 'Select'}
+              ${isSelected ? '🎯 Active' : 'Focus'}
             </button>
             <button class="btn-delete-task btn-icon-small" data-action="delete" title="Delete task">✕</button>
           </div>
@@ -192,7 +234,8 @@ export class TaskManager {
 
   escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;')
+    return String(str)
+      .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
