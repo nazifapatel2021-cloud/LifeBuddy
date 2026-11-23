@@ -15,8 +15,10 @@
   }
 
   .finances-layout-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
     gap: var(--space-6);
+    min-width: 0 !important;
+    max-width: 100% !important;
   }
 
   .metrics-kpi-grid {
@@ -90,8 +92,43 @@
 
   .content-panel {
     padding: var(--space-4);
-    max-width: 100%;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
     overflow-wrap: break-word;
+    overflow-x: hidden;
+  }
+
+  .finances-main-panel,
+  .finances-side-panel {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden;
+  }
+
+  .ledger-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+    box-sizing: border-box !important;
+  }
+
+  .category-chart-container,
+  .category-pie-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .donut-chart-wrap {
+    margin: 0 auto !important;
   }
 
   .view-header-strip {
@@ -195,8 +232,14 @@
   }
 
   .finances-kpi-summary-row {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
+  }
+
+  .fin-kpi-card {
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow: hidden;
   }
 
   .hide-mobile {
@@ -242,6 +285,39 @@
 
   .sound-mixer-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 2.5. Mobile Devices & Phones (<= 600px) */
+@media (max-width: 600px) {
+  .finances-kpi-summary-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .fin-kpi-card {
+    padding: 12px 14px !important;
+  }
+
+  .fin-kpi-value {
+    font-size: 1.15rem !important;
+  }
+
+  .finances-filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .finances-filter-bar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .fin-month-input,
+  .fin-cat-select {
+    flex: 1 !important;
+    width: auto !important;
   }
 }
 
