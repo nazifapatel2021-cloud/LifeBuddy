@@ -1,7 +1,6 @@
 # 🌱 LifeBuddy — Mindful Focus, Tasks, Habits & Finances
 
-> **Final-Year Engineering Project (FYP)**  
-> **Thesis:** *"A self-learning, privacy-first productivity system that connects focus, tasks, habits, and spending data to give personalized, explainable insights and predictions, and keeps working offline."*
+> **A self-learning, privacy-first personal productivity and financial intelligence system that connects focus, tasks, habits, and spending data to provide personalized, explainable insights with full offline resilience.**
 
 ---
 
@@ -208,22 +207,7 @@ Log in with demo persona: **`alex_student`** / **`password123`**.
 
 ---
 
-### Method 2: Docker Compose (FastAPI + PostgreSQL 16)
-```bash
-# 1. Start application and PostgreSQL containers
-docker compose up --build -d
-
-# 2. Seed demo personas into PostgreSQL
-docker compose exec web python scripts/seed_demo.py
-
-# 3. View live logs
-docker compose logs -f web
-```
-Open **`http://localhost:8000`**.
-
----
-
-### Method 3: Cloud Deployment (Render Free Tier)
+### Method 2: Cloud Deployment (Render Free Tier)
 1. Fork or push this repository to GitHub.
 2. In Render Dashboard, click **New +** ➔ **Blueprint**.
 3. Select this repository. Render automatically reads `render.yaml`, configures Python 3.12, builds dependencies, seeds demo personas, and issues a live HTTPS URL.  
@@ -282,14 +266,8 @@ TOTAL                               726     60    92%  (Target: >= 80%)
 
 ---
 
-## 📚 Viva Defense & Documentation Index
+## 📄 License & Architecture
 
-- **`docs/AUDIT.md`**: Initial Phase 0 codebase audit, architectural review, and phase breakdown.
-- **`docs/PHASE_LOG.md`**: Chronological build log across all Phases 0–5, including verification records.
-- **`docs/VIVA_NOTES.md`**: Engineering design trade-offs and the **Top 20 Examiner Questions & Answers cheat sheet**.
-- **`docs/DEMO_SCRIPT.md`**: 5-Minute viva demonstration walkthrough with exact click paths.
-- **`docs/DEPLOYMENT.md`**: Complete operational deployment runbooks (Docker, Docker Compose, Render).
-- **`evaluation_report.md`**: Formal empirical scientific evaluation report with baselines and ablation studies.
-- **`notebooks/`**:
-  - `01_eda_and_behavioral_dynamics.ipynb`: Exploratory data analysis of multi-persona behavioral dynamics.
-  - `02_model_benchmarks_and_ablation.ipynb`: Cross-validation benchmarks, ROC curves, feature ablation tables.
+- **Frontend:** Zero-build vanilla ES6 with native SVG rendering and IndexedDB offline persistence.
+- **Backend:** FastAPI + ASGI with Argon2id authentication and SQLite / PostgreSQL support.
+- **License:** MIT License. Free for open-source and personal productivity use.

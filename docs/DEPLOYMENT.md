@@ -1,55 +1,10 @@
 # LifeBuddy Deployment Guide
 
-This guide describes how to run and deploy LifeBuddy using Docker, Docker Compose (FastAPI + PostgreSQL), and Render Free Tier.
+This guide describes how to run and deploy LifeBuddy locally and in production using Render Free Tier.
 
 ---
 
-## 1. Local Production with Docker Compose (FastAPI + PostgreSQL)
-
-The provided `docker-compose.yml` runs LifeBuddy with a dedicated PostgreSQL 16 database and automated volume persistence.
-
-### Prerequisites
-- Docker Engine $\ge 20.10$
-- Docker Compose $\ge 2.0$
-
-### One-Command Startup
-```bash
-docker compose up --build -d
-```
-
-### Inspect Container Health & Logs
-```bash
-# Check status
-docker compose ps
-
-# Follow logs
-docker compose logs -f web
-
-# Seed demo personas into PostgreSQL
-docker compose exec web python scripts/seed_demo.py
-```
-
-Open `http://localhost:8000` in your web browser. To stop the deployment:
-```bash
-docker compose down
-```
-
----
-
-## 2. Standalone Docker Container (SQLite Mode)
-
-To run a single lightweight Docker container without external database dependencies:
-```bash
-# Build the production image
-docker build -t lifebuddy:latest .
-
-# Run container exposing port 8000
-docker run -d -p 8000:8000 -v lifebuddy_data:/app/lifebuddy.db --name lifebuddy lifebuddy:latest
-```
-
----
-
-## 3. Cloud Deployment: Render (Free Tier Blueprint)
+## 1. Cloud Deployment: Render (Free Tier Blueprint)
 
 Render provides free hosting for web services with automatic TLS certificates and continuous deployment from GitHub.
 
@@ -75,12 +30,29 @@ Ensure your repository is hosted on GitHub (`https://github.com/your-username/Li
 
 ---
 
-## 4. Environment Variables Reference
+## 2. Local Development
+
+To run LifeBuddy locally on your machine:
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Seed realistic demo personas
+python scripts/seed_demo.py
+
+# 3. Start development server
+python run.py
+```
+Open `http://localhost:8000` in your web browser.
+
+---
+
+## 3. Environment Variables Reference
 
 | Variable | Description | Default |
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL connection URI or omitted for SQLite | `None` (uses `lifebuddy.db`) |
-| `LIFEBUDDY_SECRET_KEY` | HMAC SHA-256 secret key for signing JWTs | `"lifebuddy_mindful_productivity_secret..."` |
+| `LIFEBUDDY_SECRET_KEY` | HMAC SHA-256 secret key for signing JWTs | Auto-generated in production |
 | `ACCESS_TOKEN_EXPIRY_SECONDS` | Short-lived access token validity in seconds | `900` (15 minutes) |
 | `REFRESH_TOKEN_EXPIRY_SECONDS` | Refresh token validity in seconds | `604800` (7 days) |
 | `CORS_ORIGINS` | Permitted CORS origins, comma-separated or `*` | `*` |
