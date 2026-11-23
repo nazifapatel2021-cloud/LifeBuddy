@@ -56,7 +56,7 @@ export class InsightsCoordinator {
 
     this.container.innerHTML = `
       <!-- Top Section: Weekly Reflection & Best Focus Window -->
-      <div class="insights-top-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+      <div class="insights-top-grid">
         <!-- Card 1: Best Deep-Work Window -->
         <div class="content-panel">
           <div class="panel-header">
@@ -138,7 +138,7 @@ export class InsightsCoordinator {
       </div>
 
       <!-- Fourth Section: 7-Day Performance Trends (Focus Minutes & Habit Heatmap) -->
-      <div class="insights-trends-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px;">
+      <div class="insights-trends-grid">
         <!-- Focus Trend Chart -->
         <div class="content-panel">
           <div class="panel-header">

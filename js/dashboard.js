@@ -205,7 +205,7 @@ export class DashboardManager {
       </div>
 
       <!-- Main Three-Card Balanced Content Stream -->
-      <div class="today-tri-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 20px;">
+      <div class="today-tri-grid">
         <!-- Card 1: Today's Tasks -->
         <div class="content-panel">
           <div class="panel-header">

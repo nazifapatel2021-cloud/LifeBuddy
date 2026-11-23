@@ -935,6 +935,13 @@ input[type="number"] {
   margin-bottom: var(--space-5);
 }
 
+.today-tri-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
 .today-dual-grid > .content-panel:first-child {
   background: linear-gradient(180deg, #f0f4ff 0%, #f8faff 100%) !important;
   border: 1.5px solid #c7d2fe !important;
@@ -2436,6 +2443,35 @@ input[type="number"] {
   color: var(--text-light);
   border-top: 1px solid var(--border-subtle);
   padding-top: 6px;
+}
+
+/* Insights View Top & Trends Grids */
+.insights-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.insights-trends-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.forecast-chart-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.daily-log-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 /* Explainability Slide-Over Drawer */

@@ -80,7 +80,7 @@ export class DailyLogController {
       </div>
 
       <!-- Quick Metrics Recap of Today -->
-      <div class="metrics-grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+      <div class="metrics-grid daily-log-metrics-grid">
         <div class="glass-pill" style="text-align: center; padding: 10px 8px;">
           <div style="font-size: 0.75rem; color: var(--text-muted);">Deep Focus</div>
           <div style="font-weight: 700; font-size: 1rem; color: var(--text-main);">${focusMins}m</div>
