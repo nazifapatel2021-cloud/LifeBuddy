@@ -3,6 +3,7 @@ import { API } from './api.js';
 import { store } from './store.js';
 import { formatCurrency } from './currency.js';
 import { dailyLogController } from './daily_log.js';
+import { formatFriendlyDate, getLocalDateString, normalizeDate } from './date_utils.js';
 
 const MINDFUL_QUOTES = [
   "Small daily disciplines compound into extraordinary life outcomes.",
@@ -19,6 +20,9 @@ export class DashboardManager {
     this.onStartFocus = options.onStartFocus || (() => {});
     this.onTaskFocus = options.onTaskFocus || (() => {});
     this.onTaskCreated = options.onTaskCreated || (() => {});
+    this.getActiveTaskId = options.getActiveTaskId || (() => {
+      return localStorage.getItem('lifebuddy_active_task_id') || localStorage.getItem('zen_pomodoro_active_task') || null;
+    });
 
     // Subscribe to central store updates
     store.subscribe(() => {
@@ -67,9 +71,10 @@ export class DashboardManager {
 
     const allTasks = store.state.tasks || [];
     const pendingTasks = store.getPendingTasks();
-    const completedTasks = allTasks.filter(t => t.completed);
-    const tasksDone = completedTasks.length;
-    const tasksTotal = allTasks.length;
+    const todayStr = getLocalDateString();
+    const todayTasks = allTasks.filter(t => normalizeDate(t.due_date) === todayStr);
+    const todayTasksDone = todayTasks.filter(t => t.completed).length;
+    const todayTasksTotal = todayTasks.length;
 
     const allHabits = store.state.habits || [];
     const habitsDone = store.getHabitsDoneToday();
@@ -126,7 +131,7 @@ export class DashboardManager {
     }
 
     container.innerHTML = `
-      <!-- Hero Briefing Header (Clean, only Start Focus action) -->
+      <!-- Hero Briefing Header (Clean, only Start Focus action in Next Best Action) -->
       <div class="today-hero-panel">
         <div class="today-hero-left">
           <div class="today-date-badge">
@@ -135,11 +140,6 @@ export class DashboardManager {
           </div>
           <h1 class="today-greeting">${greeting}, <span class="highlight-name">${this.escapeHtml(userName)}</span></h1>
           <p class="today-quote">"${quote}"</p>
-        </div>
-        <div class="today-hero-actions">
-          <button id="hero-quick-focus-btn" class="btn-primary btn-hero-cta">
-            <span>▶</span> <span>Start Focus</span>
-          </button>
         </div>
       </div>
 
@@ -164,14 +164,14 @@ export class DashboardManager {
         <div class="kpi-card" data-nav="planner">
           <div class="kpi-top">
             <span class="kpi-icon">📋</span>
-            <span class="kpi-badge">${tasksDone} / ${tasksTotal} done</span>
+            ${todayTasksTotal > 0 ? `<span class="kpi-badge">${todayTasksDone} / ${todayTasksTotal} done</span>` : ''}
           </div>
           <div class="kpi-body">
             <div class="kpi-number">${pendingTasks.length} <span class="kpi-unit">tasks</span></div>
             <div class="kpi-title">Pending Milestones</div>
           </div>
           <div class="kpi-progress-bar">
-            <div class="kpi-progress-fill" style="width: ${tasksTotal > 0 ? (tasksDone / tasksTotal) * 100 : 0}%;"></div>
+            <div class="kpi-progress-fill" style="width: ${todayTasksTotal > 0 ? (todayTasksDone / todayTasksTotal) * 100 : 0}%;"></div>
           </div>
         </div>
 
@@ -204,30 +204,30 @@ export class DashboardManager {
         </div>
       </div>
 
-      <!-- Main Two-Column Balanced Content Stream -->
-      <div class="today-dual-grid">
-        <!-- Column 1: Priority Focus Targets -->
+      <!-- Main Three-Card Balanced Content Stream -->
+      <div class="today-tri-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 20px;">
+        <!-- Card 1: Today's Tasks -->
         <div class="content-panel">
           <div class="panel-header">
             <div>
-              <h2 class="panel-title">Focus Target Queue</h2>
+              <h2 class="panel-title">Today's Tasks</h2>
               <p class="panel-subtitle">Today's active milestones — check off as you complete</p>
             </div>
-            <button class="btn-link" data-nav="planner">Open Planner →</button>
+            <button class="btn-link" data-nav="planner">Planner →</button>
           </div>
           <div id="dash-priority-tasks-container" class="priority-tasks-stream">
             ${this.renderTopTasks(pendingTasks.slice(0, 5))}
           </div>
         </div>
 
-        <!-- Column 2: Financial Pulse & Budget Meter -->
+        <!-- Card 2: Financial Pulse & Budget Meter -->
         <div class="content-panel">
           <div class="panel-header">
             <div>
               <h2 class="panel-title">Monthly Budget Meter</h2>
               <p class="panel-subtitle">Daily allowance: ${formatCurrency(dailyAllowance)}</p>
             </div>
-            <button class="btn-link" data-nav="finances">Open Finances →</button>
+            <button class="btn-link" data-nav="finances">Finances →</button>
           </div>
           <div class="budget-snapshot-box">
             <div class="budget-stat-item">
@@ -246,16 +246,19 @@ export class DashboardManager {
               <div class="progress-bar-fill" style="width: ${Math.min(100, (monthExpense / budget) * 100)}%;"></div>
             </div>
           </div>
+        </div>
 
-          <!-- Quick Habit Check-Ins Strip -->
-          <div class="dash-habits-quick-section" style="margin-top: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <span class="sub-label">Today's Habits</span>
-              <button class="btn-link" data-nav="habits">View All →</button>
+        <!-- Card 3: Today's Habits -->
+        <div class="content-panel">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Today's Habits</h2>
+              <p class="panel-subtitle">Quick check-in to build momentum</p>
             </div>
-            <div class="dash-habits-pills-row">
-              ${this.renderHabitPills(allHabits.slice(0, 4))}
-            </div>
+            <button class="btn-link" data-nav="habits">View All →</button>
+          </div>
+          <div class="dash-habits-pills-row" style="display: flex; flex-direction: column; gap: 8px;">
+            ${this.renderHabitPills(allHabits.slice(0, 5))}
           </div>
         </div>
       </div>
@@ -341,8 +344,19 @@ export class DashboardManager {
   }
 
   isHabitDoneToday(habit) {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return Array.isArray(habit.history) && habit.history.includes(todayStr);
+    const todayStr = getLocalDateString();
+    return Array.isArray(habit.history) && habit.history.some(d => String(d).slice(0, 10) === todayStr);
+  }
+
+  cleanHabitTitle(title, icon) {
+    if (!title) return '';
+    let clean = title.trim();
+    if (icon && clean.startsWith(icon)) {
+      clean = clean.slice(icon.length).trim();
+    }
+    // Strip any leading emoji + whitespace if duplicated
+    clean = clean.replace(/^[\p{Extended_Pictographic}\u200d\ufe0f]+\s*/u, '');
+    return clean || title;
   }
 
   renderHabitPills(habits) {
@@ -351,10 +365,11 @@ export class DashboardManager {
     }
     return habits.map(h => {
       const isDone = this.isHabitDoneToday(h);
+      const displayTitle = this.cleanHabitTitle(h.title, h.icon);
       return `
         <button class="btn-quick-habit-pill ${isDone ? 'done' : ''}" data-id="${h.id}">
           <span>${isDone ? '✓' : h.icon || '🌱'}</span>
-          <span>${this.escapeHtml(h.title)}</span>
+          <span>${this.escapeHtml(displayTitle)}</span>
           <span class="habit-pill-streak">🔥${h.streak || 0}</span>
         </button>
       `;
@@ -439,7 +454,7 @@ export class DashboardManager {
         e.stopPropagation();
         const habitId = btn.dataset.id;
         if (habitId) {
-          const today = new Date().toISOString().split('T')[0];
+          const today = getLocalDateString();
           await store.checkHabit(habitId, today);
           this.render(container);
         }
@@ -454,7 +469,7 @@ export class DashboardManager {
       });
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
 
     container.querySelectorAll('.dash-quick-mood-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -576,21 +591,42 @@ export class DashboardManager {
       `;
     }
 
+    const categoryIcons = {
+      work: '💼 Work',
+      study: '📚 Study',
+      personal: '🏠 Personal',
+      health: '🌱 Health'
+    };
+
+    const activeId = typeof this.getActiveTaskId === 'function' 
+      ? this.getActiveTaskId() 
+      : (localStorage.getItem('lifebuddy_active_task_id') || localStorage.getItem('zen_pomodoro_active_task') || null);
+
     return tasks.map(t => {
       const isCompleted = !!t.completed;
+      const isActive = !isCompleted && activeId && (t.id === activeId);
+      const friendlyDate = t.due_date ? formatFriendlyDate(t.due_date) : '';
+      const catLabel = categoryIcons[t.category] || t.category || '💼 Work';
       return `
-        <div class="task-stream-item">
+        <div class="task-stream-item ${isActive ? 'task-item-active' : ''}">
           <div class="task-stream-left">
             <button class="dash-task-toggle ${isCompleted ? 'checked' : ''}" data-id="${t.id}" title="${isCompleted ? 'Mark pending' : 'Mark completed'}">
               ${isCompleted ? '✓' : ''}
             </button>
-            <span class="task-stream-title ${isCompleted ? 'completed-text' : ''}">${this.escapeHtml(t.title)}</span>
-            <span class="badge badge-${t.priority === 'urgent' ? 'urgent' : 'subtle'}">${t.priority || 'medium'}</span>
-            ${t.due_date ? `<span class="badge badge-subtle">📅 ${t.due_date}</span>` : ''}
+            <div class="task-stream-details">
+              <span class="task-stream-title ${isCompleted ? 'completed-text' : ''}" title="${this.escapeHtml(t.title)}">${this.escapeHtml(t.title)}</span>
+              <div class="task-stream-badges">
+                <span class="badge badge-subtle">${catLabel}</span>
+                <span class="badge badge-${t.priority === 'urgent' ? 'urgent' : 'subtle'}">${t.priority || 'medium'}</span>
+                ${friendlyDate ? `<span class="badge badge-subtle">📅 ${friendlyDate}</span>` : ''}
+              </div>
+            </div>
           </div>
-          <button class="btn-task-quick-focus btn-focus-action" data-id="${t.id}" title="Focus on this task">
-            <span>🎯</span> <span>Focus</span>
-          </button>
+          ${!isCompleted ? `
+            <button class="btn-task-quick-focus btn-focus-action ${isActive ? 'active' : ''}" data-id="${t.id}" title="${isActive ? 'Active focus task — click to open focus timer' : 'Set as active focus task'}">
+              <span>🎯</span> <span>${isActive ? 'Active' : 'Focus'}</span>
+            </button>
+          ` : ''}
         </div>
       `;
     }).join('');

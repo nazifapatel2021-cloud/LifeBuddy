@@ -32,8 +32,12 @@ export class AuthController {
           }
         }
       } catch (e) {
-        console.warn('Could not verify session with backend, clearing session', e);
-        API.auth.logout();
+        if (e && (e.status === 401 || (e.message && (e.message.includes('401') || e.message.includes('Unauthorized') || e.message.includes('Could not validate'))))) {
+          console.warn('Session expired, logging out:', e);
+          API.auth.logout();
+        } else {
+          console.warn('Backend connection blip; preserving active session and data:', e);
+        }
       }
     }
     this.updateUI();
@@ -76,6 +80,9 @@ export class AuthController {
     const gateSuccessName = document.getElementById('gate-success-name');
     const gateContinueSigninBtn = document.getElementById('gate-continue-signin-btn');
 
+    const gateLocalNotice = document.getElementById('gate-local-notice');
+    const gateIdentifierGroup = document.getElementById('gate-identifier-group');
+    const gateIdentifierLabel = document.getElementById('gate-identifier-label');
     const gateFullnameGroup = document.getElementById('gate-fullname-group');
     const gateFullnameInput = document.getElementById('gate-fullname-input');
     const gateUsernameInput = document.getElementById('gate-username-input');
@@ -120,12 +127,18 @@ export class AuthController {
       if (gateTabLogin) gateTabLogin.classList.toggle('active', !isRegister);
       if (gateTabRegister) gateTabRegister.classList.toggle('active', isRegister);
 
+      if (gateLocalNotice) gateLocalNotice.style.display = 'none';
       if (gateFullnameGroup) gateFullnameGroup.style.display = isRegister ? 'block' : 'none';
+      if (gateIdentifierGroup) gateIdentifierGroup.style.display = isRegister ? 'none' : 'block';
       if (gateEmailGroup) gateEmailGroup.style.display = isRegister ? 'block' : 'none';
       if (gateProfileRow) gateProfileRow.style.display = isRegister ? 'flex' : 'none';
       if (gateGoalGroup) gateGoalGroup.style.display = isRegister ? 'block' : 'none';
       if (gateConfirmGroup) gateConfirmGroup.style.display = isRegister ? 'block' : 'none';
       if (pwdStrengthContainer) pwdStrengthContainer.style.display = isRegister ? 'block' : 'none';
+
+      if (gateUsernameInput) {
+        if (isRegister) gateUsernameInput.removeAttribute('required');
+      }
 
       if (gatePasswordInput) {
         gatePasswordInput.autocomplete = isRegister ? 'new-password' : 'current-password';
@@ -133,6 +146,7 @@ export class AuthController {
       }
 
       if (gateSubmitBtn) {
+        gateSubmitBtn.disabled = false;
         gateSubmitBtn.innerHTML = isRegister
           ? '<span>Create Your Account</span> <span>→</span>'
           : '<span>Sign In to LifeBuddy</span> <span>→</span>';
@@ -232,13 +246,13 @@ export class AuthController {
     if (gateForm) {
       gateForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const username = gateUsernameInput?.value.trim() || '';
+        const identifier = gateUsernameInput?.value.trim() || '';
         const password = gatePasswordInput?.value || '';
         const email = gateEmailInput?.value.trim() || '';
         const fullName = gateFullnameInput?.value.trim() || '';
-        const profession = gateProfessionSelect?.value || 'Working Professional';
-        const ageGroup = gateAgeSelect?.value || '25-34';
-        const focusGoal = gateGoalSelect?.value || 'Deep Work & Productivity';
+        const profession = gateProfessionSelect?.value || '';
+        const ageGroup = gateAgeSelect?.value || '';
+        const focusGoal = gateGoalSelect?.value || '';
 
         if (gateErrorMsg) gateErrorMsg.style.display = 'none';
 
@@ -247,11 +261,6 @@ export class AuthController {
           if (!fullName) {
             showError('Please enter your display name.');
             gateFullnameInput?.focus();
-            return;
-          }
-          if (!username || username.length < 3) {
-            showError('Username must be at least 3 characters.');
-            gateUsernameInput?.focus();
             return;
           }
           if (!email || !email.includes('@')) {
@@ -272,8 +281,11 @@ export class AuthController {
 
           if (gateSubmitBtn) gateSubmitBtn.disabled = true;
 
+          // Derive valid username from email
+          const derivedUsername = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') || ('user_' + Math.floor(Math.random() * 10000));
+
           try {
-            const resp = await API.auth.register(username, email, password, {
+            const resp = await API.auth.register(derivedUsername, email, password, {
               fullName,
               profession,
               ageGroup,
@@ -281,8 +293,8 @@ export class AuthController {
             });
 
             // SUCCESS STATE: DO NOT auto-login, DO NOT navigate to dashboard!
-            newlyRegisteredUsername = username;
-            const firstName = fullName.split(/\s+/)[0] || username;
+            newlyRegisteredUsername = email;
+            const firstName = fullName.split(/\s+/)[0] || derivedUsername;
 
             if (gateForm) gateForm.style.display = 'none';
             if (gateTabsHeader) gateTabsHeader.style.display = 'none';
@@ -298,16 +310,16 @@ export class AuthController {
             if (gateSubmitBtn) gateSubmitBtn.disabled = false;
           }
         } else {
-          // SIGN IN FLOW
-          if (!username || !password) {
-            showError('Please enter both your username and password.');
+          // SIGN IN FLOW (Sign In with Email or Username)
+          if (!identifier || !password) {
+            showError('Please enter both your email/username and password.');
             return;
           }
 
           if (gateSubmitBtn) gateSubmitBtn.disabled = true;
 
           try {
-            const data = await API.auth.login(username, password);
+            const data = await API.auth.login(identifier, password);
             if (data && data.user) {
               store.setUser(data.user);
             }
@@ -317,7 +329,7 @@ export class AuthController {
             window.location.reload();
           } catch (err) {
             // Friendly ambiguous error to avoid credential harvesting
-            showError('Invalid username or password. Please verify your credentials and try again.');
+            showError('Invalid email/username or password. Please verify your credentials and try again.');
           } finally {
             if (gateSubmitBtn) gateSubmitBtn.disabled = false;
           }
@@ -346,10 +358,14 @@ export class AuthController {
       });
     }
 
-    // 6. Header Auth Modal (Sign Out / Close)
+    // 6. Header Auth Modal & Log Out Confirmation Flow
     const authModal = document.getElementById('auth-modal');
     const closeAuthBtn = document.getElementById('close-auth-btn');
     const authLogoutBtn = document.getElementById('auth-logout-btn');
+    const logoutConfirmModal = document.getElementById('logout-confirm-modal');
+    const closeLogoutModal = document.getElementById('close-logout-modal');
+    const btnCancelLogout = document.getElementById('btn-cancel-logout');
+    const btnConfirmLogout = document.getElementById('btn-confirm-logout');
 
     if (closeAuthBtn && authModal) {
       closeAuthBtn.addEventListener('click', () => {
@@ -357,14 +373,98 @@ export class AuthController {
       });
     }
 
+    const openLogoutModal = () => {
+      if (logoutConfirmModal) logoutConfirmModal.classList.add('active');
+    };
+
+    const closeLogoutModalFn = () => {
+      if (logoutConfirmModal) logoutConfirmModal.classList.remove('active');
+    };
+
     if (authLogoutBtn) {
       authLogoutBtn.addEventListener('click', () => {
+        openLogoutModal();
+      });
+    }
+
+    if (closeLogoutModal) closeLogoutModal.addEventListener('click', closeLogoutModalFn);
+    if (btnCancelLogout) btnCancelLogout.addEventListener('click', closeLogoutModalFn);
+    if (logoutConfirmModal) {
+      logoutConfirmModal.addEventListener('click', (e) => {
+        if (e.target === logoutConfirmModal) closeLogoutModalFn();
+      });
+    }
+
+    if (btnConfirmLogout) {
+      btnConfirmLogout.addEventListener('click', () => {
         API.auth.logout();
         store.setUser(null);
+        closeLogoutModalFn();
         if (authModal) authModal.classList.remove('active');
         this.updateUI();
         this.onUserChanged(null);
         window.location.reload();
+      });
+    }
+
+    // 7. Delete Account Flow
+    const deleteAccountModal    = document.getElementById('delete-account-modal');
+    const btnDeleteTrigger      = document.getElementById('btn-delete-account-trigger');
+    const closeDeleteModal      = document.getElementById('close-delete-account-modal');
+    const btnCancelDelete       = document.getElementById('btn-cancel-delete-account');
+    const btnConfirmDelete      = document.getElementById('btn-confirm-delete-account');
+    const deleteBtnText         = document.getElementById('delete-btn-text');
+    const deleteBtnSpinner      = document.getElementById('delete-btn-spinner');
+
+    const openDeleteModal = () => {
+      if (deleteAccountModal) {
+        deleteAccountModal.classList.add('active');
+      }
+    };
+
+    const closeDeleteModalFn = () => {
+      if (deleteAccountModal) deleteAccountModal.classList.remove('active');
+    };
+
+    if (btnDeleteTrigger)  btnDeleteTrigger.addEventListener('click',  openDeleteModal);
+    if (closeDeleteModal)  closeDeleteModal.addEventListener('click',  closeDeleteModalFn);
+    if (btnCancelDelete)   btnCancelDelete.addEventListener('click',   closeDeleteModalFn);
+
+    // Close on backdrop click
+    if (deleteAccountModal) {
+      deleteAccountModal.addEventListener('click', (e) => {
+        if (e.target === deleteAccountModal) closeDeleteModalFn();
+      });
+    }
+
+    // Confirm permanent deletion
+    if (btnConfirmDelete) {
+      btnConfirmDelete.addEventListener('click', async () => {
+        if (!btnConfirmDelete) return;
+        // Show spinner
+        if (deleteBtnText)    deleteBtnText.style.display   = 'none';
+        if (deleteBtnSpinner) deleteBtnSpinner.style.display = 'inline';
+        btnConfirmDelete.disabled = true;
+        if (btnCancelDelete)  btnCancelDelete.disabled = true;
+
+        try {
+          await API.user.deleteMyData();
+          // deleteMyData already clears localStorage & fires auth-changed
+          store.setUser(null);
+          closeDeleteModalFn();
+          if (authModal) authModal.classList.remove('active');
+          this.updateUI();
+          this.onUserChanged(null);
+          // Brief pause so the user sees the update, then reload
+          setTimeout(() => window.location.reload(), 300);
+        } catch (err) {
+          // Restore UI on failure
+          if (deleteBtnText)    deleteBtnText.style.display   = 'inline';
+          if (deleteBtnSpinner) deleteBtnSpinner.style.display = 'none';
+          btnConfirmDelete.disabled = false;
+          if (btnCancelDelete)  btnCancelDelete.disabled = false;
+          alert(`Deletion failed: ${err.message || 'Please try again.'}`);
+        }
       });
     }
   }

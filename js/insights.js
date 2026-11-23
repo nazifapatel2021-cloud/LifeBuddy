@@ -90,7 +90,7 @@ export class InsightsCoordinator {
             </div>
             <span class="badge badge-subtle">${this.escapeHtml(reflection?.period || 'Past 7 Days')}</span>
           </div>
-          <div class="reflection-box" style="margin-top: 14px; padding: 16px; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); max-height: 180px; overflow-y: auto;">
+          <div class="reflection-box" style="margin-top: 14px; padding: 16px; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle);">
             <div class="reflection-content" style="font-size: 0.88rem; line-height: 1.6; color: var(--text-main);">
               ${this.formatMarkdown(reflection?.reflection)}
             </div>
@@ -201,18 +201,35 @@ export class InsightsCoordinator {
     const spent = typeof actualSpent === 'number' ? actualSpent : (forecast?.spent_so_far || 0);
     const budget = storeBudget || forecast?.monthly_budget || 25000;
 
+    if (spent === 0) {
+      return `
+        <div class="empty-state-card" style="padding: 32px 20px; text-align: center; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle);">
+          <span style="font-size: 2rem; display: block; margin-bottom: 8px;">💰</span>
+          <p style="font-weight: 600; font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px;">No spending logged for this month</p>
+          <span style="font-size: 0.82rem; color: var(--text-muted);">Record transactions in Personal Finances to generate an intelligent month-end velocity trajectory and confidence interval cone.</span>
+        </div>
+      `;
+    }
+
     // Linear projection based on run-rate
     const dailyRate = spent / dayPassed;
     const projected = Math.round(dailyRate * daysInMonth);
     const ciUpper = Math.round(projected * 1.12);
     const ciLower = Math.max(spent, Math.round(projected * 0.88));
 
-    // Y-Axis Range
-    const maxVal = Math.max(budget * 1.3, ciUpper * 1.15, spent * 1.25, 10000);
+    // Y-Axis Range with round ₹5,000 steps
+    const rawMax = Math.max(budget * 1.3, ciUpper * 1.15, spent * 1.25, 10000);
+    const tickStep = 5000;
+    const roundedMax = Math.ceil(rawMax / tickStep) * tickStep;
     const minVal = 0;
 
+    const yTicks = [];
+    for (let v = 0; v <= roundedMax; v += tickStep) {
+      yTicks.push(v);
+    }
+
     const scaleX = (day) => padL + ((day - 1) / (daysInMonth - 1)) * (width - padL - padR);
-    const scaleY = (val) => height - padB - ((val - minVal) / (maxVal - minVal)) * (height - padT - padB);
+    const scaleY = (val) => height - padB - ((val - minVal) / (roundedMax - minVal)) * (height - padT - padB);
 
     // Calculate cumulative points for past days from store transactions
     const expenses = store.getExpenses(today.toISOString().slice(0, 7));
@@ -238,9 +255,6 @@ export class InsightsCoordinator {
     const ciUpperY = scaleY(ciUpper);
     const ciLowerY = scaleY(ciLower);
     const budgetY = scaleY(budget);
-
-    // Y Grid intervals (4 steps)
-    const yTicks = [0, maxVal * 0.33, maxVal * 0.66, maxVal];
 
     // Status message
     const isUnder = projected <= budget;
@@ -322,6 +336,17 @@ export class InsightsCoordinator {
         .reduce((sum, s) => sum + (Number(s.duration_minutes) || 25), 0);
 
       days.push({ dayName, dateStr, minutes: dayMins, isToday: i === 0 });
+    }
+
+    const totalWeekMins = days.reduce((sum, d) => sum + d.minutes, 0);
+    if (totalWeekMins === 0) {
+      return `
+        <div class="empty-state-card" style="padding: 24px 16px; text-align: center; border-radius: 12px; background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); margin-top: 10px;">
+          <span style="font-size: 1.5rem; display: block; margin-bottom: 6px;">⏱️</span>
+          <p style="font-weight: 600; font-size: 0.88rem; color: var(--text-main); margin-bottom: 4px;">No focus sessions logged in the last 7 days</p>
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Start a 25-minute Pomodoro session in the Focus Room to begin tracking your daily deep-work trends!</span>
+        </div>
+      `;
     }
 
     const maxMins = Math.max(goal * 1.2, ...days.map(d => d.minutes), 60);
@@ -488,6 +513,8 @@ export class InsightsCoordinator {
   formatMarkdown(text) {
     if (!text) return '';
     return text
+      .replace(/\$([0-9]+(\.[0-9]+)?)/g, '₹$1')
+      .replace(/\$/g, '₹')
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n\n/g, '<br><br>');
   }

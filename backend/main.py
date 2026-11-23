@@ -3,7 +3,7 @@ import json
 import uuid
 import time
 from collections import defaultdict
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -78,6 +78,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_no_cache_header(request, call_next):
+    response = await call_next(request)
+    if request.url.path.endswith(".js") or request.url.path.endswith(".css") or request.url.path == "/" or request.url.path.endswith(".html"):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 @app.get("/api/health")
 def health_check():
     try:
@@ -118,7 +127,7 @@ def register(user: UserRegister):
         )
         user_id = cursor.lastrowid
         cursor.execute(
-            "INSERT INTO user_settings (user_id, full_name, profession, age_group, focus_goal, theme) VALUES (?, ?, ?, ?, ?, 'nordic')",
+            "INSERT INTO user_settings (user_id, full_name, profession, age_group, focus_goal, theme, currency_symbol) VALUES (?, ?, ?, ?, ?, 'nordic', '₹')",
             (user_id, user.full_name, user.profession, user.age_group, user.focus_goal)
         )
         conn.commit()
@@ -544,6 +553,51 @@ def delete_task(task_id: str, user: dict = Depends(get_current_user)):
 
 # ================= HABITS ENDPOINTS =================
 
+def compute_habit_streaks(history: list) -> tuple[int, int]:
+    """Dynamically compute active streak and best streak from history dates relative to today."""
+    if not history:
+        return 0, 0
+    unique_dates = sorted(list(set(str(d)[:10] for d in history)))
+    if not unique_dates:
+        return 0, 0
+
+    best_streak = 0
+    curr_run = 0
+    prev_d = None
+    for d_str in unique_dates:
+        try:
+            d = date.fromisoformat(d_str)
+            if prev_d is None or d == prev_d + timedelta(days=1):
+                curr_run += 1
+            else:
+                curr_run = 1
+            prev_d = d
+            if curr_run > best_streak:
+                best_streak = curr_run
+        except Exception:
+            pass
+
+    today = date.today()
+    today_str = today.isoformat()
+    yesterday = today - timedelta(days=1)
+    yesterday_str = yesterday.isoformat()
+
+    streak = 0
+    if today_str in unique_dates:
+        curr = today
+        while curr.isoformat() in unique_dates:
+            streak += 1
+            curr = curr - timedelta(days=1)
+    elif yesterday_str in unique_dates:
+        curr = yesterday
+        while curr.isoformat() in unique_dates:
+            streak += 1
+            curr = curr - timedelta(days=1)
+    else:
+        streak = 0
+
+    return streak, max(best_streak, streak)
+
 @app.get("/api/habits")
 def get_habits(user: dict = Depends(get_current_user)):
     conn = get_db_connection()
@@ -554,7 +608,11 @@ def get_habits(user: dict = Depends(get_current_user)):
     results = []
     for r in rows:
         item = dict(r)
-        item["history"] = json.loads(item["history"] or "[]")
+        history = json.loads(item["history"] or "[]")
+        item["history"] = history
+        streak, best_streak = compute_habit_streaks(history)
+        item["streak"] = streak
+        item["best_streak"] = best_streak
         results.append(item)
     return results
 
@@ -586,7 +644,7 @@ def toggle_habit_check(habit_id: str, check: HabitCheckIn, user: dict = Depends(
         raise HTTPException(status_code=404, detail="Habit not found")
 
     history = json.loads(row["history"] or "[]")
-    target_date = check.date
+    target_date = check.date[:10]
 
     if target_date in history:
         history.remove(target_date)
@@ -594,17 +652,7 @@ def toggle_habit_check(habit_id: str, check: HabitCheckIn, user: dict = Depends(
         history.append(target_date)
         history.sort()
 
-    streak = 0
-    today_str = date.today().isoformat()
-    if history:
-        sorted_dates = sorted(list(set(history)), reverse=True)
-        from datetime import timedelta
-        curr = date.today()
-        if today_str not in sorted_dates:
-            curr = curr - timedelta(days=1)
-        while curr.isoformat() in sorted_dates:
-            streak += 1
-            curr = curr - timedelta(days=1)
+    streak, best_streak = compute_habit_streaks(history)
 
     last_comp = history[-1] if history else None
     cursor.execute("""
@@ -615,6 +663,41 @@ def toggle_habit_check(habit_id: str, check: HabitCheckIn, user: dict = Depends(
     cursor.execute("SELECT * FROM habits WHERE id = ?", (habit_id,))
     updated = dict(cursor.fetchone())
     updated["history"] = history
+    updated["streak"] = streak
+    updated["best_streak"] = best_streak
+    conn.close()
+    return updated
+
+@app.patch("/api/habits/{habit_id}")
+def update_habit(habit_id: str, updates: HabitUpdate, user: dict = Depends(get_current_user)):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM habits WHERE id = ? AND user_id = ?", (habit_id, user["id"]))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Habit not found")
+
+    fields = []
+    values = []
+    if updates.title is not None:
+        fields.append("title = ?")
+        values.append(updates.title.strip())
+    if updates.icon is not None:
+        fields.append("icon = ?")
+        values.append(updates.icon)
+    if updates.frequency is not None:
+        fields.append("frequency = ?")
+        values.append(updates.frequency)
+
+    if fields:
+        values.extend([habit_id, user["id"]])
+        cursor.execute(f"UPDATE habits SET {', '.join(fields)} WHERE id = ? AND user_id = ?", tuple(values))
+        conn.commit()
+
+    cursor.execute("SELECT * FROM habits WHERE id = ?", (habit_id,))
+    updated = dict(cursor.fetchone())
+    updated["history"] = json.loads(updated["history"] or "[]")
     conn.close()
     return updated
 

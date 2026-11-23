@@ -5,6 +5,7 @@
 */
 import { formatCurrency } from './currency.js';
 import { API } from './api.js';
+import { getLocalDateString } from './date_utils.js';
 
 const STORE_STORAGE_KEY = 'lifebuddy_store_v2';
 const SCHEMA_VERSION = 2;
@@ -262,7 +263,7 @@ class Store {
   }
 
   getTodayDateString() {
-    return new Date().toISOString().split('T')[0];
+    return getLocalDateString();
   }
 
   getCurrentMonthPrefix() {
@@ -321,7 +322,14 @@ class Store {
 
   getActiveTask() {
     if (!this.state.activeTaskId) return null;
-    return this.state.tasks.find(t => t.id === this.state.activeTaskId) || null;
+    const task = this.state.tasks.find(t => t.id === this.state.activeTaskId && !t.completed);
+    if (!task) {
+      this.state.activeTaskId = null;
+      localStorage.removeItem('lifebuddy_active_task_id');
+      localStorage.removeItem('zen_pomodoro_active_task');
+      return null;
+    }
+    return task;
   }
 
   // Habit Selectors
@@ -510,6 +518,10 @@ class Store {
     const idx = this.state.tasks.findIndex(t => t.id === id);
     if (idx !== -1) {
       this.state.tasks[idx] = { ...this.state.tasks[idx], ...(updated || updates) };
+      if (this.state.tasks[idx].completed && this.state.activeTaskId === id) {
+        const nextPending = this.state.tasks.find(t => !t.completed && t.id !== id);
+        this.setActiveTaskId(nextPending ? nextPending.id : null);
+      }
       this.saveToStorage();
       this.notify('tasks', this.state.tasks);
     }
@@ -590,7 +602,11 @@ class Store {
     const date = dateStr || this.getTodayDateString();
     let updated = null;
     try {
-      updated = await API.habits.checkIn(id, date);
+      if (typeof API.habits.checkIn === 'function') {
+        updated = await API.habits.checkIn(id, date);
+      } else if (typeof API.habits.check === 'function') {
+        updated = await API.habits.check(id, date);
+      }
     } catch (e) {
       console.warn('API habit check failed, checking locally', e);
     }
@@ -784,9 +800,13 @@ class Store {
       this.state.sessions = sessions;
       this.state.dailyLogs = dailyLogs;
 
-      if (!this.getActiveTask() && tasks.length > 0) {
+      if (!this.getActiveTask()) {
         const first = tasks.find(t => !t.completed);
-        if (first) this.state.activeTaskId = first.id;
+        this.state.activeTaskId = first ? first.id : null;
+        if (!first) {
+          localStorage.removeItem('lifebuddy_active_task_id');
+          localStorage.removeItem('zen_pomodoro_active_task');
+        }
       }
 
       this.saveToStorage();

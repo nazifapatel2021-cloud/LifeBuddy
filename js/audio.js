@@ -12,6 +12,7 @@ class SoundSynthesizer {
     this.activeNodes = {};
     this.masterGain = null;
     this.isMuted = false;
+    this.masterVolumeLevel = 1.0;
   }
 
   ensureContext() {
@@ -21,7 +22,7 @@ class SoundSynthesizer {
         if (!AudioCtx) return null;
         this.ctx = new AudioCtx();
         this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.5;
+        this.masterGain.gain.value = this.isMuted ? 0 : this.masterVolumeLevel;
         this.masterGain.connect(this.ctx.destination);
       } catch (e) {
         console.warn('Web Audio API not supported or initialized', e);
@@ -35,14 +36,29 @@ class SoundSynthesizer {
   }
 
   setMasterVolume(val) {
-    const settings = Storage.getSettings ? Storage.getSettings() : {};
-    if (settings.soundEnabled === false) return;
-
+    const clamped = Math.max(0, Math.min(1, parseFloat(val) || 0.5));
+    this.masterVolumeLevel = clamped;
     const ctx = this.ensureContext();
-    if (ctx && this.masterGain) {
-      const clamped = Math.max(0, Math.min(1, parseFloat(val) || 0.5));
+    if (ctx && this.masterGain && !this.isMuted) {
       this.masterGain.gain.setValueAtTime(clamped, ctx.currentTime);
     }
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    const ctx = this.ensureContext();
+    if (ctx && this.masterGain) {
+      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.masterVolumeLevel, ctx.currentTime);
+    }
+    return this.isMuted;
+  }
+
+  isSoundActive(type) {
+    return Boolean(this.activeNodes[type]);
+  }
+
+  getActiveCount() {
+    return Object.keys(this.activeNodes).length;
   }
 
   /* Warm Tibetan Singing Bowl Meditation Gong for timer completion */

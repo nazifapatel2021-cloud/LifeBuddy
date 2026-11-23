@@ -152,10 +152,10 @@ def generate_data():
 
         # 3. Habits
         habits_config = [
-            ("💧 Drink 2L Water", "💧"),
-            ("🏃 20m Morning Exercise", "🏃"),
-            ("📖 Read 15 mins", "📖"),
-            ("🧘 Mindful Breathing", "🧘")
+            ("Drink 2L Water", "💧"),
+            ("20m Morning Exercise", "🏃"),
+            ("Read 15 mins", "📖"),
+            ("Mindful Breathing", "🧘")
         ]
         user_habits = []
         for h_title, h_icon in habits_config:

@@ -7,9 +7,9 @@
   <meta name="description" content="A premium personal life-management platform uniting deep focus, intelligent task planning, habit consistency, and mindful personal finances.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%236366f1%22/><path d=%22M16 6 C10 6 7 11 7 17 C7 23 11 26 16 26 C21 26 25 23 25 17 C25 11 22 6 16 6 Z%22 fill=%22none%22 stroke=%22%23ffffff%22 stroke-width=%222.5%22/><circle cx=%2216%22 cy=%2216%22 r=%223.5%22 fill=%22%23ffffff%22/></svg>">
   <link rel="manifest" href="static/manifest.json">
-  <link rel="stylesheet" href="css/variables.css?v=3.3">
-  <link rel="stylesheet" href="css/styles.css?v=3.3">
-  <link rel="stylesheet" href="css/responsive.css?v=3.3">
+  <link rel="stylesheet" href="css/variables.css?v=4.0">
+  <link rel="stylesheet" href="css/styles.css?v=4.1">
+  <link rel="stylesheet" href="css/responsive.css?v=4.0">
 </head>
 <body>
 
@@ -107,11 +107,6 @@
       <div class="welcome-container-inner">
         <!-- Hero Pitch Banner -->
         <div class="welcome-hero-panel">
-          <div class="welcome-pill-badge">
-            <span class="pill-sparkle">✨</span>
-            <span>Intelligent Life-Management Platform</span>
-          </div>
-
           <h1 class="welcome-headline">
             Your Life.<br>
             <span class="gradient-text">Smarter, Every Day.</span>
@@ -134,7 +129,7 @@
             <div class="welcome-feature-card feature-card-habits">
               <span class="feature-icon feature-icon-habits">🌱</span>
               <div class="feature-text">
-                <span class="feature-title">Habit Compounding</span>
+                <span class="feature-title">Habit Building</span>
                 <span class="feature-desc">Streak tracking, daily reflections, and consistent momentum</span>
               </div>
             </div>
@@ -173,13 +168,10 @@
                 <span>Continue to Sign In</span>
                 <span>→</span>
               </button>
-              <div class="auth-privacy-foot" style="margin-top: 18px;">
-                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
-              </div>
             </div>
 
             <!-- Active Form Body -->
-            <form id="gate-auth-form" class="auth-form-body">
+            <form id="gate-auth-form" class="auth-form-body" novalidate>
               <div id="gate-error-msg" class="auth-error-banner" style="display: none;"></div>
 
               <!-- Display Name (Visible on Register) -->
@@ -189,49 +181,54 @@
                 <span class="field-hint" id="fullname-hint" style="display: none;"></span>
               </div>
 
-              <div class="form-field-group">
-                <label class="field-label" for="gate-username-input">Username</label>
-                <input type="text" id="gate-username-input" class="field-input" placeholder="Enter your username" required autocomplete="username">
+              <!-- Email or Username (Used for Sign In and Register) -->
+              <div class="form-field-group" id="gate-identifier-group">
+                <label class="field-label" for="gate-username-input" id="gate-identifier-label">Email or Username</label>
+                <input type="text" id="gate-username-input" class="field-input" placeholder="name@example.com or username" autocomplete="username">
                 <span class="field-hint" id="username-hint" style="display: none;"></span>
               </div>
 
-              <!-- Email Address (Visible on Register) -->
+              <!-- Email Address (Visible on Register if separate identifier used) -->
               <div class="form-field-group" id="gate-email-group" style="display: none;">
                 <label class="field-label" for="gate-email-input">Email Address</label>
                 <input type="email" id="gate-email-input" class="field-input" placeholder="name@example.com" autocomplete="email">
                 <span class="field-hint" id="email-hint" style="display: none;"></span>
               </div>
 
-              <!-- Profile Details (Visible on Register) -->
-              <div class="form-field-row" id="gate-profile-row" style="display: none; display: flex; gap: 10px;">
+              <!-- Profile Details (Visible on Register Only - Optional with NO preselected values) -->
+              <div class="form-field-row" id="gate-profile-row" style="display: none; gap: 10px;">
                 <div class="form-field-group" style="flex: 1.2;">
-                  <label class="field-label" for="gate-profession-select">Profession / Role</label>
+                  <label class="field-label" for="gate-profession-select">Profession / Role (Optional)</label>
                   <select id="gate-profession-select" class="field-select">
+                    <option value="" selected>Select profession (optional)</option>
                     <option value="Student">Student / Academic</option>
                     <option value="Software Engineer">Software Engineer / Tech</option>
                     <option value="Designer">Designer / Creative</option>
                     <option value="Freelancer">Freelancer / Consultant</option>
                     <option value="Founder">Founder / Entrepreneur</option>
-                    <option value="Working Professional" selected>Working Professional</option>
+                    <option value="Working Professional">Working Professional</option>
                   </select>
                 </div>
 
                 <div class="form-field-group" style="flex: 0.8;">
-                  <label class="field-label" for="gate-age-select">Age Group</label>
+                  <label class="field-label" for="gate-age-select">Age Group (Optional)</label>
                   <select id="gate-age-select" class="field-select">
+                    <option value="" selected>Select age (optional)</option>
+                    <option value="13-17">13–17</option>
                     <option value="18-24">18–24</option>
-                    <option value="25-34" selected>25–34</option>
+                    <option value="25-34">25–34</option>
                     <option value="35-44">35–44</option>
                     <option value="45+">45+</option>
                   </select>
                 </div>
               </div>
 
-              <!-- Focus Goal (Visible on Register) -->
+              <!-- Focus Goal (Visible on Register Only - Optional with NO preselected values) -->
               <div class="form-field-group" id="gate-goal-group" style="display: none;">
-                <label class="field-label" for="gate-goal-select">Primary Focus Goal</label>
+                <label class="field-label" for="gate-goal-select">Primary Focus Goal (Optional)</label>
                 <select id="gate-goal-select" class="field-select">
-                  <option value="Deep Work & Productivity" selected>🎯 Deep Work & Daily Productivity</option>
+                  <option value="" selected>Select primary focus (optional)</option>
+                  <option value="Deep Work & Productivity">🎯 Deep Work & Daily Productivity</option>
                   <option value="Habit Building">🌱 Habit Consistency & Mindful Routine</option>
                   <option value="Financial Budgeting">💰 Financial Awareness & Budget Discipline</option>
                   <option value="Balanced Work-Life">⚖️ Balanced Work-Life Rhythm</option>
@@ -244,7 +241,7 @@
                   <label class="field-label" for="gate-password-input" style="margin-bottom: 0;">Password</label>
                 </div>
                 <div class="password-input-wrap">
-                  <input type="password" id="gate-password-input" class="field-input" placeholder="Enter your password" required autocomplete="current-password">
+                  <input type="password" id="gate-password-input" class="field-input" placeholder="Enter your password" autocomplete="current-password">
                   <button type="button" class="btn-toggle-pwd" id="toggle-pwd-btn" title="Toggle password visibility" aria-label="Show password">
                     <svg class="eye-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -280,10 +277,6 @@
                 <span>Sign In to LifeBuddy</span>
                 <span>→</span>
               </button>
-
-              <div class="auth-privacy-foot">
-                <span>🔒</span> <span>100% Private. Local execution. Zero telemetry.</span>
-              </div>
             </form>
           </div>
         </div>
@@ -305,9 +298,9 @@
           <div class="timer-arena-card">
             <!-- Mode Selector Switcher -->
             <div class="timer-mode-switcher" role="tablist">
-              <button class="mode-btn active" data-mode="focus">Focus Block</button>
-              <button class="mode-btn" data-mode="shortBreak">Short Break</button>
-              <button class="mode-btn" data-mode="longBreak">Long Break</button>
+              <button class="mode-btn active" data-mode="focus">Focus 25m</button>
+              <button class="mode-btn" data-mode="shortBreak">Short 5m</button>
+              <button class="mode-btn" data-mode="longBreak">Long 15m</button>
             </div>
 
             <!-- Precision Circular Timer Display -->
@@ -328,11 +321,15 @@
                 <div id="pomodoro-session-counter" class="pomodoro-session-counter" style="display: none;"></div>
                 <div id="timer-digits" class="timer-digits">25:00</div>
                 <div id="timer-label" class="timer-label">Focus Session</div>
-                <div id="active-task-badge" class="active-task-badge" style="display: none;"></div>
-                <button id="btn-add-pomo-to-task" class="btn-icon-tiny" title="Add another pomodoro to this task" style="display: none; margin-top: 6px;">
-                  +1 🍅 Add Pomodoro
-                </button>
               </div>
+            </div>
+
+            <!-- Active Focus Target Container (Smooth layout below the circle) -->
+            <div class="active-task-target-bar">
+              <div id="active-task-badge" class="active-task-badge" style="display: none;"></div>
+              <button id="btn-add-pomo-to-task" class="btn-icon-tiny" title="Add another pomodoro to this task" style="display: none;">
+                +1 🍅 Add Pomodoro
+              </button>
             </div>
 
             <!-- Tactile Session Controls -->
@@ -352,7 +349,7 @@
             </div>
           </div>
 
-          <!-- Side Workspace: Task Queue & Ambient Sound Mixer -->
+          <!-- Side Workspace: Task Queue, Today's Sessions & Ambient Sound Mixer -->
           <div class="focus-side-workspace">
             <!-- Focus Task Queue -->
             <div class="content-panel">
@@ -363,13 +360,18 @@
                 </div>
               </div>
 
-              <form id="task-form" class="task-quick-composer">
-                <input type="text" id="task-title-input" class="field-input" placeholder="What are you focusing on?" required autocomplete="off">
-                <input type="number" id="task-pomo-input" class="field-input input-pomo" value="1" min="1" max="12" title="Estimated Pomodoros">
-                <button type="submit" class="btn-primary btn-add-queue" title="Add to focus queue">+</button>
-              </form>
-
               <div id="task-list-container" class="task-stream"></div>
+            </div>
+
+            <!-- Today's Focus Sessions Card -->
+            <div id="focus-sessions-card" class="content-panel">
+              <div class="panel-header">
+                <div>
+                  <h2 class="panel-title">Today's Sessions</h2>
+                  <p class="panel-subtitle" id="focus-sessions-subtitle">0 sessions • 0 mins focused</p>
+                </div>
+              </div>
+              <div id="focus-sessions-list" class="focus-sessions-stream"></div>
             </div>
 
             <!-- Ambient Sound Synthesizer Mixer -->
@@ -377,31 +379,39 @@
               <div class="panel-header">
                 <div>
                   <h2 class="panel-title">Ambient Soundscapes</h2>
-                  <p class="panel-subtitle">Synthesized in Web Audio API • Zero audio lag</p>
                 </div>
               </div>
 
               <div class="sound-mixer-grid">
                 <div class="sound-card" data-sound="rain">
-                  <div class="sound-card-top">
-                    <span class="sound-icon">🌧️</span>
-                    <span class="sound-title">Gentle Rain</span>
+                  <div class="sound-card-top" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="sound-icon">🌧️</span>
+                      <span class="sound-title">Gentle Rain</span>
+                    </div>
+                    <button type="button" class="btn-sound-toggle btn-secondary btn-icon-small" data-sound="rain">Play</button>
                   </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
 
                 <div class="sound-card" data-sound="brown">
-                  <div class="sound-card-top">
-                    <span class="sound-icon">🪵</span>
-                    <span class="sound-title">Deep Focus</span>
+                  <div class="sound-card-top" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="sound-icon">🪵</span>
+                      <span class="sound-title">Deep Focus</span>
+                    </div>
+                    <button type="button" class="btn-sound-toggle btn-secondary btn-icon-small" data-sound="brown">Play</button>
                   </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
 
                 <div class="sound-card" data-sound="pink">
-                  <div class="sound-card-top">
-                    <span class="sound-icon">🍃</span>
-                    <span class="sound-title">Forest Breeze</span>
+                  <div class="sound-card-top" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                      <span class="sound-icon">🍃</span>
+                      <span class="sound-title">Forest Breeze</span>
+                    </div>
+                    <button type="button" class="btn-sound-toggle btn-secondary btn-icon-small" data-sound="pink">Play</button>
                   </div>
                   <input type="range" class="sound-slider" min="0" max="1" step="0.05" value="0.5" title="Volume">
                 </div>
@@ -434,13 +444,19 @@
             <!-- Structured Task Composer -->
             <form id="planner-task-form" class="planner-composer-card">
               <div class="composer-row-primary">
-                <input type="text" id="planner-task-title" class="field-input" placeholder="Task title (e.g. Design Systems Architecture or DBMS Final)" required autocomplete="off">
-                <select id="planner-task-cat" class="field-input select-category">
-                  <option value="work" selected>💼 Work</option>
-                  <option value="study">📚 Study</option>
-                  <option value="personal">🏠 Personal</option>
-                  <option value="health">🌱 Health</option>
-                </select>
+                <div class="field-pair flex-2">
+                  <label class="sub-label">Task Title</label>
+                  <input type="text" id="planner-task-title" class="field-input" placeholder="Task title (e.g. Design Systems Architecture or DBMS Final)" required autocomplete="off">
+                </div>
+                <div class="field-pair">
+                  <label class="sub-label">Category</label>
+                  <select id="planner-task-cat" class="field-input select-category">
+                    <option value="work" selected>💼 Work</option>
+                    <option value="study">📚 Study</option>
+                    <option value="personal">🏠 Personal</option>
+                    <option value="health">🌱 Health</option>
+                  </select>
+                </div>
               </div>
 
               <div class="composer-row-secondary">
@@ -459,21 +475,14 @@
                   <input type="number" id="planner-task-pomo" class="field-input input-pomo" value="2" min="1" max="12" title="Estimated Pomodoros">
                 </div>
 
-                <div class="field-pair flex-1">
+                <div class="field-pair" style="max-width: 140px;">
                   <label class="sub-label">Due Date</label>
-                  <input type="date" id="planner-task-due" class="field-input input-date">
+                  <input type="date" id="planner-task-due" class="field-input input-date" style="max-width: 140px;">
                 </div>
 
                 <button type="submit" class="btn-primary btn-save-task">
                   <span>+ Add Task</span>
                 </button>
-              </div>
-
-              <div class="composer-row-tertiary" style="margin-top: 8px;">
-                <label class="checkbox-label" style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; color: var(--text-muted);">
-                  <input type="checkbox" id="planner-task-focus-queue" checked>
-                  <span>Pin to Focus Room target queue</span>
-                </label>
               </div>
             </form>
 
@@ -488,7 +497,7 @@
         <div class="view-header-strip">
           <div>
             <h1 class="view-heading">Habits & Consistency</h1>
-            <p class="view-subheading">Build compounding daily momentum with streak tracking and risk predictions</p>
+            <p class="view-subheading">Build healthy daily routines, track your progress, and keep your streaks alive</p>
           </div>
         </div>
 
@@ -498,14 +507,23 @@
             <div class="panel-header">
               <div>
                 <h2 class="panel-title">Active Daily Habits</h2>
-                <p class="panel-subtitle">Check in every day to reinforce your consistency neural pathways</p>
               </div>
             </div>
 
+            <!-- Quick-start Suggestion Chips -->
+            <div class="habit-quick-chips-row" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+              <span class="sub-label" style="align-self: center; font-size: 0.78rem; font-weight: 600;">Quick Add:</span>
+              <button type="button" class="habit-chip-btn" data-title="Drink 2L Water" data-icon="💧">+ 💧 2L Water</button>
+              <button type="button" class="habit-chip-btn" data-title="Read 20 Pages" data-icon="📖">+ 📖 Read 20 Pages</button>
+              <button type="button" class="habit-chip-btn" data-title="Morning Meditation" data-icon="🧘">+ 🧘 Meditation</button>
+              <button type="button" class="habit-chip-btn" data-title="Daily Workout" data-icon="🏃">+ 🏃 Workout</button>
+              <button type="button" class="habit-chip-btn" data-title="Evening Reflection" data-icon="✍️">+ ✍️ Reflection</button>
+            </div>
+
             <!-- New Habit Form -->
-            <form id="habit-form" class="habit-quick-composer">
-              <input type="text" id="habit-title-input" class="field-input" placeholder="New habit (e.g. Read 20 pages or morning meditation)" required autocomplete="off">
-              <select id="habit-icon-select" class="field-input select-icon">
+            <form id="habit-form" class="habit-quick-composer" style="display: flex; gap: 8px; align-items: center; width: 100%;">
+              <input type="text" id="habit-title-input" class="field-input" placeholder="New habit (e.g. Read 20 pages or morning meditation)" required autocomplete="off" style="flex: 1 1 auto; min-width: 180px;">
+              <select id="habit-icon-select" class="field-input select-icon" style="flex: 0 0 135px; width: 135px; max-width: 135px; min-width: 135px;">
                 <option value="🌱">🌱 Wellness</option>
                 <option value="💧">💧 Hydration</option>
                 <option value="📖">📖 Reading</option>
@@ -513,7 +531,15 @@
                 <option value="🧘">🧘 Mindfulness</option>
                 <option value="✍️">✍️ Writing</option>
               </select>
-              <button type="submit" class="btn-primary btn-add-habit">+</button>
+              <select id="habit-freq-select" class="field-input select-frequency" style="flex: 0 0 145px; width: 145px; max-width: 145px; min-width: 145px;">
+                <option value="daily" selected>Daily</option>
+                <option value="weekdays">Weekdays</option>
+                <option value="weekends">Weekends</option>
+                <option value="thrice_weekly">Thrice a Week</option>
+                <option value="twice_weekly">Twice a Week</option>
+                <option value="weekly">Once a Week</option>
+              </select>
+              <button type="submit" class="btn-primary btn-add-habit" style="flex: 0 0 auto; white-space: nowrap; padding: 8px 16px;">+ Add Habit</button>
             </form>
 
             <div id="habits-list-container" class="habits-stream"></div>
@@ -542,8 +568,8 @@
             <!-- Expense List Feed -->
             <div class="panel-header" style="margin-top: 24px;">
               <div>
-                <h2 class="panel-title">Recent Transactions</h2>
-                <p class="panel-subtitle">Auto-categorized spending records</p>
+                <h2 class="panel-title">Monthly Ledger</h2>
+                <p class="panel-subtitle">Itemized debits, credits, and balance tracking</p>
               </div>
             </div>
             <div id="expense-list-container" class="expense-stream"></div>
@@ -628,12 +654,18 @@
             </div>
           </div>
 
-          <div style="display: flex; gap: 8px; margin-top: 14px;">
-            <button type="button" id="btn-edit-profile-trigger" class="btn-secondary" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
-              ✏️ Edit Profile
+          <div style="display: flex; gap: 10px; margin-top: 16px;">
+            <button type="button" id="btn-edit-profile-trigger" class="btn-secondary" style="flex: 1; font-size: 0.84rem; padding: 9px 12px;">
+              Edit Profile
             </button>
-            <button id="auth-logout-btn" class="btn-danger-outline" style="flex: 1; font-size: 0.82rem; padding: 8px 12px;">
+            <button type="button" id="auth-logout-btn" class="btn-secondary" style="flex: 1; font-size: 0.84rem; padding: 9px 12px;">
               Sign Out
+            </button>
+          </div>
+
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color); text-align: center;">
+            <button id="btn-delete-account-trigger" type="button" class="btn-delete-account" style="width: auto; padding: 6px 14px; font-size: 0.8rem; border: none; color: #ef4444; background: transparent; cursor: pointer; text-decoration: underline;">
+              Delete Account
             </button>
           </div>
         </div>
@@ -662,7 +694,7 @@
             <label class="field-label" for="edit-age-select">Age Group</label>
             <select id="edit-age-select" class="field-select">
               <option value="">Not set</option>
-              <option value="Under 18">Under 18</option>
+              <option value="13-17">13–17</option>
               <option value="18-24">18–24</option>
               <option value="25-34">25–34</option>
               <option value="35-44">35–44</option>
@@ -775,7 +807,7 @@
 
       <div class="modal-body-scroll">
         <div class="form-field-group">
-          <label class="field-label" for="pref-monthly-budget">Monthly Spending Budget (₹)</label>
+          <label class="field-label" for="pref-monthly-budget">Monthly Budget (₹)</label>
           <input type="number" id="pref-monthly-budget" class="field-input" min="1000" step="500" value="25000">
         </div>
 
@@ -840,39 +872,6 @@
           </div>
         </div>
 
-        <!-- Data & Privacy Section -->
-        <div class="settings-section" style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
-          <h3 class="settings-section-title" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
-            Data & Privacy
-          </h3>
-          <p class="privacy-statement-text" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px;">
-            100% Private. Local execution. Zero telemetry.
-          </p>
-
-          <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
-            <button type="button" id="pref-btn-export" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;">
-              <span>📦</span> <span>Export my data (JSON)</span>
-            </button>
-            <button type="button" id="pref-btn-import" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px;">
-              <span>📥</span> <span>Import data</span>
-            </button>
-            <input type="file" id="pref-import-file-input" accept=".json" style="display: none;">
-          </div>
-
-          <!-- Danger Zone: Delete All My Data -->
-          <div class="settings-danger-card" style="padding: 14px 16px; border-radius: var(--radius-sm); border: 1.5px solid #fecaca; background: #fff5f5; margin-top: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-              <div>
-                <div style="font-size: 0.85rem; font-weight: 700; color: #b91c1c;">Delete All Workspace Data</div>
-                <p style="font-size: 0.78rem; color: #7f1d1d; margin: 4px 0 0 0;">Permanently erase all personal tasks, habits, focus logs, and financial records.</p>
-              </div>
-              <button type="button" id="pref-btn-delete-all" class="btn-danger" style="background: #dc2626; color: #ffffff; border: none; padding: 8px 14px; font-weight: 600; font-size: 0.8rem; border-radius: 6px; cursor: pointer;">
-                🗑️ Delete all my data
-              </button>
-            </div>
-          </div>
-        </div>
-
         <button id="save-settings-btn" class="btn-primary btn-save-settings" style="margin-top: 20px;">
           Save Preferences
         </button>
@@ -880,53 +879,111 @@
     </div>
   </div>
 
-  <!-- 5. Delete Data Confirmation Modal -->
-  <div id="delete-confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
-    <div class="modal-card modal-compact" style="border: 2px solid #ef4444; max-width: 440px;">
+  <!-- 6. Edit Task Modal -->
+  <div id="edit-task-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-task-title">
+    <div class="modal-card modal-compact">
       <div class="modal-header">
         <div class="modal-header-text">
-          <h2 id="delete-confirm-title" class="modal-title" style="color: #b91c1c;">⚠️ Delete All Workspace Data</h2>
-          <p class="modal-subtitle">This action is permanent and cannot be undone.</p>
+          <h2 id="edit-task-title" class="modal-title">Edit Task</h2>
+          <p class="modal-subtitle">Update task details and focus priorities</p>
         </div>
-        <button id="close-delete-modal-btn" class="btn-close-modal">✕</button>
+        <button id="close-edit-task-modal" class="btn-close-modal">✕</button>
       </div>
 
-      <div class="modal-body" style="padding: 16px 20px;">
-        <div style="background: #fee2e2; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.82rem; color: #991b1b; line-height: 1.5;">
-          <strong>The following data will be permanently wiped:</strong>
-          <ul style="margin: 6px 0 0 16px; padding: 0;">
-            <li>All task milestones & planner history</li>
-            <li>All Pomodoro focus sessions and peak-hour statistics</li>
-            <li>All habit streaks and completion records</li>
-            <li>All financial transaction ledgers and category budgets</li>
-            <li>All daily wellness reflections, sleep logs, and mood history</li>
-            <li>All local settings and machine learning models</li>
-          </ul>
+      <form id="edit-task-form" class="modal-form">
+        <input type="hidden" id="edit-task-id">
+        <div class="form-field-group">
+          <label class="field-label" for="edit-task-title-input">Task Title</label>
+          <input type="text" id="edit-task-title-input" class="field-input" required autocomplete="off">
         </div>
 
-        <p style="font-size: 0.82rem; color: var(--text-main); margin-bottom: 8px;">
-          To confirm, type <strong style="color: #b91c1c; font-family: monospace; font-size: 0.95rem;">DELETE</strong> in the box below:
-        </p>
-        <input 
-          type="text" 
-          id="delete-confirm-input" 
-          class="field-input" 
-          placeholder="Type DELETE" 
-          autocomplete="off"
-          style="border-color: #ef4444; font-weight: 700; text-align: center; letter-spacing: 0.05em;"
-        >
+        <div class="form-field-row" style="display: flex; gap: 10px;">
+          <div class="form-field-group" style="flex: 1;">
+            <label class="field-label" for="edit-task-cat-select">Category</label>
+            <select id="edit-task-cat-select" class="field-input select-category">
+              <option value="work">💼 Work</option>
+              <option value="study">📚 Study</option>
+              <option value="personal">🏠 Personal</option>
+              <option value="health">🌱 Health</option>
+            </select>
+          </div>
+          <div class="form-field-group" style="flex: 1;">
+            <label class="field-label" for="edit-task-priority-select">Priority</label>
+            <select id="edit-task-priority-select" class="field-input select-priority">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-field-row" style="display: flex; gap: 10px;">
+          <div class="form-field-group" style="flex: 1;">
+            <label class="field-label" for="edit-task-pomo-input">Estimated 🍅</label>
+            <input type="number" id="edit-task-pomo-input" class="field-input input-pomo" min="1" max="12" value="1">
+          </div>
+          <div class="form-field-group" style="flex: 1.2;">
+            <label class="field-label" for="edit-task-due-input">Due Date</label>
+            <input type="date" id="edit-task-due-input" class="field-input input-date">
+          </div>
+        </div>
 
         <div style="display: flex; gap: 10px; margin-top: 18px;">
-          <button type="button" id="btn-cancel-delete" class="btn-secondary" style="flex: 1;">
-            Cancel
-          </button>
-          <button type="button" id="btn-confirm-delete" class="btn-danger" style="flex: 1.2; background: #dc2626; color: #fff; border: none; font-weight: 700; opacity: 0.5; cursor: not-allowed;" disabled>
-            Permanently Erase
+          <button type="button" id="btn-cancel-edit-task" class="btn-secondary" style="flex: 1;">Cancel</button>
+          <button type="submit" id="btn-save-edit-task" class="btn-primary" style="flex: 1;">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete Account Confirmation Modal -->
+  <div id="delete-account-modal" class="modal-overlay" role="alertdialog" aria-modal="true" aria-labelledby="delete-modal-title">
+    <div class="modal-card modal-compact" style="max-width: 400px;">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h2 id="delete-modal-title" class="modal-title" style="color: #ef4444;">Delete Account</h2>
+          <p class="modal-subtitle">Are you sure you want to permanently delete your account?</p>
+        </div>
+        <button id="close-delete-account-modal" class="btn-close-modal">✕</button>
+      </div>
+
+      <div style="padding: 12px 0 4px;">
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px 0;">
+          All your tasks, habits, expenses, focus history, and account data will be permanently erased. This action cannot be undone.
+        </p>
+
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-cancel-delete-account" class="btn-secondary" style="flex: 1; font-size: 0.84rem; padding: 10px;">Cancel</button>
+          <button id="btn-confirm-delete-account" class="btn-delete-confirm" style="flex: 1; font-size: 0.84rem; padding: 10px;">
+            <span id="delete-btn-text">Delete Account</span>
+            <span id="delete-btn-spinner" style="display:none;">Deleting…</span>
           </button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Sign Out Confirmation Modal -->
+  <div id="logout-confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="logout-modal-title">
+    <div class="modal-card modal-compact" style="max-width: 380px;">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h2 id="logout-modal-title" class="modal-title">Sign Out</h2>
+          <p class="modal-subtitle">Are you sure you want to sign out?</p>
+        </div>
+        <button id="close-logout-modal" class="btn-close-modal">✕</button>
+      </div>
+
+      <div style="padding: 12px 0 4px;">
+        <p style="font-size: 0.84rem; color: var(--text-muted); line-height: 1.5; margin: 0 0 16px 0;">
+          You will need to sign back in with your username and password to access your workspace.
+        </p>
+
+        <div style="display: flex; gap: 10px;">
+          <button id="btn-cancel-logout" class="btn-secondary" style="flex: 1; font-size: 0.84rem; padding: 10px;">Cancel</button>
+          <button id="btn-confirm-logout" class="btn-primary" style="flex: 1; font-size: 0.84rem; padding: 10px;">Sign Out</button>
+        </div>
       </div>
     </div>
   </div>
@@ -935,6 +992,6 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Application Bootstrap -->
-  <script type="module" src="js/app.js?v=3.3"></script>
+  <script type="module" src="js/app.js?v=4.9"></script>
 </body>
 </html>

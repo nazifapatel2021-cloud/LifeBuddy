@@ -379,6 +379,40 @@ export const API = {
       return null;
     },
 
+    async checkIn(id, dateStr) {
+      return this.check(id, dateStr);
+    },
+
+    async update(id, updates) {
+      if (API.isLoggedIn() && navigator.onLine) {
+        try {
+          return await API.request(`/api/habits/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(updates)
+          });
+        } catch (e) {
+          console.warn('Backend offline, queueing habit update', e);
+        }
+      }
+
+      let habits = await this.getAll();
+      const idx = habits.findIndex(h => h.id === id);
+      if (idx !== -1) {
+        habits[idx] = { ...habits[idx], ...updates };
+        localStorage.setItem(OFFLINE_HABITS_KEY, JSON.stringify(habits));
+
+        await syncEngine.queueMutation({
+          id,
+          entity: 'habit',
+          action: 'upsert',
+          payload: habits[idx]
+        });
+
+        return habits[idx];
+      }
+      return null;
+    },
+
     async delete(id) {
       if (API.isLoggedIn() && navigator.onLine) {
         try {

@@ -6,7 +6,7 @@ import { TimerEngine } from './timer.js';
 import { TaskManager } from './tasks.js';
 import { HabitManager } from './habits.js';
 import { ExpenseManager } from './expenses.js';
-import { DashboardManager } from './dashboard.js';
+import { DashboardManager } from './dashboard.js?v=3.5';
 import { AuthController } from './auth.js';
 import { StatsVisualizer } from './stats.js';
 import { ThemeManager } from './theme.js';
@@ -15,6 +15,7 @@ import { ModelTransparencyController } from './transparency.js';
 import { API } from './api.js';
 import { syncEngine } from './sync.js';
 import { dailyLogController } from './daily_log.js';
+import { getLocalDateString } from './date_utils.js';
 
 function initApp() {
   const CIRCUMFERENCE = 2 * Math.PI * 136; // 854.513 (matches SVG circle r="136")
@@ -40,6 +41,7 @@ function initApp() {
     onActiveTaskChanged: (activeTask) => {
       updateActiveTaskBadge(activeTask);
       updateSessionCounterUI();
+      dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
     }
   });
 
@@ -71,6 +73,9 @@ function initApp() {
       taskManager.setActiveTask(taskId);
       updateSessionCounterUI();
     },
+    getActiveTaskId: () => {
+      return taskManager.getActiveTask()?.id || null;
+    },
     onTaskCreated: () => {
       taskManager.loadTasks ? taskManager.loadTasks() : null;
     }
@@ -88,6 +93,7 @@ function initApp() {
         statsVisualizer.updateStatsUI();
         insightsCoordinator.render();
         updateSessionCounterUI();
+        updateActiveTaskBadge(taskManager.getActiveTask());
       } catch (e) {
         console.warn('User change reload error:', e);
       }
@@ -138,6 +144,7 @@ function initApp() {
           console.warn('Failed to record session:', e);
         }
         statsVisualizer.updateStatsUI();
+        renderTodayFocusSessions();
         dashboardManager.render(document.getElementById('view-dashboard')).catch(console.warn);
         showToast('🎉 Focus session completed! Mindful work recognized.');
       } else {
@@ -163,7 +170,7 @@ function initApp() {
 
     if (!counterEl) return;
 
-    if (activeTask) {
+    if (activeTask && !activeTask.completed) {
       counterEl.style.display = 'block';
       const act = activeTask.completed_pomodoros || 0;
       const est = activeTask.estimated_pomodoros || 1;
@@ -186,7 +193,7 @@ function initApp() {
   if (addPomoBtn) {
     addPomoBtn.addEventListener('click', async () => {
       const activeTask = taskManager.getActiveTask();
-      if (activeTask) {
+      if (activeTask && !activeTask.completed) {
         await taskManager.addPomodoroToTask(activeTask.id);
         updateSessionCounterUI();
         showToast('🍅 Added +1 Pomodoro to target');
@@ -233,6 +240,7 @@ function initApp() {
     } else if (viewName === 'focus') {
       taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
       updateSessionCounterUI();
+      updateActiveTaskBadge(taskManager.getActiveTask());
     } else if (viewName === 'finances') {
       expenseManager.render();
     }
@@ -309,22 +317,94 @@ function initApp() {
   }
 
   function updateModeTabs(activeMode) {
+    const focusDuration = store.state.settings?.focus_duration || settings.focusDuration || 25;
+    const shortBreakDuration = store.state.settings?.short_break || settings.shortBreakDuration || 5;
+    const longBreakDuration = store.state.settings?.long_break || settings.longBreakDuration || 15;
+
     modeBtns.forEach(btn => {
-      if (btn.dataset.mode === activeMode) btn.classList.add('active');
+      const mode = btn.dataset.mode;
+      if (mode === 'focus') btn.textContent = `Focus ${focusDuration}m`;
+      else if (mode === 'shortBreak') btn.textContent = `Short ${shortBreakDuration}m`;
+      else if (mode === 'longBreak') btn.textContent = `Long ${longBreakDuration}m`;
+
+      if (mode === activeMode) btn.classList.add('active');
       else btn.classList.remove('active');
     });
   }
 
+  function renderTodayFocusSessions() {
+    const listEl = document.getElementById('focus-sessions-list');
+    const subtitleEl = document.getElementById('focus-sessions-subtitle');
+    if (!listEl) return;
+
+    const todayStr = getLocalDateString();
+    const sessions = (store.state.sessions || []).filter(s => 
+      s.mode === 'focus' && (s.completed_at || '').startsWith(todayStr)
+    );
+    const totalMinutes = sessions.reduce((sum, s) => sum + (Number(s.duration_minutes) || 25), 0);
+
+    if (subtitleEl) {
+      subtitleEl.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''} • ${totalMinutes} mins focused`;
+    }
+
+    if (sessions.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state-sm" style="padding: 16px 0; text-align: center;">
+          <span style="font-size: 1.4rem;">⏱️</span>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 6px 0 0 0;">No sessions completed yet today. Hit Start to log your first focus block!</p>
+        </div>
+      `;
+      return;
+    }
+
+    const tasksMap = new Map();
+    (store.state.tasks || []).forEach(t => tasksMap.set(t.id, t.title));
+
+    listEl.innerHTML = sessions.slice(0, 8).map(s => {
+      const taskTitle = s.task_id ? (tasksMap.get(s.task_id) || 'Task Focus') : 'Deep Focus Block';
+      const timeStr = s.completed_at ? new Date(s.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return `
+        <div class="glass-pill" style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; margin-bottom: 6px; font-size: 0.82rem;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="color: var(--accent-primary);">✓</span>
+            <span style="font-weight: 600; color: var(--text-main);">${escapeHtml(taskTitle)}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; color: var(--text-muted);">
+            <span class="badge badge-subtle">${s.duration_minutes || 25}m</span>
+            ${timeStr ? `<span>${timeStr}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   function updateActiveTaskBadge(task) {
     const badge = document.getElementById('active-task-badge');
+    const addPomoBtn = document.getElementById('btn-add-pomo-to-task');
     if (!badge) return;
-    if (task) {
+    if (task && !task.completed) {
       badge.style.display = 'inline-flex';
-      badge.innerHTML = `<span>🎯</span> <span>${escapeHtml(task.title)}</span>`;
+      badge.setAttribute('data-full-title', task.title);
+      badge.removeAttribute('title');
+      badge.innerHTML = `<span>🎯</span> <span class="badge-task-text">${escapeHtml(task.title)}</span>`;
+      if (addPomoBtn) addPomoBtn.style.display = 'inline-block';
     } else {
       badge.style.display = 'none';
+      badge.removeAttribute('data-full-title');
+      badge.removeAttribute('title');
+      badge.innerHTML = '';
+      if (addPomoBtn) addPomoBtn.style.display = 'none';
     }
     updateSessionCounterUI();
+  }
+
+  // Click active task badge to unassign / clear focus target
+  const activeTaskBadgeEl = document.getElementById('active-task-badge');
+  if (activeTaskBadgeEl) {
+    activeTaskBadgeEl.addEventListener('click', () => {
+      taskManager.setActiveTask(null);
+      showToast('Unassigned focus task target');
+    });
   }
 
   // Quick Task Forms (Focus Room & Planner)
@@ -355,13 +435,9 @@ function initApp() {
       const priority = document.getElementById('planner-task-priority')?.value || 'medium';
       const estPomo = document.getElementById('planner-task-pomo')?.value || 1;
       const dueDate = document.getElementById('planner-task-due')?.value || null;
-      const inFocusQueue = document.getElementById('planner-task-focus-queue') ? document.getElementById('planner-task-focus-queue').checked : true;
-
       if (title.trim()) {
-        await taskManager.addTask(title, estPomo, category, priority, dueDate || null, inFocusQueue);
+        await taskManager.addTask(title, estPomo, category, priority, dueDate || null, true);
         plannerTaskForm.reset();
-        const queueCheck = document.getElementById('planner-task-focus-queue');
-        if (queueCheck) queueCheck.checked = true;
         showToast('Task created in Planner');
       }
     });
@@ -377,25 +453,14 @@ function initApp() {
     });
   });
 
-  // Habit Form
-  const habitForm = document.getElementById('habit-form');
-  if (habitForm) {
-    habitForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('habit-title-input')?.value || '';
-      const icon = document.getElementById('habit-icon-select')?.value || '🌱';
-      if (title.trim()) {
-        await habitManager.addHabit({ title, icon });
-        habitForm.reset();
-        showToast('New daily habit created');
-      }
-    });
-  }
+  // Habit Form is managed by habitManager.bindComposerEvents() in js/habits.js
 
   // Ambient Sound Synthesis & Master Volume / Mute
   const globalSoundBtn = document.getElementById('global-sound-stop-btn');
-  const masterSlider = document.getElementById('ambient-master-slider');
-  const masterMuteBtn = document.getElementById('ambient-master-mute-btn');
+  const masterSlider = document.getElementById('ambient-master-slider') || document.getElementById('sound-master-volume');
+  const soundMuteBtn = document.getElementById('sound-master-mute-btn') || document.getElementById('ambient-master-mute-btn');
+  const muteIcon = document.getElementById('sound-mute-icon');
+  const muteText = document.getElementById('sound-mute-text');
 
   if (masterSlider) {
     masterSlider.addEventListener('input', (e) => {
@@ -404,26 +469,24 @@ function initApp() {
     });
   }
 
-  if (masterMuteBtn) {
-    masterMuteBtn.addEventListener('click', () => {
-      audioSynth.isMuted = !audioSynth.isMuted;
-      if (audioSynth.isMuted) {
-        audioSynth.setMasterVolume(0);
-        masterMuteBtn.textContent = '🔇';
-        showToast('Muted ambient sounds');
-      } else {
-        const val = masterSlider ? parseFloat(masterSlider.value) : 0.7;
-        audioSynth.setMasterVolume(val);
-        masterMuteBtn.textContent = '🔊';
-        showToast('Unmuted ambient sounds');
-      }
+  if (soundMuteBtn) {
+    soundMuteBtn.addEventListener('click', () => {
+      const isMuted = audioSynth.toggleMute();
+      if (muteIcon) muteIcon.textContent = isMuted ? '🔇' : '🔊';
+      if (muteText) muteText.textContent = isMuted ? 'Unmute' : 'Mute';
+      soundMuteBtn.classList.toggle('active', isMuted);
+      showToast(isMuted ? '🔇 Ambient sounds muted' : '🔊 Ambient sounds unmuted');
     });
   }
 
   if (globalSoundBtn) {
     globalSoundBtn.addEventListener('click', () => {
       audioSynth.stopAllAmbientSounds();
-      document.querySelectorAll('.sound-card').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.sound-card').forEach(c => {
+        c.classList.remove('active');
+        const toggleBtn = c.querySelector('.btn-sound-toggle');
+        if (toggleBtn) toggleBtn.textContent = 'Play';
+      });
       globalSoundBtn.style.display = 'none';
       showToast('🔇 Ambient sounds stopped');
     });
@@ -432,18 +495,30 @@ function initApp() {
   document.querySelectorAll('.sound-card').forEach(card => {
     const type = card.dataset.sound;
     const slider = card.querySelector('.sound-slider');
+    const toggleBtn = card.querySelector('.btn-sound-toggle');
 
-    card.addEventListener('click', (e) => {
-      if (e.target.tagName === 'INPUT') return;
+    const toggleSound = () => {
       const volume = slider ? parseFloat(slider.value) : 0.5;
       const isPlaying = audioSynth.toggleAmbientSound(type, volume);
-      if (isPlaying) card.classList.add('active');
-      else card.classList.remove('active');
+      card.classList.toggle('active', isPlaying);
+      if (toggleBtn) toggleBtn.textContent = isPlaying ? 'Stop' : 'Play';
 
       const anyPlaying = Object.keys(audioSynth.activeNodes).length > 0;
       if (globalSoundBtn) {
         globalSoundBtn.style.display = anyPlaying ? 'inline-flex' : 'none';
       }
+    };
+
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSound();
+      });
+    }
+
+    card.addEventListener('click', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.classList.contains('btn-sound-toggle')) return;
+      toggleSound();
     });
 
     if (slider) {
@@ -492,6 +567,12 @@ function initApp() {
 
       const sndCheck = document.getElementById('input-sound-enabled');
       if (sndCheck) sndCheck.checked = curr.soundEnabled !== false;
+
+      const backupDateEl = document.getElementById('pref-last-backup-date');
+      if (backupDateEl) {
+        const lastBackup = localStorage.getItem('lifebuddy_last_backup_date');
+        backupDateEl.textContent = lastBackup ? new Date(lastBackup).toLocaleString() : 'Never';
+      }
 
       settingsModal.classList.add('active');
     });
@@ -655,7 +736,7 @@ function initApp() {
     const editAge = document.getElementById('edit-age-select');
     const editFocus = document.getElementById('edit-focus-select');
 
-    if (editName) editName.value = settings.full_name || user.full_name || '';
+    if (editName) editName.value = settings.full_name || user.full_name || user.username || '';
     if (editProf) editProf.value = settings.profession || user.profession || '';
     if (editAge) editAge.value = settings.age_group || user.age_group || '';
     if (editFocus) editFocus.value = settings.focus_goal || user.focus_goal || '';
@@ -755,7 +836,10 @@ function initApp() {
         a.download = `lifebuddy_data_export_${new Date().toISOString().split('T')[0]}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        showToast('📦 Data export downloaded');
+        localStorage.setItem('lifebuddy_last_backup_date', new Date().toISOString());
+        const backupDateEl = document.getElementById('pref-last-backup-date');
+        if (backupDateEl) backupDateEl.textContent = new Date().toLocaleString();
+        showToast('📦 Data export downloaded & backup timestamp recorded');
       } catch (err) {
         alert('Could not export data: ' + err.message);
       }
@@ -822,79 +906,6 @@ function initApp() {
     });
   }
 
-  // 3. Delete All My Data Confirmation Modal
-  const btnDeleteAllTrigger = document.getElementById('pref-btn-delete-all');
-  const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-  const closeDeleteModalBtn = document.getElementById('close-delete-modal-btn');
-  const btnCancelDelete = document.getElementById('btn-cancel-delete');
-  const btnConfirmDelete = document.getElementById('btn-confirm-delete');
-  const deleteConfirmInput = document.getElementById('delete-confirm-input');
-
-  const openDeleteModal = () => {
-    if (!deleteConfirmModal) return;
-    if (deleteConfirmInput) deleteConfirmInput.value = '';
-    if (btnConfirmDelete) {
-      btnConfirmDelete.disabled = true;
-      btnConfirmDelete.style.opacity = '0.5';
-      btnConfirmDelete.style.cursor = 'not-allowed';
-    }
-    deleteConfirmModal.classList.add('active');
-  };
-
-  const closeDeleteModal = () => {
-    if (!deleteConfirmModal) return;
-    deleteConfirmModal.classList.remove('active');
-  };
-
-  if (btnDeleteAllTrigger) {
-    btnDeleteAllTrigger.addEventListener('click', openDeleteModal);
-  }
-
-  if (closeDeleteModalBtn) {
-    closeDeleteModalBtn.addEventListener('click', closeDeleteModal);
-  }
-
-  if (btnCancelDelete) {
-    btnCancelDelete.addEventListener('click', closeDeleteModal);
-  }
-
-  if (deleteConfirmInput && btnConfirmDelete) {
-    deleteConfirmInput.addEventListener('input', () => {
-      const isConfirmed = deleteConfirmInput.value.trim() === 'DELETE';
-      btnConfirmDelete.disabled = !isConfirmed;
-      btnConfirmDelete.style.opacity = isConfirmed ? '1' : '0.5';
-      btnConfirmDelete.style.cursor = isConfirmed ? 'pointer' : 'not-allowed';
-    });
-  }
-
-  if (btnConfirmDelete) {
-    btnConfirmDelete.addEventListener('click', async () => {
-      if (deleteConfirmInput.value.trim() !== 'DELETE') return;
-
-      btnConfirmDelete.disabled = true;
-      btnConfirmDelete.textContent = 'Erasing...';
-
-      try {
-        if (API.isLoggedIn()) {
-          try {
-            await API.request('/api/user/delete-my-data', { method: 'DELETE' });
-          } catch (e) {
-            console.warn('Server delete call error:', e);
-          }
-        }
-      } catch (err) {
-        console.warn('Delete error', err);
-      }
-
-      API.auth.logout();
-      localStorage.clear();
-      sessionStorage.clear();
-
-      alert('All workspace data has been permanently erased.');
-      window.location.reload();
-    });
-  }
-
   if (zenToggleBtn) {
     zenToggleBtn.addEventListener('click', () => {
       document.body.classList.add('zen-mode');
@@ -936,11 +947,17 @@ function initApp() {
 
     try {
       await store.syncAll();
+      await taskManager.init();
+      await habitManager.init();
+      await expenseManager.init();
       taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
       taskManager.renderTaskList(document.getElementById('planner-task-list'));
       habitManager.renderHabitsList(document.getElementById('habits-list-container'));
       expenseManager.render();
       updateSessionCounterUI();
+      updateActiveTaskBadge(taskManager.getActiveTask());
+      updateModeTabs(timerEngine.currentMode);
+      renderTodayFocusSessions();
     } catch (e) {
       console.warn('Data collections load error:', e);
     }
@@ -972,6 +989,7 @@ function initApp() {
       setTimeout(() => toast.remove(), 300);
     }, 2800);
   }
+  window.showToast = showToast;
 
   // HTML Escape Helper
   function escapeHtml(str) {

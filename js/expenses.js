@@ -2,6 +2,7 @@
 import { API } from './api.js';
 import { store } from './store.js';
 import { formatCurrency } from './currency.js';
+import { formatMonthDisplay } from './date_utils.js';
 
 export const EXPENSE_CATEGORIES = [
   { value: 'Food', label: '🍔 Food', color: '#f59e0b' },
@@ -61,8 +62,11 @@ export class ExpenseManager {
     this.currency = '₹';
     this.selectedMonth = new Date().toISOString().slice(0, 7);
     this.selectedCategory = 'all';
-    this.searchQuery = '';
     this.onChanged = options.onChanged || (() => {});
+    this._eventsBound = false;
+
+    // Bind modal and global finance events
+    this.bindGlobalFinanceEvents();
 
     // Subscribe to store updates
     store.subscribe(() => {
@@ -77,10 +81,14 @@ export class ExpenseManager {
   }
 
   bindGlobalFinanceEvents() {
+    if (this._eventsBound) return;
     const addBtn = document.getElementById('btn-add-expense-modal');
     const modal = document.getElementById('expense-modal');
     const closeBtn = document.getElementById('close-expense-modal');
     const form = document.getElementById('expense-form');
+
+    if (!addBtn || !modal) return;
+    this._eventsBound = true;
 
     const btnExp = document.getElementById('btn-select-expense');
     const btnInc = document.getElementById('btn-select-income');
@@ -139,6 +147,16 @@ export class ExpenseManager {
       });
     }
 
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.remove('active');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) {
+        modal.classList.remove('active');
+      }
+    });
+
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -173,15 +191,6 @@ export class ExpenseManager {
     // Filter by Category
     if (this.selectedCategory !== 'all') {
       list = list.filter(e => e.category === this.selectedCategory);
-    }
-
-    // Filter by Search
-    if (this.searchQuery) {
-      const q = this.searchQuery.toLowerCase();
-      list = list.filter(e => 
-        (e.note || '').toLowerCase().includes(q) || 
-        (e.category || '').toLowerCase().includes(q)
-      );
     }
 
     // Sort newest first
@@ -263,23 +272,20 @@ export class ExpenseManager {
 
   renderBudgetWidget(container) {
     const summary = this.getFinancesSummary();
-    const isOver = summary.totalExpense > summary.monthlyBudget;
-
-    let barColor = 'var(--accent-primary)';
-    if (summary.budgetPercent > 90) barColor = 'var(--color-danger, #ef4444)';
-    else if (summary.budgetPercent > 70) barColor = 'var(--color-warning, #f59e0b)';
+    const hasActivity = summary.totalIncome > 0 || summary.totalExpense > 0;
+    const cashFlowLabel = !hasActivity ? 'No activity yet' : (summary.netSavings >= 0 ? 'Positive cash flow' : 'Deficit');
 
     container.innerHTML = `
-      <!-- Distinct Monthly Income & Spending Cap Cards -->
+      <!-- Distinct Monthly Income & Monthly Budget Cards -->
       <div class="finances-kpi-summary-row">
         <!-- Monthly Income Card -->
         <div class="fin-kpi-card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="fin-kpi-label">Monthly Income Target</span>
-            <button id="btn-edit-income" class="btn-icon-tiny" title="Edit Planned Income">✏️</button>
+            <span class="fin-kpi-label">Monthly Income</span>
+            <button id="btn-edit-income" class="btn-icon-tiny" title="Edit Monthly Income Target">✏️</button>
           </div>
           <div class="fin-kpi-value text-income">${formatCurrency(summary.plannedIncome)}</div>
-          <span class="fin-kpi-sub">Actual Logged: ${formatCurrency(summary.totalIncome)}</span>
+          <span class="fin-kpi-sub">Received this month: ${formatCurrency(summary.totalIncome)}</span>
           <!-- Inline Income Edit Box -->
           <div id="income-edit-box" style="display: none; align-items: center; gap: 4px; margin-top: 6px;">
             <input type="number" id="input-new-income" class="field-input" style="width: 100px; padding: 3px 6px; font-size: 0.8rem;" value="${summary.plannedIncome}" step="1000">
@@ -288,11 +294,11 @@ export class ExpenseManager {
           </div>
         </div>
 
-        <!-- Monthly Spending Cap Card -->
+        <!-- Monthly Budget Card -->
         <div class="fin-kpi-card">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="fin-kpi-label">Monthly Spending Cap</span>
-            <button id="btn-edit-budget" class="btn-icon-tiny" title="Edit Spending Cap">✏️</button>
+            <span class="fin-kpi-label">Monthly Budget</span>
+            <button id="btn-edit-budget" class="btn-icon-tiny" title="Edit Monthly Budget">✏️</button>
           </div>
           <div class="fin-kpi-value text-expense">${formatCurrency(summary.monthlyBudget)}</div>
           <span class="fin-kpi-sub">Spent: ${formatCurrency(summary.totalExpense)} (${summary.budgetPercent}%)</span>
@@ -306,38 +312,18 @@ export class ExpenseManager {
 
         <!-- Net Cash Flow / Savings -->
         <div class="fin-kpi-card">
-          <span class="fin-kpi-label">Net Savings / Cash Flow</span>
+          <span class="fin-kpi-label">Net Cash Flow</span>
           <span class="fin-kpi-value ${summary.netSavings >= 0 ? 'text-income' : 'text-expense'}">
             ${summary.netSavings >= 0 ? '+' : ''}${formatCurrency(summary.netSavings)}
           </span>
-          <span class="fin-kpi-sub">${summary.netSavings >= 0 ? 'Positive cash flow' : 'Deficit'}</span>
+          <span class="fin-kpi-sub">${cashFlowLabel}</span>
         </div>
 
-        <!-- Safe Remaining / Daily Burn Rate -->
+        <!-- Left to Spend / Daily Burn Rate -->
         <div class="fin-kpi-card">
           <span class="fin-kpi-label">Daily Burn Rate</span>
           <span class="fin-kpi-value">${formatCurrency(summary.dailyAverage)}<span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;">/day</span></span>
-          <span class="fin-kpi-sub">Safe Left: ${formatCurrency(summary.remaining)}</span>
-        </div>
-      </div>
-
-      <!-- Spending Pacing Visual Progress Bar -->
-      <div class="budget-card" style="margin-top: 14px;">
-        <div class="budget-header">
-          <div>
-            <span class="budget-label">Spending vs Monthly Cap</span>
-            <div class="budget-values">
-              <span class="budget-current">${formatCurrency(summary.totalExpense)}</span>
-              <span class="budget-target"> / ${formatCurrency(summary.monthlyBudget)}</span>
-            </div>
-          </div>
-          <div class="budget-badge ${isOver ? 'badge-danger' : 'badge-safe'}">
-            ${isOver ? 'Exceeded Cap' : `${summary.budgetPercent}% Used`}
-          </div>
-        </div>
-
-        <div class="progress-bar-bg" style="margin-top: 12px;">
-          <div class="progress-bar-fill" style="width: ${summary.budgetPercent}%; background: ${barColor};"></div>
+          <span class="fin-kpi-sub">Left to spend: ${formatCurrency(summary.remaining)}</span>
         </div>
       </div>
     `;
@@ -409,16 +395,18 @@ export class ExpenseManager {
 
   renderExpenseList(container) {
     const list = this.getFilteredExpenses();
+    const monthPretty = formatMonthDisplay(this.selectedMonth);
 
-    // Controls header: Month selector, Category filter, Search input, Ledger Export
+    // Controls header: Month selector, Category filter, and Download Ledger (Excel with autowidth and CSV)
     const filterHeaderHtml = `
-      <div class="finances-filter-bar">
-        <div class="finances-filter-left">
+      <div class="finances-filter-bar" style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
           <input 
             type="month" 
             id="fin-month-selector" 
             class="field-input fin-month-input" 
             value="${this.selectedMonth}"
+            title="Select month"
           >
           <select id="fin-cat-filter" class="field-input fin-cat-select">
             <option value="all" ${this.selectedCategory === 'all' ? 'selected' : ''}>All Categories</option>
@@ -434,61 +422,110 @@ export class ExpenseManager {
             <option value="Investment" ${this.selectedCategory === 'Investment' ? 'selected' : ''}>📈 Investment</option>
             <option value="Other" ${this.selectedCategory === 'Other' ? 'selected' : ''}>📦 Other</option>
           </select>
-          <input 
-            type="text" 
-            id="fin-search-input" 
-            class="field-input fin-search-input" 
-            placeholder="Search transactions..." 
-            value="${this.escapeHtml(this.searchQuery)}"
-          >
         </div>
-        <div class="finances-filter-right">
-          <button id="btn-export-csv" class="btn-secondary btn-sm" title="Download ledger for selected month (${this.selectedMonth})">
-            📑 Download Monthly Ledger
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button id="btn-export-excel" class="btn-primary btn-sm" title="Download Excel Ledger with autowidth and clean formatting (.xls)">
+            📊 Download Excel Ledger
+          </button>
+          <button id="btn-export-csv" class="btn-secondary btn-sm" title="Download plain CSV ledger">
+            📑 CSV
           </button>
         </div>
       </div>
     `;
+
+    // Calculate running balance chronologically across all entries for the selected month starting with Opening Balance
+    const allMonthEntries = (store.state.expenses || [])
+      .filter(e => (e.date || '').startsWith(this.selectedMonth))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.id || '').localeCompare(b.id || ''));
+
+    const plannedIncome = store.getPlannedIncome() || 0;
+    let runningBal = plannedIncome;
+    const balanceMap = new Map();
+    allMonthEntries.forEach(item => {
+      const amt = Number(item.amount) || 0;
+      if (item.type === 'income') {
+        runningBal += amt;
+      } else {
+        runningBal -= amt;
+      }
+      balanceMap.set(item.id, runningBal);
+    });
 
     if (list.length === 0) {
       container.innerHTML = `
         ${filterHeaderHtml}
         <div class="empty-state" style="margin-top: 16px;">
           <div class="empty-icon">🪙</div>
-          <p>No transactions match your current filters. Tap "+ Log Expense" to record spending or income!</p>
+          <p>No transactions found for ${monthPretty}. Tap "+ Log Expense" above to record spending or income!</p>
         </div>
       `;
       this.bindFilterEvents(container);
       return;
     }
 
-    const itemsHtml = list.map(exp => {
+    const openingRowHtml = plannedIncome > 0 ? `
+      <tr class="ledger-opening-row" style="background: rgba(99, 102, 241, 0.04); font-weight: 600;">
+        <td class="ledger-col-date">${this.selectedMonth}-01</td>
+        <td class="ledger-col-desc">Opening Balance (Monthly Income Target)</td>
+        <td class="ledger-col-cat"><span class="badge badge-subtle">💼 Income</span></td>
+        <td class="ledger-col-debit"><span style="color: var(--text-muted);">-</span></td>
+        <td class="ledger-col-credit text-income">+${formatCurrency(plannedIncome)}</td>
+        <td class="ledger-col-balance text-income">${formatCurrency(plannedIncome)}</td>
+        <td></td>
+      </tr>
+    ` : '';
+
+    const tableRowsHtml = list.map(exp => {
       const isIncome = exp.type === 'income';
       const icon = CATEGORY_ICONS[exp.category] || (isIncome ? '💰' : '📦');
-      const sign = isIncome ? '+' : '-';
-      const colorClass = isIncome ? 'text-income' : 'text-expense';
+      const amt = Number(exp.amount) || 0;
+      const balance = balanceMap.get(exp.id) ?? 0;
+      const balClass = balance >= 0 ? 'text-income' : 'text-expense';
 
       return `
-        <div class="expense-item glass-pill" data-id="${exp.id}">
-          <div class="expense-meta">
-            <div class="expense-icon-badge">${icon}</div>
-            <div class="expense-info">
-              <span class="expense-title">${this.escapeHtml(exp.note || exp.category)}</span>
-              <span class="expense-sub">${exp.category} • ${exp.date}</span>
-            </div>
-          </div>
-          <div class="expense-actions">
-            <span class="expense-amount ${colorClass}">${sign}${formatCurrency(exp.amount)}</span>
+        <tr data-id="${exp.id}">
+          <td class="ledger-col-date">${exp.date || '-'}</td>
+          <td class="ledger-col-desc">${this.escapeHtml(exp.note || exp.category)}</td>
+          <td class="ledger-col-cat">
+            <span class="badge badge-subtle" style="font-size: 0.72rem;">${icon} ${this.escapeHtml(exp.category)}</span>
+          </td>
+          <td class="ledger-col-debit ${!isIncome ? 'text-expense' : ''}">
+            ${!isIncome ? formatCurrency(amt) : '<span style="color: var(--text-muted);">-</span>'}
+          </td>
+          <td class="ledger-col-credit ${isIncome ? 'text-income' : ''}">
+            ${isIncome ? '+' + formatCurrency(amt) : '<span style="color: var(--text-muted);">-</span>'}
+          </td>
+          <td class="ledger-col-balance ${balClass}">
+            ${formatCurrency(balance)}
+          </td>
+          <td style="text-align: center;">
             <button class="btn-delete-expense btn-icon-small" title="Delete record" data-id="${exp.id}">✕</button>
-          </div>
-        </div>
+          </td>
+        </tr>
       `;
     }).join('');
 
     container.innerHTML = `
       ${filterHeaderHtml}
-      <div class="expense-stream" style="margin-top: 14px;">
-        ${itemsHtml}
+      <div class="ledger-table-wrap" style="margin-top: 14px;">
+        <table class="ledger-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th style="text-align: right;">Debit (Expense)</th>
+              <th style="text-align: right;">Credit (Income)</th>
+              <th style="text-align: right;">Balance</th>
+              <th style="text-align: center; width: 36px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${openingRowHtml}
+            ${tableRowsHtml}
+          </tbody>
+        </table>
       </div>
     `;
 
@@ -524,18 +561,17 @@ export class ExpenseManager {
       });
     }
 
-    const searchInp = container.querySelector('#fin-search-input');
-    if (searchInp) {
-      searchInp.addEventListener('input', (e) => {
-        this.searchQuery = e.target.value;
-        this.renderExpenseList(document.getElementById('expense-list-container'));
+    const exportExcelBtn = container.querySelector('#btn-export-excel');
+    if (exportExcelBtn) {
+      exportExcelBtn.addEventListener('click', () => {
+        this.exportExcelLedger();
       });
     }
 
-    const exportBtn = container.querySelector('#btn-export-csv');
-    if (exportBtn) {
-      exportBtn.addEventListener('click', () => {
-        this.exportMonthlyLedger();
+    const exportCsvBtn = container.querySelector('#btn-export-csv');
+    if (exportCsvBtn) {
+      exportCsvBtn.addEventListener('click', () => {
+        this.exportCsvLedger();
       });
     }
   }
@@ -636,25 +672,174 @@ export class ExpenseManager {
     `;
   }
 
-  /* Downloads Ledger containing ALL records for the selected month regardless of other filters */
-  exportMonthlyLedger() {
+  /* Downloads Ledger formatted for Microsoft Excel with column auto-widths, styles, and proper + / - signs */
+  exportExcelLedger() {
     const list = (store.state.expenses || [])
       .filter(e => (e.date || '').startsWith(this.selectedMonth))
-      .sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.id || '').localeCompare(b.id || ''));
 
     if (list.length === 0) {
       alert(`No transaction entries found for ${this.selectedMonth}.`);
       return;
     }
 
-    const headers = ['Date', 'Type', 'Category', 'Description / Note', 'Amount (INR)'];
-    const rows = list.map(e => [
-      `"${e.date || ''}"`,
-      `"${e.type === 'income' ? 'Income' : 'Expense'}"`,
-      `"${e.category || ''}"`,
-      `"${(e.note || '').replace(/"/g, '""')}"`,
-      Number(e.amount) || 0
-    ]);
+    const plannedIncome = store.getPlannedIncome() || 0;
+    let runningBalance = plannedIncome;
+    const rowsXml = [];
+
+    // Opening Balance Row from Monthly Income
+    if (plannedIncome > 0) {
+      rowsXml.push(`
+   <Row ss:Height="21">
+    <Cell ss:StyleID="DateCell"><Data ss:Type="String">${this.selectedMonth}-01</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Opening Balance (Monthly Income Target)</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">Income</Data></Cell>
+    <Cell ss:StyleID="DebitCell"><Data ss:Type="String">-</Data></Cell>
+    <Cell ss:StyleID="CreditCell"><Data ss:Type="Number">${plannedIncome}</Data></Cell>
+    <Cell ss:StyleID="BalanceCell"><Data ss:Type="Number">${runningBalance}</Data></Cell>
+   </Row>`);
+    }
+
+    list.forEach(e => {
+      const amt = Number(e.amount) || 0;
+      const isIncome = e.type === 'income';
+      runningBalance += isIncome ? amt : -amt;
+
+      rowsXml.push(`
+   <Row ss:Height="21">
+    <Cell ss:StyleID="DateCell"><Data ss:Type="String">${this.escapeXml(e.date || '')}</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${this.escapeXml(e.note || e.category || '')}</Data></Cell>
+    <Cell ss:StyleID="TextCell"><Data ss:Type="String">${this.escapeXml(e.category || '')}</Data></Cell>
+    <Cell ss:StyleID="DebitCell">${!isIncome ? `<Data ss:Type="Number">${amt}</Data>` : `<Data ss:Type="String">-</Data>`}</Cell>
+    <Cell ss:StyleID="CreditCell">${isIncome ? `<Data ss:Type="Number">${amt}</Data>` : `<Data ss:Type="String">-</Data>`}</Cell>
+    <Cell ss:StyleID="BalanceCell"><Data ss:Type="Number">${runningBalance}</Data></Cell>
+   </Row>`);
+    });
+
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Font ss:FontName="Segoe UI" ss:Size="10" ss:Color="#1e293b"/>
+  </Style>
+  <Style ss:ID="Header">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders>
+    <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#4338CA"/>
+   </Borders>
+   <Font ss:FontName="Segoe UI" ss:Bold="1" ss:Color="#FFFFFF" ss:Size="10"/>
+   <Interior ss:Color="#4F46E5" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="DateCell">
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+   <Font ss:FontName="Segoe UI" ss:Size="10"/>
+  </Style>
+  <Style ss:ID="TextCell">
+   <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+   <Font ss:FontName="Segoe UI" ss:Size="10"/>
+  </Style>
+  <Style ss:ID="DebitCell">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+   <Font ss:FontName="Segoe UI" ss:Color="#DC2626" ss:Size="10"/>
+   <NumberFormat ss:Format="#,##0.00;[Red]-#,##0.00;0.00"/>
+  </Style>
+  <Style ss:ID="CreditCell">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+   <Font ss:FontName="Segoe UI" ss:Bold="1" ss:Color="#059669" ss:Size="10"/>
+   <NumberFormat ss:Format="+#,##0.00;-#,##0.00;0.00"/>
+  </Style>
+  <Style ss:ID="BalanceCell">
+   <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+   <Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+   <Font ss:FontName="Segoe UI" ss:Bold="1" ss:Size="10"/>
+   <NumberFormat ss:Format="#,##0.00;[Red]-#,##0.00;0.00"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Monthly Ledger">
+  <Table>
+   <Column ss:AutoFitWidth="1" ss:Width="110"/>
+   <Column ss:AutoFitWidth="1" ss:Width="220"/>
+   <Column ss:AutoFitWidth="1" ss:Width="130"/>
+   <Column ss:AutoFitWidth="1" ss:Width="130"/>
+   <Column ss:AutoFitWidth="1" ss:Width="130"/>
+   <Column ss:AutoFitWidth="1" ss:Width="140"/>
+   <Row ss:Height="26">
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Date</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Description</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Category</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Debit (Expense)</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Credit (Income)</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Running Balance</Data></Cell>
+   </Row>
+   ${rowsXml.join('')}
+  </Table>
+ </Worksheet>
+</Workbook>`;
+
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `LifeBuddy_Ledger_${this.selectedMonth}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  /* Downloads Ledger as standard CSV with sanitized dates and explicit + / - signs */
+  exportCsvLedger() {
+    const list = (store.state.expenses || [])
+      .filter(e => (e.date || '').startsWith(this.selectedMonth))
+      .sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.id || '').localeCompare(b.id || ''));
+
+    if (list.length === 0) {
+      alert(`No transaction entries found for ${this.selectedMonth}.`);
+      return;
+    }
+
+    const plannedIncome = store.getPlannedIncome() || 0;
+    let runningBalance = plannedIncome;
+    const headers = ['Date', 'Description', 'Category', 'Debit (Expense)', 'Credit (Income)', 'Running Balance'];
+    const rows = [];
+
+    if (plannedIncome > 0) {
+      rows.push([
+        `="${this.selectedMonth}-01"`,
+        `"Opening Balance (Monthly Income Target)"`,
+        `"Income"`,
+        `"-"`,
+        `"+${plannedIncome}"`,
+        runningBalance
+      ]);
+    }
+
+    list.forEach(e => {
+      const amt = Number(e.amount) || 0;
+      const isIncome = e.type === 'income';
+      const debit = isIncome ? '-' : `${amt}`;
+      const credit = isIncome ? `+${amt}` : '-';
+      runningBalance += isIncome ? amt : -amt;
+
+      rows.push([
+        `="${e.date || ''}"`,
+        `"${(e.note || e.category || '').replace(/"/g, '""')}"`,
+        `"${e.category || ''}"`,
+        `"${debit}"`,
+        `"${credit}"`,
+        runningBalance
+      ]);
+    });
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
@@ -664,6 +849,20 @@ export class ExpenseManager {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
+
+  exportMonthlyLedger() {
+    this.exportExcelLedger();
+  }
+
+  escapeXml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   escapeHtml(str) {

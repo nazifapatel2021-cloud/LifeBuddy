@@ -38,8 +38,8 @@ class CrossModuleInsightEngine:
                 "correlation": 0.50,
                 "effect_size": "Moderate",
                 "narrative": (
-                    f"You have logged {len(daily_logs)} days so far (minimum {self.min_sample_size} days required for personalized correlation analysis). "
-                    "Cognitive science shows that consistent 7.5+ hours of sleep and regular morning exercise typically boost next-day deep-work focus by 30-40%."
+                    f"You have logged {len(daily_logs)} day{'s' if len(daily_logs) != 1 else ''} so far (minimum {self.min_sample_size} days required for personalized correlation analysis). "
+                    "Consistent 7.5+ hours of sleep and regular exercise help sustain long-term deep-work focus and steady energy."
                 ),
                 "is_statistically_significant": False
             }]

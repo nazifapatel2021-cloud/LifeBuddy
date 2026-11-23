@@ -204,7 +204,7 @@ python scripts/seed_demo.py
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 Open **`http://localhost:8000`** in your browser.  
-Log in with demo persona: **`alex_code`** / **`password123`**.
+Log in with demo persona: **`alex_student`** / **`password123`**.
 
 ---
 

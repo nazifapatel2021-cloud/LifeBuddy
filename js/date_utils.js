@@ -49,3 +49,40 @@ export function normalizeDate(dateStr) {
 
   return trimmed;
 }
+
+/**
+ * Formats canonical date string into human-friendly representation:
+ * "Today", "Tomorrow", "Yesterday", or "Mon, 16 Nov".
+ */
+export function formatFriendlyDate(dateStr) {
+  const norm = normalizeDate(dateStr);
+  if (!norm) return '';
+  const today = getLocalDateString();
+  if (norm === today) return 'Today';
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (norm === getLocalDateString(tomorrow)) return 'Tomorrow';
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (norm === getLocalDateString(yesterday)) return 'Yesterday';
+
+  const [y, m, d] = norm.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+/**
+ * Formats YYYY-MM into "Month Year" (e.g. "November 2026")
+ */
+export function formatMonthDisplay(monthStr) {
+  if (!monthStr || typeof monthStr !== 'string') return '';
+  const parts = monthStr.split('-');
+  if (parts.length < 2) return monthStr;
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const dt = new Date(year, month - 1, 1);
+  return dt.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+
