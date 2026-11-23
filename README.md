@@ -4,16 +4,16 @@
 
 ---
 
-## 🌟 Executive Summary
+## 🌟 Overview
 
-**LifeBuddy** is an intelligent, offline-first personal operating system designed to overcome the fragmentation and privacy vulnerabilities of modern productivity software. Rather than treating focus, task management, daily routines, and personal finances as isolated silos, LifeBuddy unifies them through an on-device, explainable machine learning engine.
+**LifeBuddy** is a personal productivity app designed to bring your focus sessions, tasks, habits, and spending logs together in one place, using local machine learning to provide helpful, personalized insights.
 
-### Core Distinctions
-- **Zero-Build Vanilla ES6 Frontend:** No Webpack/Vite bundlers, no npm dependency tree, 100% native ES modules and pure SVG/Canvas rendering.
-- **Isolated Per-User Machine Learning:** All models are trained exclusively on that user's local data using classical statistical learning (`scikit-learn`, `numpy`, `pandas`, `scipy`, `statsmodels`). Zero multi-tenant data pooling; zero deep learning; zero telemetry leaks.
-- **Explainable AI (XAI):** Every single prediction features a slide-out "Why am I seeing this?" drawer demystifying Bayesian shrinkage, regression weights, and confidence intervals in plain English.
-- **Offline-First Resilience:** Client IndexedDB outbox queue, client ISO timestamps, idempotent batch sync endpoint (`POST /api/sync/batch`), and Last-Write-Wins (LWW) conflict resolution.
-- **Enterprise-Grade Security:** Argon2id password hashing (Password Hashing Competition winner), dual JWT lifecycle (15-min access + 7-day refresh), in-memory sliding-window rate limiting, and full GDPR export and right-to-be-forgotten deletion endpoints.
+### Key Features
+- **Clean Vanilla Frontend:** Built with native ES modules, pure CSS, and SVG charts without heavy bundle dependencies.
+- **On-Device Machine Learning:** Models are trained directly on your own data using classical statistical learning (`scikit-learn`, `numpy`, `pandas`).
+- **Explainable Insights:** Every prediction explains why it is shown so you understand the logic behind recommendations.
+- **Offline Support:** Keeps working offline with IndexedDB and syncs automatically when reconnected.
+- **Security & Privacy:** Argon2id password hashing, secure JWT authentication, and full data export/deletion controls.
 
 ---
 
@@ -266,8 +266,9 @@ TOTAL                               726     60    92%  (Target: >= 80%)
 
 ---
 
-## 📄 License & Architecture
+## 🛠️ Tech Stack
 
-- **Frontend:** Zero-build vanilla ES6 with native SVG rendering and IndexedDB offline persistence.
-- **Backend:** FastAPI + ASGI with Argon2id authentication and SQLite / PostgreSQL support.
-- **License:** MIT License. Free for open-source and personal productivity use.
+- **Frontend:** HTML5, CSS3, JavaScript (Vanilla ES6)
+- **Backend:** Python, FastAPI, Uvicorn
+- **Machine Learning:** scikit-learn, pandas, numpy
+- **Database:** SQLite
