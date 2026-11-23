@@ -14,6 +14,14 @@ export class InsightsCoordinator {
   constructor(options = {}) {
     this.container = options.container || document.getElementById('ml-insights-container') || document.getElementById('view-insights');
     this.currentExplanation = null;
+    this._cachedData = null;
+    this._fetchPromise = null;
+  }
+
+  clearCache() {
+    this._cachedData = null;
+    this._fetchPromise = null;
+    if (this.container) this.container.innerHTML = '';
   }
 
   getFriendlyBadge(rawConfidence) {
@@ -35,21 +43,60 @@ export class InsightsCoordinator {
       .replace(/'/g, '&#39;');
   }
 
-  async render() {
+  async render(forceRefresh = false) {
     if (!this.container) return;
 
-    // Load data from ML endpoints with robust error fallbacks
-    const [focusRec, spendForecast, habitRisks, rawInsights, reflection] = await Promise.all([
-      API.ml.getFocusRecommendation().catch(() => ({ recommended_window: '09:00 - 11:30 AM', explanation: 'Start your mornings with deep focus blocks.', confidence: 'cold' })),
-      API.ml.getSpendingForecast().catch(() => ({ spent_so_far: store.getMonthExpense(), monthly_budget: store.getBudget(), projected_month_end: store.getMonthExpense() })),
-      API.ml.getHabitRisks().catch(() => []),
-      API.ml.getCrossModuleInsights().catch(() => []),
-      API.ml.getWeeklyReflection().catch(() => ({
-        period: 'Past 7 Days',
-        reflection: `🌿 **Weekly Reflection for ${store.getDisplayName()}**\n\nContinue tracking your focus, habits, and spending to generate personalized insights.`
-      }))
-    ]);
+    // 1. Instant Cache Render: If data is already in memory, display immediately with 0 delay!
+    if (this._cachedData && !forceRefresh) {
+      this._renderHTML(this._cachedData);
+      return;
+    }
 
+    // 2. Responsive Loading Skeleton: Don't show a blank box while ML models compute
+    if (!this._cachedData && (!this.container.innerHTML || this.container.innerHTML.trim() === '')) {
+      this.container.innerHTML = `
+        <div class="content-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px; text-align: center; border-radius: 12px; margin-top: 10px;">
+          <div style="font-size: 2.2rem; animation: pulse 1.6s infinite ease-in-out; margin-bottom: 12px;">🧠</div>
+          <h3 style="font-size: 1.05rem; font-weight: 600; color: var(--text-main); margin-bottom: 6px;">Computing Personalized Insights…</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted); max-width: 360px; line-height: 1.5; margin: 0 auto;">
+            Analyzing your deep work sessions, habit streaks, and spending forecast with local ML models.
+          </p>
+        </div>
+      `;
+    }
+
+    // 3. Deduplicate in-flight fetch across rapid tab switches
+    if (!this._fetchPromise) {
+      this._fetchPromise = Promise.all([
+        API.ml.getFocusRecommendation().catch(() => ({ recommended_window: '09:00 - 11:30 AM', explanation: 'Start your mornings with deep focus blocks.', confidence: 'cold' })),
+        API.ml.getSpendingForecast().catch(() => ({ spent_so_far: store.getMonthExpense(), monthly_budget: store.getBudget(), projected_month_end: store.getMonthExpense() })),
+        API.ml.getHabitRisks().catch(() => []),
+        API.ml.getCrossModuleInsights().catch(() => []),
+        API.ml.getWeeklyReflection().catch(() => ({
+          period: 'Past 7 Days',
+          reflection: `🌿 **Weekly Reflection for ${store.getDisplayName()}**\n\nContinue tracking your focus, habits, and spending to generate personalized insights.`
+        }))
+      ]).then(([focusRec, spendForecast, habitRisks, rawInsights, reflection]) => {
+        this._cachedData = { focusRec, spendForecast, habitRisks, rawInsights, reflection };
+        this._fetchPromise = null;
+        return this._cachedData;
+      }).catch(err => {
+        this._fetchPromise = null;
+        throw err;
+      });
+    }
+
+    try {
+      const data = await this._fetchPromise;
+      this._renderHTML(data);
+    } catch (err) {
+      console.warn('Insights rendering error:', err);
+    }
+  }
+
+  _renderHTML(data) {
+    if (!this.container || !data) return;
+    const { focusRec, spendForecast, habitRisks, rawInsights, reflection } = data;
     const focusBadge = this.getFriendlyBadge(focusRec?.confidence);
     const budget = store.getBudget();
     const monthSpent = store.getMonthExpense();

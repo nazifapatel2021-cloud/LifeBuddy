@@ -84,6 +84,7 @@ function initApp() {
   const authController = new AuthController({
     onUserChanged: async () => {
       try {
+        if (insightsCoordinator.clearCache) insightsCoordinator.clearCache();
         await store.fetchState();
         taskManager.renderFocusQueueList(document.getElementById('task-list-container'));
         taskManager.renderTaskList(document.getElementById('planner-task-list'));
