@@ -7,9 +7,9 @@
   <meta name="description" content="A premium personal life-management platform uniting deep focus, intelligent task planning, habit consistency, and mindful personal finances.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%236366f1%22/><path d=%22M16 6 C10 6 7 11 7 17 C7 23 11 26 16 26 C21 26 25 23 25 17 C25 11 22 6 16 6 Z%22 fill=%22none%22 stroke=%22%23ffffff%22 stroke-width=%222.5%22/><circle cx=%2216%22 cy=%2216%22 r=%223.5%22 fill=%22%23ffffff%22/></svg>">
   <link rel="manifest" href="static/manifest.json">
-  <link rel="stylesheet" href="css/variables.css?v=6.0">
-  <link rel="stylesheet" href="css/styles.css?v=6.0">
-  <link rel="stylesheet" href="css/responsive.css?v=6.0">
+  <link rel="stylesheet" href="css/variables.css?v=7.0">
+  <link rel="stylesheet" href="css/styles.css?v=7.0">
+  <link rel="stylesheet" href="css/responsive.css?v=7.0">
 </head>
 <body>
 
@@ -521,25 +521,27 @@
             </div>
 
             <!-- New Habit Form -->
-            <form id="habit-form" class="habit-quick-composer" style="display: flex; gap: 8px; align-items: center; width: 100%;">
-              <input type="text" id="habit-title-input" class="field-input" placeholder="New habit (e.g. Read 20 pages or morning meditation)" required autocomplete="off" style="flex: 1 1 auto; min-width: 180px;">
-              <select id="habit-icon-select" class="field-input select-icon" style="flex: 0 0 135px; width: 135px; max-width: 135px; min-width: 135px;">
-                <option value="🌱">🌱 Wellness</option>
-                <option value="💧">💧 Hydration</option>
-                <option value="📖">📖 Reading</option>
-                <option value="🏃">🏃 Exercise</option>
-                <option value="🧘">🧘 Mindfulness</option>
-                <option value="✍️">✍️ Writing</option>
-              </select>
-              <select id="habit-freq-select" class="field-input select-frequency" style="flex: 0 0 145px; width: 145px; max-width: 145px; min-width: 145px;">
-                <option value="daily" selected>Daily</option>
-                <option value="weekdays">Weekdays</option>
-                <option value="weekends">Weekends</option>
-                <option value="thrice_weekly">Thrice a Week</option>
-                <option value="twice_weekly">Twice a Week</option>
-                <option value="weekly">Once a Week</option>
-              </select>
-              <button type="submit" class="btn-primary btn-add-habit" style="flex: 0 0 auto; white-space: nowrap; padding: 8px 16px;">+ Add Habit</button>
+            <form id="habit-form" class="habit-quick-composer">
+              <input type="text" id="habit-title-input" class="field-input" placeholder="New habit (e.g. Read 20 pages or morning meditation)" required autocomplete="off">
+              <div class="habit-composer-controls">
+                <select id="habit-icon-select" class="field-input select-icon">
+                  <option value="🌱">🌱 Wellness</option>
+                  <option value="💧">💧 Hydration</option>
+                  <option value="📖">📖 Reading</option>
+                  <option value="🏃">🏃 Exercise</option>
+                  <option value="🧘">🧘 Mindfulness</option>
+                  <option value="✍️">✍️ Writing</option>
+                </select>
+                <select id="habit-freq-select" class="field-input select-frequency">
+                  <option value="daily" selected>Daily</option>
+                  <option value="weekdays">Weekdays</option>
+                  <option value="weekends">Weekends</option>
+                  <option value="thrice_weekly">Thrice a Week</option>
+                  <option value="twice_weekly">Twice a Week</option>
+                  <option value="weekly">Once a Week</option>
+                </select>
+              </div>
+              <button type="submit" class="btn-primary btn-add-habit">+ Add Habit</button>
             </form>
 
             <div id="habits-list-container" class="habits-stream"></div>

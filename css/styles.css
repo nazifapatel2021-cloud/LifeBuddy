@@ -1943,27 +1943,32 @@ input[type="number"] {
   flex: 1 1 auto;
   min-width: 180px;
   width: auto;
+  height: 38px;
+}
+
+.habit-composer-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .habit-quick-composer select#habit-icon-select,
 .habit-quick-composer select.select-icon {
-  flex: 0 0 135px !important;
-  width: 135px !important;
-  max-width: 135px !important;
-  min-width: 135px !important;
+  width: 135px;
+  height: 38px;
 }
 
 .habit-quick-composer select#habit-freq-select,
 .habit-quick-composer select.select-frequency {
-  flex: 0 0 145px !important;
-  width: 145px !important;
-  max-width: 145px !important;
-  min-width: 145px !important;
+  width: 145px;
+  height: 38px;
 }
 
 .habit-quick-composer button.btn-add-habit {
   flex: 0 0 auto;
-  padding: 8px 16px;
+  height: 38px;
+  padding: 0 16px;
   white-space: nowrap;
 }
 

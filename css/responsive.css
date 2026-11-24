@@ -272,15 +272,46 @@
   }
 
   .habit-quick-composer {
-    flex-direction: column;
-    gap: 8px;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
   }
 
-  .select-icon,
-  .select-frequency {
+  .habit-quick-composer input#habit-title-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+  }
+
+  .habit-composer-controls {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  .habit-quick-composer select#habit-icon-select,
+  .habit-quick-composer select.select-icon,
+  .habit-quick-composer select#habit-freq-select,
+  .habit-quick-composer select.select-frequency {
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
     flex: none !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+  }
+
+  .habit-quick-composer button.btn-add-habit {
+    width: 100% !important;
+    height: 42px !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
   }
 
   .sound-mixer-grid {
